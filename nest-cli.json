@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/zinfurn-api/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "zinfurn-api/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/zinfurn-api",
+  "projects": {
+    "zinfurn": {
+      "type": "application",
+      "root": "apps/zinfurn-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/zinfurn-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/zinfurn-api/tsconfig.app.json"
+      }
+    },
+    "zinfurn-batch": {
+      "type": "application",
+      "root": "apps/zinfurn-batch",
+      "entryFile": "main",
+      "sourceRoot": "apps/zinfurn-batch/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/zinfurn-batch/tsconfig.app.json"
+      }
+    }
+  }
+}
