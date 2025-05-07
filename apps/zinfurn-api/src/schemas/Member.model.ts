@@ -33,6 +33,11 @@ const MemberSchema = new Schema(
             required: true,
         },
 
+        memberEmail: {
+            type: String,
+            index: { unique: true, sparse: true },
+          },
+
         memberPassword: {
             type: String,
             select: false,

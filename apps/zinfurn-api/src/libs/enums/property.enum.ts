@@ -18,7 +18,7 @@ export enum PropertyStatus {
 	HOLD = 'HOLD',
 	ACTIVE = 'ACTIVE',
 	SOLD = 'SOLD',
-	DELETED = 'DELETED',
+	DELETE = 'DELETE',
 }
 registerEnumType(PropertyStatus, {
 	name: 'PropertyStatus',
@@ -38,7 +38,8 @@ registerEnumType(PropertyCategory, {
 export enum PropertyMaterial {
 	WOOD = 'WOOD',
 	METAL = 'METAL',
-	PLASTIC = 'PLASTIC'
+	PLASTIC = 'PLASTIC',
+	GLASS = "GLASS"
 }
 registerEnumType(PropertyMaterial, {
 	name: 'PropertyMaterial',

@@ -2,10 +2,10 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./apps/nestar-api/src/app.controller.ts":
-/*!***********************************************!*\
-  !*** ./apps/nestar-api/src/app.controller.ts ***!
-  \***********************************************/
+/***/ "./apps/zinfurn-api/src/app.controller.ts":
+/*!************************************************!*\
+  !*** ./apps/zinfurn-api/src/app.controller.ts ***!
+  \************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -22,7 +22,7 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppController = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const app_service_1 = __webpack_require__(/*! ./app.service */ "./apps/nestar-api/src/app.service.ts");
+const app_service_1 = __webpack_require__(/*! ./app.service */ "./apps/zinfurn-api/src/app.service.ts");
 let AppController = class AppController {
     appService;
     constructor(appService) {
@@ -47,10 +47,10 @@ exports.AppController = AppController = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/app.module.ts":
-/*!*******************************************!*\
-  !*** ./apps/nestar-api/src/app.module.ts ***!
-  \*******************************************/
+/***/ "./apps/zinfurn-api/src/app.module.ts":
+/*!********************************************!*\
+  !*** ./apps/zinfurn-api/src/app.module.ts ***!
+  \********************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -63,15 +63,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const app_controller_1 = __webpack_require__(/*! ./app.controller */ "./apps/nestar-api/src/app.controller.ts");
-const app_service_1 = __webpack_require__(/*! ./app.service */ "./apps/nestar-api/src/app.service.ts");
+const app_controller_1 = __webpack_require__(/*! ./app.controller */ "./apps/zinfurn-api/src/app.controller.ts");
+const app_service_1 = __webpack_require__(/*! ./app.service */ "./apps/zinfurn-api/src/app.service.ts");
 const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const apollo_1 = __webpack_require__(/*! @nestjs/apollo */ "@nestjs/apollo");
-const app_resolver_1 = __webpack_require__(/*! ./app.resolver */ "./apps/nestar-api/src/app.resolver.ts");
-const components_module_1 = __webpack_require__(/*! ./components/components.module */ "./apps/nestar-api/src/components/components.module.ts");
-const database_module_1 = __webpack_require__(/*! ./database/database.module */ "./apps/nestar-api/src/database/database.module.ts");
-const socket_module_1 = __webpack_require__(/*! ./socket/socket.module */ "./apps/nestar-api/src/socket/socket.module.ts");
+const app_resolver_1 = __webpack_require__(/*! ./app.resolver */ "./apps/zinfurn-api/src/app.resolver.ts");
+const components_module_1 = __webpack_require__(/*! ./components/components.module */ "./apps/zinfurn-api/src/components/components.module.ts");
+const database_module_1 = __webpack_require__(/*! ./database/database.module */ "./apps/zinfurn-api/src/database/database.module.ts");
+const socket_module_1 = __webpack_require__(/*! ./socket/socket.module */ "./apps/zinfurn-api/src/socket/socket.module.ts");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -104,10 +104,10 @@ exports.AppModule = AppModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/app.resolver.ts":
-/*!*********************************************!*\
-  !*** ./apps/nestar-api/src/app.resolver.ts ***!
-  \*********************************************/
+/***/ "./apps/zinfurn-api/src/app.resolver.ts":
+/*!**********************************************!*\
+  !*** ./apps/zinfurn-api/src/app.resolver.ts ***!
+  \**********************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -142,10 +142,10 @@ exports.AppResolver = AppResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/app.service.ts":
-/*!********************************************!*\
-  !*** ./apps/nestar-api/src/app.service.ts ***!
-  \********************************************/
+/***/ "./apps/zinfurn-api/src/app.service.ts":
+/*!*********************************************!*\
+  !*** ./apps/zinfurn-api/src/app.service.ts ***!
+  \*********************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -171,10 +171,10 @@ exports.AppService = AppService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/auth.module.ts":
-/*!************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/auth.module.ts ***!
-  \************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/auth.module.ts":
+/*!*************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/auth.module.ts ***!
+  \*************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -187,7 +187,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const auth_service_1 = __webpack_require__(/*! ./auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
+const auth_service_1 = __webpack_require__(/*! ./auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
 const axios_1 = __webpack_require__(/*! @nestjs/axios */ "@nestjs/axios");
 const jwt_1 = __webpack_require__(/*! @nestjs/jwt */ "@nestjs/jwt");
 let AuthModule = class AuthModule {
@@ -210,10 +210,10 @@ exports.AuthModule = AuthModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/auth.service.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/auth.service.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/auth.service.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/auth.service.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -232,7 +232,7 @@ exports.AuthService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const jwt_1 = __webpack_require__(/*! @nestjs/jwt */ "@nestjs/jwt");
 const bcrypt = __webpack_require__(/*! bcryptjs */ "bcryptjs");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let AuthService = class AuthService {
     jwtService;
     constructor(jwtService) {
@@ -268,10 +268,10 @@ exports.AuthService = AuthService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts":
-/*!********************************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts ***!
-  \********************************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts":
+/*!*********************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts ***!
+  \*********************************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -298,10 +298,10 @@ exports.AuthMember = (0, common_1.createParamDecorator)((data, context) => {
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts":
-/*!***************************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts ***!
-  \***************************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts":
+/*!****************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts ***!
+  \****************************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -314,10 +314,10 @@ exports.Roles = Roles;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts":
-/*!******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/guards/auth.guard.ts ***!
-  \******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts ***!
+  \*******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -334,8 +334,8 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthGuard = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
-const common_enum_1 = __webpack_require__(/*! apps/nestar-api/src/libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
+const common_enum_1 = __webpack_require__(/*! apps/zinfurn-api/src/libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let AuthGuard = class AuthGuard {
     authService;
     constructor(authService) {
@@ -367,10 +367,10 @@ exports.AuthGuard = AuthGuard = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/guards/roles.guard.ts":
-/*!*******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/guards/roles.guard.ts ***!
-  \*******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts":
+/*!********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts ***!
+  \********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -388,8 +388,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RolesGuard = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
-const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
-const common_enum_1 = __webpack_require__(/*! apps/nestar-api/src/libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
+const common_enum_1 = __webpack_require__(/*! apps/zinfurn-api/src/libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let RolesGuard = class RolesGuard {
     reflector;
     authService;
@@ -426,10 +426,10 @@ exports.RolesGuard = RolesGuard = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/auth/guards/without.guard.ts":
-/*!*********************************************************************!*\
-  !*** ./apps/nestar-api/src/components/auth/guards/without.guard.ts ***!
-  \*********************************************************************/
+/***/ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts":
+/*!**********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/guards/without.guard.ts ***!
+  \**********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -446,7 +446,7 @@ var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WithoutGuard = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
+const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
 let WithoutGuard = class WithoutGuard {
     authService;
     constructor(authService) {
@@ -482,10 +482,10 @@ exports.WithoutGuard = WithoutGuard = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/board-article/board-article.module.ts":
-/*!******************************************************************************!*\
-  !*** ./apps/nestar-api/src/components/board-article/board-article.module.ts ***!
-  \******************************************************************************/
+/***/ "./apps/zinfurn-api/src/components/board-article/board-article.module.ts":
+/*!*******************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/board-article/board-article.module.ts ***!
+  \*******************************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -498,14 +498,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const board_article_resolver_1 = __webpack_require__(/*! ./board-article.resolver */ "./apps/nestar-api/src/components/board-article/board-article.resolver.ts");
-const board_article_service_1 = __webpack_require__(/*! ./board-article.service */ "./apps/nestar-api/src/components/board-article/board-article.service.ts");
+const board_article_resolver_1 = __webpack_require__(/*! ./board-article.resolver */ "./apps/zinfurn-api/src/components/board-article/board-article.resolver.ts");
+const board_article_service_1 = __webpack_require__(/*! ./board-article.service */ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const BoardArticle_model_1 = __webpack_require__(/*! ../../schemas/BoardArticle.model */ "./apps/nestar-api/src/schemas/BoardArticle.model.ts");
-const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/nestar-api/src/components/member/member.module.ts");
-const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/nestar-api/src/components/view/view.module.ts");
-const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/nestar-api/src/components/like/like.module.ts");
+const BoardArticle_model_1 = __webpack_require__(/*! ../../schemas/BoardArticle.model */ "./apps/zinfurn-api/src/schemas/BoardArticle.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
 let BoardArticleModule = class BoardArticleModule {
 };
 exports.BoardArticleModule = BoardArticleModule;
@@ -531,10 +531,10 @@ exports.BoardArticleModule = BoardArticleModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/board-article/board-article.resolver.ts":
-/*!********************************************************************************!*\
-  !*** ./apps/nestar-api/src/components/board-article/board-article.resolver.ts ***!
-  \********************************************************************************/
+/***/ "./apps/zinfurn-api/src/components/board-article/board-article.resolver.ts":
+/*!*********************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/board-article/board-article.resolver.ts ***!
+  \*********************************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -555,18 +555,18 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleResolver = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts");
-const board_article_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article */ "./apps/nestar-api/src/libs/dto/board-article/board-article.ts");
-const board_article_input_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article.input */ "./apps/nestar-api/src/libs/dto/board-article/board-article.input.ts");
-const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const board_article_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article */ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.ts");
+const board_article_input_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article.input */ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.input.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const board_article_service_1 = __webpack_require__(/*! ./board-article.service */ "./apps/nestar-api/src/components/board-article/board-article.service.ts");
-const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/nestar-api/src/components/auth/guards/without.guard.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const board_article_update_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article.update */ "./apps/nestar-api/src/libs/dto/board-article/board-article.update.ts");
-const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts");
-const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/nestar-api/src/components/auth/guards/roles.guard.ts");
+const board_article_service_1 = __webpack_require__(/*! ./board-article.service */ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const board_article_update_1 = __webpack_require__(/*! ../../libs/dto/board-article/board-article.update */ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.update.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
 let BoardArticleResolver = class BoardArticleResolver {
     boardArticleService;
     constructor(boardArticleService) {
@@ -694,10 +694,10 @@ exports.BoardArticleResolver = BoardArticleResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/board-article/board-article.service.ts":
-/*!*******************************************************************************!*\
-  !*** ./apps/nestar-api/src/components/board-article/board-article.service.ts ***!
-  \*******************************************************************************/
+/***/ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts":
+/*!********************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/board-article/board-article.service.ts ***!
+  \********************************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -719,14 +719,14 @@ exports.BoardArticleService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
-const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/nestar-api/src/components/view/view.service.ts");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const board_article_enum_1 = __webpack_require__(/*! ../../libs/enums/board-article.enum */ "./apps/nestar-api/src/libs/enums/board-article.enum.ts");
-const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/nestar-api/src/components/like/like.service.ts");
-const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/nestar-api/src/libs/enums/like.enum.ts");
+const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
+const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/zinfurn-api/src/components/view/view.service.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const board_article_enum_1 = __webpack_require__(/*! ../../libs/enums/board-article.enum */ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
 let BoardArticleService = class BoardArticleService {
     boardArticleModel;
     memberService;
@@ -921,10 +921,10 @@ exports.BoardArticleService = BoardArticleService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/comment/comment.module.ts":
-/*!******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/comment/comment.module.ts ***!
-  \******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/comment/comment.module.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/comment/comment.module.ts ***!
+  \*******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -937,14 +937,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const comment_resolver_1 = __webpack_require__(/*! ./comment.resolver */ "./apps/nestar-api/src/components/comment/comment.resolver.ts");
+const comment_resolver_1 = __webpack_require__(/*! ./comment.resolver */ "./apps/zinfurn-api/src/components/comment/comment.resolver.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const Comment_model_1 = __webpack_require__(/*! ../../schemas/Comment.model */ "./apps/nestar-api/src/schemas/Comment.model.ts");
-const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/nestar-api/src/components/member/member.module.ts");
-const property_module_1 = __webpack_require__(/*! ../property/property.module */ "./apps/nestar-api/src/components/property/property.module.ts");
-const board_article_module_1 = __webpack_require__(/*! ../board-article/board-article.module */ "./apps/nestar-api/src/components/board-article/board-article.module.ts");
-const comment_service_1 = __webpack_require__(/*! ./comment.service */ "./apps/nestar-api/src/components/comment/comment.service.ts");
+const Comment_model_1 = __webpack_require__(/*! ../../schemas/Comment.model */ "./apps/zinfurn-api/src/schemas/Comment.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const property_module_1 = __webpack_require__(/*! ../property/property.module */ "./apps/zinfurn-api/src/components/property/property.module.ts");
+const board_article_module_1 = __webpack_require__(/*! ../board-article/board-article.module */ "./apps/zinfurn-api/src/components/board-article/board-article.module.ts");
+const comment_service_1 = __webpack_require__(/*! ./comment.service */ "./apps/zinfurn-api/src/components/comment/comment.service.ts");
 let CommentModule = class CommentModule {
 };
 exports.CommentModule = CommentModule;
@@ -969,10 +969,10 @@ exports.CommentModule = CommentModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/comment/comment.resolver.ts":
-/*!********************************************************************!*\
-  !*** ./apps/nestar-api/src/components/comment/comment.resolver.ts ***!
-  \********************************************************************/
+/***/ "./apps/zinfurn-api/src/components/comment/comment.resolver.ts":
+/*!*********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/comment/comment.resolver.ts ***!
+  \*********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -993,18 +993,18 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts");
-const comment_1 = __webpack_require__(/*! ../../libs/dto/comment/comment */ "./apps/nestar-api/src/libs/dto/comment/comment.ts");
-const comment_input_1 = __webpack_require__(/*! ../../libs/dto/comment/comment.input */ "./apps/nestar-api/src/libs/dto/comment/comment.input.ts");
-const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const comment_1 = __webpack_require__(/*! ../../libs/dto/comment/comment */ "./apps/zinfurn-api/src/libs/dto/comment/comment.ts");
+const comment_input_1 = __webpack_require__(/*! ../../libs/dto/comment/comment.input */ "./apps/zinfurn-api/src/libs/dto/comment/comment.input.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const comment_service_1 = __webpack_require__(/*! ./comment.service */ "./apps/nestar-api/src/components/comment/comment.service.ts");
-const comment_update_1 = __webpack_require__(/*! ../../libs/dto/comment/comment.update */ "./apps/nestar-api/src/libs/dto/comment/comment.update.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/nestar-api/src/components/auth/guards/without.guard.ts");
-const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts");
-const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/nestar-api/src/components/auth/guards/roles.guard.ts");
+const comment_service_1 = __webpack_require__(/*! ./comment.service */ "./apps/zinfurn-api/src/components/comment/comment.service.ts");
+const comment_update_1 = __webpack_require__(/*! ../../libs/dto/comment/comment.update */ "./apps/zinfurn-api/src/libs/dto/comment/comment.update.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
 let CommentResolver = class CommentResolver {
     commentService;
     constructor(commentService) {
@@ -1075,10 +1075,10 @@ exports.CommentResolver = CommentResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/comment/comment.service.ts":
-/*!*******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/comment/comment.service.ts ***!
-  \*******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/comment/comment.service.ts":
+/*!********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/comment/comment.service.ts ***!
+  \********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1099,13 +1099,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
+const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const property_service_1 = __webpack_require__(/*! ../property/property.service */ "./apps/nestar-api/src/components/property/property.service.ts");
-const board_article_service_1 = __webpack_require__(/*! ../board-article/board-article.service */ "./apps/nestar-api/src/components/board-article/board-article.service.ts");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const comment_enum_1 = __webpack_require__(/*! ../../libs/enums/comment.enum */ "./apps/nestar-api/src/libs/enums/comment.enum.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const property_service_1 = __webpack_require__(/*! ../property/property.service */ "./apps/zinfurn-api/src/components/property/property.service.ts");
+const board_article_service_1 = __webpack_require__(/*! ../board-article/board-article.service */ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const comment_enum_1 = __webpack_require__(/*! ../../libs/enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let CommentService = class CommentService {
     commentModule;
     memberService;
@@ -1207,10 +1207,10 @@ exports.CommentService = CommentService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/components.module.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/components/components.module.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/components/components.module.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/components.module.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1223,14 +1223,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ComponentsModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const member_module_1 = __webpack_require__(/*! ./member/member.module */ "./apps/nestar-api/src/components/member/member.module.ts");
-const property_module_1 = __webpack_require__(/*! ./property/property.module */ "./apps/nestar-api/src/components/property/property.module.ts");
-const auth_module_1 = __webpack_require__(/*! ./auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const board_article_module_1 = __webpack_require__(/*! ./board-article/board-article.module */ "./apps/nestar-api/src/components/board-article/board-article.module.ts");
-const comment_module_1 = __webpack_require__(/*! ./comment/comment.module */ "./apps/nestar-api/src/components/comment/comment.module.ts");
-const follow_module_1 = __webpack_require__(/*! ./follow/follow.module */ "./apps/nestar-api/src/components/follow/follow.module.ts");
-const like_module_1 = __webpack_require__(/*! ./like/like.module */ "./apps/nestar-api/src/components/like/like.module.ts");
-const view_module_1 = __webpack_require__(/*! ./view/view.module */ "./apps/nestar-api/src/components/view/view.module.ts");
+const member_module_1 = __webpack_require__(/*! ./member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const property_module_1 = __webpack_require__(/*! ./property/property.module */ "./apps/zinfurn-api/src/components/property/property.module.ts");
+const auth_module_1 = __webpack_require__(/*! ./auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const board_article_module_1 = __webpack_require__(/*! ./board-article/board-article.module */ "./apps/zinfurn-api/src/components/board-article/board-article.module.ts");
+const comment_module_1 = __webpack_require__(/*! ./comment/comment.module */ "./apps/zinfurn-api/src/components/comment/comment.module.ts");
+const follow_module_1 = __webpack_require__(/*! ./follow/follow.module */ "./apps/zinfurn-api/src/components/follow/follow.module.ts");
+const like_module_1 = __webpack_require__(/*! ./like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
+const view_module_1 = __webpack_require__(/*! ./view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -1252,10 +1252,10 @@ exports.ComponentsModule = ComponentsModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/follow/follow.module.ts":
-/*!****************************************************************!*\
-  !*** ./apps/nestar-api/src/components/follow/follow.module.ts ***!
-  \****************************************************************/
+/***/ "./apps/zinfurn-api/src/components/follow/follow.module.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/follow/follow.module.ts ***!
+  \*****************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1269,11 +1269,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FollowModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const follow_resolver_1 = __webpack_require__(/*! ./follow.resolver */ "./apps/nestar-api/src/components/follow/follow.resolver.ts");
-const follow_service_1 = __webpack_require__(/*! ./follow.service */ "./apps/nestar-api/src/components/follow/follow.service.ts");
-const Follow_model_1 = __webpack_require__(/*! ../../schemas/Follow.model */ "./apps/nestar-api/src/schemas/Follow.model.ts");
-const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/nestar-api/src/components/member/member.module.ts");
+const follow_resolver_1 = __webpack_require__(/*! ./follow.resolver */ "./apps/zinfurn-api/src/components/follow/follow.resolver.ts");
+const follow_service_1 = __webpack_require__(/*! ./follow.service */ "./apps/zinfurn-api/src/components/follow/follow.service.ts");
+const Follow_model_1 = __webpack_require__(/*! ../../schemas/Follow.model */ "./apps/zinfurn-api/src/schemas/Follow.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
 let FollowModule = class FollowModule {
 };
 exports.FollowModule = FollowModule;
@@ -1297,10 +1297,10 @@ exports.FollowModule = FollowModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/follow/follow.resolver.ts":
-/*!******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/follow/follow.resolver.ts ***!
-  \******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/follow/follow.resolver.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/follow/follow.resolver.ts ***!
+  \*******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1320,15 +1320,15 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FollowResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const follow_service_1 = __webpack_require__(/*! ./follow.service */ "./apps/nestar-api/src/components/follow/follow.service.ts");
-const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts");
+const follow_service_1 = __webpack_require__(/*! ./follow.service */ "./apps/zinfurn-api/src/components/follow/follow.service.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const follow_1 = __webpack_require__(/*! ../../libs/dto/follow/follow */ "./apps/nestar-api/src/libs/dto/follow/follow.ts");
-const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts");
+const follow_1 = __webpack_require__(/*! ../../libs/dto/follow/follow */ "./apps/zinfurn-api/src/libs/dto/follow/follow.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/nestar-api/src/components/auth/guards/without.guard.ts");
-const follow_input_1 = __webpack_require__(/*! ../../libs/dto/follow/follow.input */ "./apps/nestar-api/src/libs/dto/follow/follow.input.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const follow_input_1 = __webpack_require__(/*! ../../libs/dto/follow/follow.input */ "./apps/zinfurn-api/src/libs/dto/follow/follow.input.ts");
 let FollowResolver = class FollowResolver {
     followService;
     constructor(followService) {
@@ -1402,10 +1402,10 @@ exports.FollowResolver = FollowResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/follow/follow.service.ts":
-/*!*****************************************************************!*\
-  !*** ./apps/nestar-api/src/components/follow/follow.service.ts ***!
-  \*****************************************************************/
+/***/ "./apps/zinfurn-api/src/components/follow/follow.service.ts":
+/*!******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/follow/follow.service.ts ***!
+  \******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1427,9 +1427,9 @@ exports.FollowService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let FollowService = class FollowService {
     followModel;
     memberService;
@@ -1550,10 +1550,10 @@ exports.FollowService = FollowService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/like/like.module.ts":
-/*!************************************************************!*\
-  !*** ./apps/nestar-api/src/components/like/like.module.ts ***!
-  \************************************************************/
+/***/ "./apps/zinfurn-api/src/components/like/like.module.ts":
+/*!*************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/like/like.module.ts ***!
+  \*************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1566,9 +1566,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LikeModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const like_service_1 = __webpack_require__(/*! ./like.service */ "./apps/nestar-api/src/components/like/like.service.ts");
+const like_service_1 = __webpack_require__(/*! ./like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const Like_model_1 = __webpack_require__(/*! ../../schemas/Like.model */ "./apps/nestar-api/src/schemas/Like.model.ts");
+const Like_model_1 = __webpack_require__(/*! ../../schemas/Like.model */ "./apps/zinfurn-api/src/schemas/Like.model.ts");
 let LikeModule = class LikeModule {
 };
 exports.LikeModule = LikeModule;
@@ -1590,10 +1590,10 @@ exports.LikeModule = LikeModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/like/like.service.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/components/like/like.service.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/components/like/like.service.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/like/like.service.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1615,9 +1615,9 @@ exports.LikeService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/nestar-api/src/libs/enums/like.enum.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let LikeService = class LikeService {
     likeModel;
     constructor(likeModel) {
@@ -1691,10 +1691,10 @@ exports.LikeService = LikeService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/member/member.module.ts":
-/*!****************************************************************!*\
-  !*** ./apps/nestar-api/src/components/member/member.module.ts ***!
-  \****************************************************************/
+/***/ "./apps/zinfurn-api/src/components/member/member.module.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/member/member.module.ts ***!
+  \*****************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1707,14 +1707,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const member_resolver_1 = __webpack_require__(/*! ./member.resolver */ "./apps/nestar-api/src/components/member/member.resolver.ts");
-const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
+const member_resolver_1 = __webpack_require__(/*! ./member.resolver */ "./apps/zinfurn-api/src/components/member/member.resolver.ts");
+const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/nestar-api/src/schemas/Member.model.ts");
-const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/nestar-api/src/components/view/view.module.ts");
-const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/nestar-api/src/components/like/like.module.ts");
-const Follow_model_1 = __webpack_require__(/*! ../../schemas/Follow.model */ "./apps/nestar-api/src/schemas/Follow.model.ts");
+const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/zinfurn-api/src/schemas/Member.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
+const Follow_model_1 = __webpack_require__(/*! ../../schemas/Follow.model */ "./apps/zinfurn-api/src/schemas/Follow.model.ts");
 let MemberModule = class MemberModule {
 };
 exports.MemberModule = MemberModule;
@@ -1735,10 +1735,10 @@ exports.MemberModule = MemberModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/member/member.resolver.ts":
-/*!******************************************************************!*\
-  !*** ./apps/nestar-api/src/components/member/member.resolver.ts ***!
-  \******************************************************************/
+/***/ "./apps/zinfurn-api/src/components/member/member.resolver.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/member/member.resolver.ts ***!
+  \*******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1754,26 +1754,26 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
-const member_input_1 = __webpack_require__(/*! ../../libs/dto/member/member.input */ "./apps/nestar-api/src/libs/dto/member/member.input.ts");
-const member_1 = __webpack_require__(/*! ../../libs/dto/member/member */ "./apps/nestar-api/src/libs/dto/member/member.ts");
+const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
+const member_input_1 = __webpack_require__(/*! ../../libs/dto/member/member.input */ "./apps/zinfurn-api/src/libs/dto/member/member.input.ts");
+const member_1 = __webpack_require__(/*! ../../libs/dto/member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts");
-const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts");
-const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/nestar-api/src/components/auth/guards/roles.guard.ts");
-const member_update_1 = __webpack_require__(/*! ../../libs/dto/member/member.update */ "./apps/nestar-api/src/libs/dto/member/member.update.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/nestar-api/src/components/auth/guards/without.guard.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
+const member_update_1 = __webpack_require__(/*! ../../libs/dto/member/member.update */ "./apps/zinfurn-api/src/libs/dto/member/member.update.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
 const graphql_upload_1 = __webpack_require__(/*! graphql-upload */ "graphql-upload");
 const fs_1 = __webpack_require__(/*! fs */ "fs");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let MemberResolver = class MemberResolver {
     memberService;
     constructor(memberService) {
@@ -1809,6 +1809,10 @@ let MemberResolver = class MemberResolver {
     async getAgents(input, memberId) {
         console.log('Query: getMember');
         return await this.memberService.getAgents(memberId, input);
+    }
+    async getTechnicians(input, memberId) {
+        console.log('Query: getMember');
+        return await this.memberService.getTechnicians(memberId, input);
     }
     async likeTargetMember(input, memberId) {
         console.log('Mutation: likeTargetMember');
@@ -1933,13 +1937,22 @@ __decorate([
     __metadata("design:returntype", typeof (_r = typeof Promise !== "undefined" && Promise) === "function" ? _r : Object)
 ], MemberResolver.prototype, "getAgents", null);
 __decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => member_1.Members),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_s = typeof member_input_1.TechnicianInquiry !== "undefined" && member_input_1.TechnicianInquiry) === "function" ? _s : Object, typeof (_t = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _t : Object]),
+    __metadata("design:returntype", typeof (_u = typeof Promise !== "undefined" && Promise) === "function" ? _u : Object)
+], MemberResolver.prototype, "getTechnicians", null);
+__decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('memberId')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
-    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+    __metadata("design:paramtypes", [String, typeof (_v = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _v : Object]),
+    __metadata("design:returntype", typeof (_w = typeof Promise !== "undefined" && Promise) === "function" ? _w : Object)
 ], MemberResolver.prototype, "likeTargetMember", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -1947,8 +1960,8 @@ __decorate([
     (0, graphql_1.Query)(() => member_1.Members),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_u = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _u : Object]),
-    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+    __metadata("design:paramtypes", [typeof (_x = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _x : Object]),
+    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
 ], MemberResolver.prototype, "getAllMembersByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -1956,8 +1969,8 @@ __decorate([
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_w = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _w : Object]),
-    __metadata("design:returntype", typeof (_x = typeof Promise !== "undefined" && Promise) === "function" ? _x : Object)
+    __metadata("design:paramtypes", [typeof (_z = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _z : Object]),
+    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
 ], MemberResolver.prototype, "updateMemberByAdmin", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -1965,8 +1978,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)({ name: 'file', type: () => graphql_upload_1.GraphQLUpload })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_y = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _y : Object, typeof (_z = typeof String !== "undefined" && String) === "function" ? _z : Object]),
-    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
+    __metadata("design:paramtypes", [typeof (_1 = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _1 : Object, typeof (_2 = typeof String !== "undefined" && String) === "function" ? _2 : Object]),
+    __metadata("design:returntype", typeof (_3 = typeof Promise !== "undefined" && Promise) === "function" ? _3 : Object)
 ], MemberResolver.prototype, "imageUploader", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -1974,8 +1987,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('files', { type: () => [graphql_upload_1.GraphQLUpload] })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array, typeof (_1 = typeof String !== "undefined" && String) === "function" ? _1 : Object]),
-    __metadata("design:returntype", typeof (_2 = typeof Promise !== "undefined" && Promise) === "function" ? _2 : Object)
+    __metadata("design:paramtypes", [Array, typeof (_4 = typeof String !== "undefined" && String) === "function" ? _4 : Object]),
+    __metadata("design:returntype", typeof (_5 = typeof Promise !== "undefined" && Promise) === "function" ? _5 : Object)
 ], MemberResolver.prototype, "imagesUploader", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
@@ -1985,10 +1998,10 @@ exports.MemberResolver = MemberResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/member/member.service.ts":
-/*!*****************************************************************!*\
-  !*** ./apps/nestar-api/src/components/member/member.service.ts ***!
-  \*****************************************************************/
+/***/ "./apps/zinfurn-api/src/components/member/member.service.ts":
+/*!******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/member/member.service.ts ***!
+  \******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2010,14 +2023,14 @@ exports.MemberService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
-const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/nestar-api/src/components/view/view.service.ts");
-const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
-const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/nestar-api/src/libs/enums/like.enum.ts");
-const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/nestar-api/src/components/like/like.service.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
+const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/zinfurn-api/src/components/view/view.service.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let MemberService = class MemberService {
     memberModel;
     followModel;
@@ -2044,9 +2057,14 @@ let MemberService = class MemberService {
         }
     }
     async login(input) {
-        const { memberNick, memberPassword } = input;
+        const { memberNick, memberPassword, memberEmail } = input;
         const response = await this.memberModel
-            .findOne({ memberNick: memberNick })
+            .findOne({
+            $or: [
+                memberNick ? { memberNick } : null,
+                memberEmail ? { memberEmail } : null,
+            ].filter(Boolean),
+        })
             .select('+memberPassword')
             .exec();
         if (!response || response.memberStatus === member_enum_1.MemberStatus.DELETE) {
@@ -2103,6 +2121,33 @@ let MemberService = class MemberService {
     async getAgents(memberId, input) {
         const { text } = input.search;
         const match = { memberType: member_enum_1.MemberType.AGENT, memberStatus: member_enum_1.MemberStatus.ACTIVE };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        if (text)
+            match.memberNick = { $regex: new RegExp(text, 'i') };
+        console.log('match: ', match);
+        const result = await this.memberModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        (0, config_1.lookupAuthMemberLiked)(memberId),
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                }
+            }
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async getTechnicians(memberId, input) {
+        const { text } = input.search;
+        const match = { memberType: member_enum_1.MemberType.TECHNICIAN, memberStatus: member_enum_1.MemberStatus.ACTIVE };
         const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
         if (text)
             match.memberNick = { $regex: new RegExp(text, 'i') };
@@ -2195,10 +2240,10 @@ exports.MemberService = MemberService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/property/property.module.ts":
-/*!********************************************************************!*\
-  !*** ./apps/nestar-api/src/components/property/property.module.ts ***!
-  \********************************************************************/
+/***/ "./apps/zinfurn-api/src/components/property/property.module.ts":
+/*!*********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/property/property.module.ts ***!
+  \*********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2211,14 +2256,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const property_resolver_1 = __webpack_require__(/*! ./property.resolver */ "./apps/nestar-api/src/components/property/property.resolver.ts");
-const property_service_1 = __webpack_require__(/*! ./property.service */ "./apps/nestar-api/src/components/property/property.service.ts");
+const property_resolver_1 = __webpack_require__(/*! ./property.resolver */ "./apps/zinfurn-api/src/components/property/property.resolver.ts");
+const property_service_1 = __webpack_require__(/*! ./property.service */ "./apps/zinfurn-api/src/components/property/property.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const Property_model_1 = __webpack_require__(/*! ../../schemas/Property.model */ "./apps/nestar-api/src/schemas/Property.model.ts");
-const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
-const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/nestar-api/src/components/view/view.module.ts");
-const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/nestar-api/src/components/member/member.module.ts");
-const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/nestar-api/src/components/like/like.module.ts");
+const Property_model_1 = __webpack_require__(/*! ../../schemas/Property.model */ "./apps/zinfurn-api/src/schemas/Property.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
+const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
 let PropertyModule = class PropertyModule {
 };
 exports.PropertyModule = PropertyModule;
@@ -2244,10 +2289,10 @@ exports.PropertyModule = PropertyModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/property/property.resolver.ts":
-/*!**********************************************************************!*\
-  !*** ./apps/nestar-api/src/components/property/property.resolver.ts ***!
-  \**********************************************************************/
+/***/ "./apps/zinfurn-api/src/components/property/property.resolver.ts":
+/*!***********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/property/property.resolver.ts ***!
+  \***********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2267,19 +2312,19 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const property_service_1 = __webpack_require__(/*! ./property.service */ "./apps/nestar-api/src/components/property/property.service.ts");
-const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/nestar-api/src/components/auth/decorators/roles.decorator.ts");
-const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
+const property_service_1 = __webpack_require__(/*! ./property.service */ "./apps/zinfurn-api/src/components/property/property.service.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/nestar-api/src/components/auth/guards/roles.guard.ts");
-const property_1 = __webpack_require__(/*! ../../libs/dto/property/property */ "./apps/nestar-api/src/libs/dto/property/property.ts");
-const property_input_1 = __webpack_require__(/*! ../../libs/dto/property/property.input */ "./apps/nestar-api/src/libs/dto/property/property.input.ts");
-const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/nestar-api/src/components/auth/decorators/authMember.decorator.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
+const property_1 = __webpack_require__(/*! ../../libs/dto/property/property */ "./apps/zinfurn-api/src/libs/dto/property/property.ts");
+const property_input_1 = __webpack_require__(/*! ../../libs/dto/property/property.input */ "./apps/zinfurn-api/src/libs/dto/property/property.input.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/nestar-api/src/components/auth/guards/without.guard.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const property_update_1 = __webpack_require__(/*! ../../libs/dto/property/property.update */ "./apps/nestar-api/src/libs/dto/property/property.update.ts");
-const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/nestar-api/src/components/auth/guards/auth.guard.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const property_update_1 = __webpack_require__(/*! ../../libs/dto/property/property.update */ "./apps/zinfurn-api/src/libs/dto/property/property.update.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
 let PropertyResolver = class PropertyResolver {
     propertyService;
     constructor(propertyService) {
@@ -2448,10 +2493,10 @@ exports.PropertyResolver = PropertyResolver = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/property/property.service.ts":
-/*!*********************************************************************!*\
-  !*** ./apps/nestar-api/src/components/property/property.service.ts ***!
-  \*********************************************************************/
+/***/ "./apps/zinfurn-api/src/components/property/property.service.ts":
+/*!**********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/property/property.service.ts ***!
+  \**********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2473,15 +2518,15 @@ exports.PropertyService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/nestar-api/src/components/member/member.service.ts");
-const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/nestar-api/src/components/view/view.service.ts");
-const property_enum_1 = __webpack_require__(/*! ../../libs/enums/property.enum */ "./apps/nestar-api/src/libs/enums/property.enum.ts");
-const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
+const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/zinfurn-api/src/components/view/view.service.ts");
+const property_enum_1 = __webpack_require__(/*! ../../libs/enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
 const moment = __webpack_require__(/*! moment */ "moment");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
-const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/nestar-api/src/libs/enums/like.enum.ts");
-const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/nestar-api/src/components/like/like.service.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
 let PropertyService = class PropertyService {
     propertyModel;
     memberService;
@@ -2585,29 +2630,27 @@ let PropertyService = class PropertyService {
         return result[0];
     }
     shapeMatchQuery(match, input) {
-        const { memberId, locationList, roomsList, bedsList, typeList, periodsRange, pricesRange, squaresRange, options, text, } = input.search;
+        const { memberId, categoryList, typeList, conditionList, materialList, colorList, pricesRange, options, text, } = input.search;
         if (memberId)
             match.memberId = (0, config_1.ShapeIntoMongoObjectId)(memberId);
-        if (locationList && locationList.length)
-            match.propertyLocation = { $in: locationList };
-        if (roomsList && roomsList.length)
-            match.propertyRooms = { $in: roomsList };
-        if (bedsList && bedsList.length)
-            match.propertyBeds = { $in: bedsList };
+        if (categoryList && categoryList.length)
+            match.propertyCategory = { $in: categoryList };
         if (typeList && typeList.length)
             match.propertyType = { $in: typeList };
-        if (pricesRange)
+        if (conditionList && conditionList.length)
+            match.propertyCondition = { $in: conditionList };
+        if (materialList && materialList.length)
+            match.propertyMaterial = { $in: materialList };
+        if (colorList && colorList.length)
+            match.propertyColor = { $in: colorList };
+        if (pricesRange) {
             match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
-        if (periodsRange)
-            match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
-        if (squaresRange)
-            match.propertySquare = { $gte: squaresRange.start, $lte: squaresRange.end };
-        if (text)
+        }
+        if (text) {
             match.propertyTitle = { $regex: new RegExp(text, 'i') };
-        if (options) {
-            match['$or'] = options.map((ele) => {
-                return { [ele]: true };
-            });
+        }
+        if (options && options.length) {
+            match['$or'] = options.map((ele) => ({ [ele]: true }));
         }
     }
     async getFavorites(memberId, input) {
@@ -2664,13 +2707,13 @@ let PropertyService = class PropertyService {
         return result;
     }
     async getAllPropertiesByAdmin(input) {
-        const { propertyStatus, propertyLocationList } = input.search;
+        const { propertyStatus, propertyCategory } = input.search;
         const match = {};
         const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
         if (propertyStatus)
             match.propertyStatus = propertyStatus;
-        if (propertyLocationList)
-            match.propertyLocation = { $in: propertyLocationList };
+        if (propertyCategory)
+            match.propertyLocation = { $in: propertyCategory };
         const result = await this.propertyModel
             .aggregate([
             { $match: match },
@@ -2744,10 +2787,10 @@ exports.PropertyService = PropertyService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/view/view.module.ts":
-/*!************************************************************!*\
-  !*** ./apps/nestar-api/src/components/view/view.module.ts ***!
-  \************************************************************/
+/***/ "./apps/zinfurn-api/src/components/view/view.module.ts":
+/*!*************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/view/view.module.ts ***!
+  \*************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2760,9 +2803,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ViewModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const view_service_1 = __webpack_require__(/*! ./view.service */ "./apps/nestar-api/src/components/view/view.service.ts");
+const view_service_1 = __webpack_require__(/*! ./view.service */ "./apps/zinfurn-api/src/components/view/view.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
-const View_model_1 = __webpack_require__(/*! ../../schemas/View.model */ "./apps/nestar-api/src/schemas/View.model.ts");
+const View_model_1 = __webpack_require__(/*! ../../schemas/View.model */ "./apps/zinfurn-api/src/schemas/View.model.ts");
 let ViewModule = class ViewModule {
 };
 exports.ViewModule = ViewModule;
@@ -2777,10 +2820,10 @@ exports.ViewModule = ViewModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/components/view/view.service.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/components/view/view.service.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/components/view/view.service.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/view/view.service.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2802,8 +2845,8 @@ exports.ViewService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
-const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
-const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/nestar-api/src/libs/config.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 let ViewService = class ViewService {
     viewModel;
     constructor(viewModel) {
@@ -2867,10 +2910,10 @@ exports.ViewService = ViewService = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/database/database.module.ts":
-/*!*********************************************************!*\
-  !*** ./apps/nestar-api/src/database/database.module.ts ***!
-  \*********************************************************/
+/***/ "./apps/zinfurn-api/src/database/database.module.ts":
+/*!**********************************************************!*\
+  !*** ./apps/zinfurn-api/src/database/database.module.ts ***!
+  \**********************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -2923,17 +2966,18 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/config.ts":
-/*!********************************************!*\
-  !*** ./apps/nestar-api/src/libs/config.ts ***!
-  \********************************************/
+/***/ "./apps/zinfurn-api/src/libs/config.ts":
+/*!*********************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/config.ts ***!
+  \*********************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.lookupVisit = exports.lookupFavorite = exports.lookupFollowerData = exports.lookupFollowingData = exports.lookupMember = exports.lookupAuthMemberFollowed = exports.lookupAuthMemberLiked = exports.ShapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableCommentSorts = exports.availableBoardArticleSorts = exports.availablePropertySorts = exports.availableOptions = exports.availableMemberSorts = exports.availableAgentSorts = void 0;
+exports.lookupVisit = exports.lookupFavorite = exports.lookupFollowerData = exports.lookupFollowingData = exports.lookupMember = exports.lookupAuthMemberFollowed = exports.lookupAuthMemberLiked = exports.ShapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableCommentSorts = exports.availableBoardArticleSorts = exports.availablePropertySorts = exports.availableOptions = exports.availableMemberSorts = exports.availableTechnician = exports.availableAgentSorts = void 0;
 const bson_1 = __webpack_require__(/*! bson */ "bson");
 exports.availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
+exports.availableTechnician = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 exports.availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 exports.availableOptions = ['propertyBarter', 'propertyRent'];
 exports.availablePropertySorts = [
@@ -3065,10 +3109,10 @@ exports.lookupVisit = {
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/board-article/board-article.input.ts":
-/*!***************************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/board-article/board-article.input.ts ***!
-  \***************************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.input.ts":
+/*!****************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/board-article/board-article.input.ts ***!
+  \****************************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3087,9 +3131,9 @@ exports.AllBoardArticlesInquiry = exports.BoardArticlesInquiry = exports.BoardAr
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/nestar-api/src/libs/enums/board-article.enum.ts");
-const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
-const config_1 = __webpack_require__(/*! ../../config */ "./apps/nestar-api/src/libs/config.ts");
+const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
 let BoardArticleInput = class BoardArticleInput {
     articleCategory;
     articleTitle;
@@ -3245,10 +3289,10 @@ exports.AllBoardArticlesInquiry = AllBoardArticlesInquiry = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/board-article/board-article.ts":
-/*!*********************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/board-article/board-article.ts ***!
-  \*********************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.ts":
+/*!**********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/board-article/board-article.ts ***!
+  \**********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3265,10 +3309,10 @@ var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticles = exports.BoardArticle = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/nestar-api/src/libs/enums/board-article.enum.ts");
+const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_1 = __webpack_require__(/*! ../member/member */ "./apps/nestar-api/src/libs/dto/member/member.ts");
-const like_1 = __webpack_require__(/*! ../like/like */ "./apps/nestar-api/src/libs/dto/like/like.ts");
+const member_1 = __webpack_require__(/*! ../member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/libs/dto/like/like.ts");
 let BoardArticle = class BoardArticle {
     _id;
     articleCategory;
@@ -3365,10 +3409,10 @@ exports.BoardArticles = BoardArticles = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/board-article/board-article.update.ts":
-/*!****************************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/board-article/board-article.update.ts ***!
-  \****************************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/board-article/board-article.update.ts":
+/*!*****************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/board-article/board-article.update.ts ***!
+  \*****************************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3386,7 +3430,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleUpdate = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/nestar-api/src/libs/enums/board-article.enum.ts");
+const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 let BoardArticleUpdate = class BoardArticleUpdate {
     _id;
@@ -3430,10 +3474,10 @@ exports.BoardArticleUpdate = BoardArticleUpdate = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/comment/comment.input.ts":
-/*!***************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/comment/comment.input.ts ***!
-  \***************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/comment/comment.input.ts":
+/*!****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/comment/comment.input.ts ***!
+  \****************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3452,9 +3496,9 @@ exports.CommentsInquiry = exports.CommentInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/nestar-api/src/libs/enums/comment.enum.ts");
-const config_1 = __webpack_require__(/*! ../../config */ "./apps/nestar-api/src/libs/config.ts");
-const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let CommentInput = class CommentInput {
     commentGroup;
     commentContent;
@@ -3535,10 +3579,10 @@ exports.CommentsInquiry = CommentsInquiry = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/comment/comment.ts":
-/*!*********************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/comment/comment.ts ***!
-  \*********************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/comment/comment.ts":
+/*!**********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/comment/comment.ts ***!
+  \**********************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3556,8 +3600,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Comments = exports.Comment = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/nestar-api/src/libs/enums/comment.enum.ts");
-const member_1 = __webpack_require__(/*! ../member/member */ "./apps/nestar-api/src/libs/dto/member/member.ts");
+const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
+const member_1 = __webpack_require__(/*! ../member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
 let Comment = class Comment {
     _id;
     commentStatus;
@@ -3629,10 +3673,10 @@ exports.Comments = Comments = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/comment/comment.update.ts":
-/*!****************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/comment/comment.update.ts ***!
-  \****************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/comment/comment.update.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/comment/comment.update.ts ***!
+  \*****************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3650,7 +3694,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentUpdate = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/nestar-api/src/libs/enums/comment.enum.ts");
+const comment_enum_1 = __webpack_require__(/*! ../../enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 let CommentUpdate = class CommentUpdate {
     _id;
@@ -3681,10 +3725,10 @@ exports.CommentUpdate = CommentUpdate = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/follow/follow.input.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/follow/follow.input.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/follow/follow.input.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/follow/follow.input.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3750,10 +3794,10 @@ exports.FollowInquiry = FollowInquiry = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/follow/follow.ts":
-/*!*******************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/follow/follow.ts ***!
-  \*******************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/follow/follow.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/follow/follow.ts ***!
+  \********************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3771,8 +3815,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Followers = exports.Followings = exports.Following = exports.Follower = exports.MeFollowed = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_1 = __webpack_require__(/*! ../member/member */ "./apps/nestar-api/src/libs/dto/member/member.ts");
-const like_1 = __webpack_require__(/*! ../like/like */ "./apps/nestar-api/src/libs/dto/like/like.ts");
+const member_1 = __webpack_require__(/*! ../member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/libs/dto/like/like.ts");
 let MeFollowed = class MeFollowed {
     followingId;
     followerId;
@@ -3922,10 +3966,10 @@ exports.Followers = Followers = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/like/like.ts":
-/*!***************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/like/like.ts ***!
-  \***************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/like/like.ts":
+/*!****************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/like/like.ts ***!
+  \****************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3942,7 +3986,7 @@ var _a, _b, _c, _d, _e, _f, _g, _h;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Like = exports.MeLiked = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
-const like_enum_1 = __webpack_require__(/*! ../../enums/like.enum */ "./apps/nestar-api/src/libs/enums/like.enum.ts");
+const like_enum_1 = __webpack_require__(/*! ../../enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 let MeLiked = class MeLiked {
     memberId;
@@ -4005,10 +4049,10 @@ exports.Like = Like = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/member/member.input.ts":
-/*!*************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/member/member.input.ts ***!
-  \*************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/member/member.input.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/member/member.input.ts ***!
+  \**************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4021,20 +4065,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f;
+var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MembersInquiry = exports.AgentsInquiry = exports.LoginInput = exports.MemberInput = void 0;
+exports.MembersInquiry = exports.TechnicianInquiry = exports.AgentsInquiry = exports.LoginInput = exports.MemberInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const config_1 = __webpack_require__(/*! ../../config */ "./apps/nestar-api/src/libs/config.ts");
-const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let MemberInput = class MemberInput {
     memberNick;
     memberPassword;
     memberPhone;
     memberType;
     memberAuthType;
+    memberEmail;
 };
 exports.MemberInput = MemberInput;
 __decorate([
@@ -4064,20 +4109,36 @@ __decorate([
     (0, graphql_1.Field)(() => member_enum_1.MemberAuthType, { nullable: true }),
     __metadata("design:type", typeof (_b = typeof member_enum_1.MemberAuthType !== "undefined" && member_enum_1.MemberAuthType) === "function" ? _b : Object)
 ], MemberInput.prototype, "memberAuthType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], MemberInput.prototype, "memberEmail", void 0);
 exports.MemberInput = MemberInput = __decorate([
     (0, graphql_1.InputType)()
 ], MemberInput);
 let LoginInput = class LoginInput {
     memberNick;
+    memberEmail;
     memberPassword;
 };
 exports.LoginInput = LoginInput;
 __decorate([
+    (0, class_validator_1.ValidateIf)((o) => !o.memberEmail),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Length)(3, 12),
-    (0, graphql_1.Field)(() => String),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], LoginInput.prototype, "memberNick", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => !o.memberNick),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.Length)(5, 30),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], LoginInput.prototype, "memberEmail", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Length)(5, 12),
@@ -4137,6 +4198,45 @@ __decorate([
 exports.AgentsInquiry = AgentsInquiry = __decorate([
     (0, graphql_1.InputType)()
 ], AgentsInquiry);
+let TechnicianInquiry = class TechnicianInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.TechnicianInquiry = TechnicianInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], TechnicianInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], TechnicianInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableTechnician),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], TechnicianInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _d : Object)
+], TechnicianInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => AISearch),
+    __metadata("design:type", AISearch)
+], TechnicianInquiry.prototype, "search", void 0);
+exports.TechnicianInquiry = TechnicianInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], TechnicianInquiry);
 let MISearch = class MISearch {
     memberStatus;
     memberType;
@@ -4145,12 +4245,12 @@ let MISearch = class MISearch {
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => member_enum_1.MemberStatus, { nullable: true }),
-    __metadata("design:type", typeof (_d = typeof member_enum_1.MemberStatus !== "undefined" && member_enum_1.MemberStatus) === "function" ? _d : Object)
+    __metadata("design:type", typeof (_e = typeof member_enum_1.MemberStatus !== "undefined" && member_enum_1.MemberStatus) === "function" ? _e : Object)
 ], MISearch.prototype, "memberStatus", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => member_enum_1.MemberType, { nullable: true }),
-    __metadata("design:type", typeof (_e = typeof member_enum_1.MemberType !== "undefined" && member_enum_1.MemberType) === "function" ? _e : Object)
+    __metadata("design:type", typeof (_f = typeof member_enum_1.MemberType !== "undefined" && member_enum_1.MemberType) === "function" ? _f : Object)
 ], MISearch.prototype, "memberType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
@@ -4189,7 +4289,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
-    __metadata("design:type", typeof (_f = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _f : Object)
+    __metadata("design:type", typeof (_g = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _g : Object)
 ], MembersInquiry.prototype, "direction", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
@@ -4203,10 +4303,10 @@ exports.MembersInquiry = MembersInquiry = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/member/member.ts":
-/*!*******************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/member/member.ts ***!
-  \*******************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/member/member.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/member/member.ts ***!
+  \********************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4224,9 +4324,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Members = exports.TotalCounter = exports.Member = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
-const like_1 = __webpack_require__(/*! ../like/like */ "./apps/nestar-api/src/libs/dto/like/like.ts");
-const follow_1 = __webpack_require__(/*! ../follow/follow */ "./apps/nestar-api/src/libs/dto/follow/follow.ts");
+const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/libs/dto/like/like.ts");
+const follow_1 = __webpack_require__(/*! ../follow/follow */ "./apps/zinfurn-api/src/libs/dto/follow/follow.ts");
 let Member = class Member {
     _id;
     memberType;
@@ -4400,10 +4500,10 @@ exports.Members = Members = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/member/member.update.ts":
-/*!**************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/member/member.update.ts ***!
-  \**************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/member/member.update.ts":
+/*!***************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/member/member.update.ts ***!
+  \***************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4421,7 +4521,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberUpdate = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
+const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 let MemberUpdate = class MemberUpdate {
     _id;
@@ -4497,10 +4597,10 @@ exports.MemberUpdate = MemberUpdate = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/property/property.input.ts":
-/*!*****************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/property/property.input.ts ***!
-  \*****************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/property/property.input.ts":
+/*!******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/property/property.input.ts ***!
+  \******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4513,30 +4613,38 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OrdinaryInquiry = exports.AllPropertiesInquiry = exports.AgentPropertiesInquiry = exports.PropertiesInquiry = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
+exports.OrdinaryInquiry = exports.AllPropertiesInquiry = exports.AgentPropertiesInquiry = exports.PropertiesInquiry = exports.PISearch = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/nestar-api/src/libs/enums/property.enum.ts");
+const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const config_1 = __webpack_require__(/*! ../../config */ "./apps/nestar-api/src/libs/config.ts");
-const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/nestar-api/src/libs/enums/common_enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 let PropertyInput = class PropertyInput {
     propertyType;
-    propertyLocation;
-    propertyAddress;
+    propertyStatus;
+    propertyCategory;
+    propertyMaterial;
+    propertyColor;
+    propertySize;
     propertyTitle;
     propertyPrice;
-    propertySquare;
-    propertyBeds;
-    propertyRooms;
+    propertySalePrice;
+    propertyIsOnSale;
+    propertySaleExpiresAt;
     propertyImages;
     propertyDesc;
     propertyBarter;
     propertyRent;
-    memberId;
+    propertyInStock;
+    propertyCondition;
+    propertyBrand;
+    propertyOriginCountry;
+    soldAt;
     constructedAt;
+    memberId;
 };
 exports.PropertyInput = PropertyInput;
 __decorate([
@@ -4545,16 +4653,30 @@ __decorate([
     __metadata("design:type", typeof (_a = typeof property_enum_1.PropertyType !== "undefined" && property_enum_1.PropertyType) === "function" ? _a : Object)
 ], PropertyInput.prototype, "propertyType", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, graphql_1.Field)(() => property_enum_1.PropertyLocation),
-    __metadata("design:type", typeof (_b = typeof property_enum_1.PropertyLocation !== "undefined" && property_enum_1.PropertyLocation) === "function" ? _b : Object)
-], PropertyInput.prototype, "propertyLocation", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _b : Object)
+], PropertyInput.prototype, "propertyStatus", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.Length)(3, 100),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCategory),
+    __metadata("design:type", typeof (_c = typeof property_enum_1.PropertyCategory !== "undefined" && property_enum_1.PropertyCategory) === "function" ? _c : Object)
+], PropertyInput.prototype, "propertyCategory", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyMaterial),
+    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyMaterial !== "undefined" && property_enum_1.PropertyMaterial) === "function" ? _d : Object)
+], PropertyInput.prototype, "propertyMaterial", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyColor),
+    __metadata("design:type", typeof (_e = typeof property_enum_1.PropertyColor !== "undefined" && property_enum_1.PropertyColor) === "function" ? _e : Object)
+], PropertyInput.prototype, "propertyColor", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
     (0, graphql_1.Field)(() => String),
     __metadata("design:type", String)
-], PropertyInput.prototype, "propertyAddress", void 0);
+], PropertyInput.prototype, "propertySize", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Length)(3, 100),
@@ -4567,27 +4689,23 @@ __decorate([
     __metadata("design:type", Number)
 ], PropertyInput.prototype, "propertyPrice", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, graphql_1.Field)(() => Number),
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Number, { nullable: true }),
     __metadata("design:type", Number)
-], PropertyInput.prototype, "propertySquare", void 0);
+], PropertyInput.prototype, "propertySalePrice", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], PropertyInput.prototype, "propertyBeds", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyInput.prototype, "propertyIsOnSale", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], PropertyInput.prototype, "propertyRooms", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], PropertyInput.prototype, "propertySaleExpiresAt", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, graphql_1.Field)(() => [String]),
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
     __metadata("design:type", Array)
 ], PropertyInput.prototype, "propertyImages", void 0);
 __decorate([
@@ -4608,8 +4726,33 @@ __decorate([
 ], PropertyInput.prototype, "propertyRent", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyInput.prototype, "propertyInStock", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCondition),
+    __metadata("design:type", typeof (_g = typeof property_enum_1.PropertyCondition !== "undefined" && property_enum_1.PropertyCondition) === "function" ? _g : Object)
+], PropertyInput.prototype, "propertyCondition", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyInput.prototype, "propertyBrand", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyInput.prototype, "propertyOriginCountry", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_c = typeof Date !== "undefined" && Date) === "function" ? _c : Object)
+    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+], PropertyInput.prototype, "soldAt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_j = typeof Date !== "undefined" && Date) === "function" ? _j : Object)
 ], PropertyInput.prototype, "constructedAt", void 0);
 exports.PropertyInput = PropertyInput = __decorate([
     (0, graphql_1.InputType)()
@@ -4653,37 +4796,37 @@ let PeriodsRange = class PeriodsRange {
 exports.PeriodsRange = PeriodsRange;
 __decorate([
     (0, graphql_1.Field)(() => Date),
-    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
+    __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
 ], PeriodsRange.prototype, "start", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
-    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+    __metadata("design:type", typeof (_l = typeof Date !== "undefined" && Date) === "function" ? _l : Object)
 ], PeriodsRange.prototype, "end", void 0);
 exports.PeriodsRange = PeriodsRange = __decorate([
     (0, graphql_1.InputType)()
 ], PeriodsRange);
 let PISearch = class PISearch {
     memberId;
-    locationList;
+    categoryList;
     typeList;
-    roomsList;
-    bedsList;
-    options;
+    conditionList;
+    materialList;
+    colorList;
     pricesRange;
-    periodsRange;
-    squaresRange;
+    options;
     text;
 };
+exports.PISearch = PISearch;
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => String, { nullable: true }),
-    __metadata("design:type", typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object)
+    __metadata("design:type", typeof (_m = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _m : Object)
 ], PISearch.prototype, "memberId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => [property_enum_1.PropertyLocation], { nullable: true }),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyCategory], { nullable: true }),
     __metadata("design:type", Array)
-], PISearch.prototype, "locationList", void 0);
+], PISearch.prototype, "categoryList", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => [property_enum_1.PropertyType], { nullable: true }),
@@ -4691,14 +4834,24 @@ __decorate([
 ], PISearch.prototype, "typeList", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => [graphql_1.Int], { nullable: true }),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyCondition], { nullable: true }),
     __metadata("design:type", Array)
-], PISearch.prototype, "roomsList", void 0);
+], PISearch.prototype, "conditionList", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => [graphql_1.Int], { nullable: true }),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
     __metadata("design:type", Array)
-], PISearch.prototype, "bedsList", void 0);
+], PISearch.prototype, "materialList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "colorList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => PricesRange, { nullable: true }),
+    __metadata("design:type", PricesRange)
+], PISearch.prototype, "pricesRange", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsIn)(config_1.availableOptions, { each: true }),
@@ -4707,25 +4860,10 @@ __decorate([
 ], PISearch.prototype, "options", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => PricesRange, { nullable: true }),
-    __metadata("design:type", PricesRange)
-], PISearch.prototype, "pricesRange", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => PeriodsRange, { nullable: true }),
-    __metadata("design:type", PeriodsRange)
-], PISearch.prototype, "periodsRange", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => SquaresRange, { nullable: true }),
-    __metadata("design:type", SquaresRange)
-], PISearch.prototype, "squaresRange", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], PISearch.prototype, "text", void 0);
-PISearch = __decorate([
+exports.PISearch = PISearch = __decorate([
     (0, graphql_1.InputType)()
 ], PISearch);
 let PropertiesInquiry = class PropertiesInquiry {
@@ -4757,7 +4895,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
-    __metadata("design:type", typeof (_g = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _g : Object)
+    __metadata("design:type", typeof (_o = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _o : Object)
 ], PropertiesInquiry.prototype, "direction", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
@@ -4773,7 +4911,7 @@ let APISearch = class APISearch {
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
-    __metadata("design:type", typeof (_h = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _h : Object)
+    __metadata("design:type", typeof (_p = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _p : Object)
 ], APISearch.prototype, "propertyStatus", void 0);
 APISearch = __decorate([
     (0, graphql_1.InputType)()
@@ -4807,7 +4945,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
-    __metadata("design:type", typeof (_j = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _j : Object)
+    __metadata("design:type", typeof (_q = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _q : Object)
 ], AgentPropertiesInquiry.prototype, "direction", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
@@ -4819,18 +4957,18 @@ exports.AgentPropertiesInquiry = AgentPropertiesInquiry = __decorate([
 ], AgentPropertiesInquiry);
 let ALPISearch = class ALPISearch {
     propertyStatus;
-    propertyLocationList;
+    propertyCategory;
 };
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
-    __metadata("design:type", typeof (_k = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _k : Object)
+    __metadata("design:type", typeof (_r = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _r : Object)
 ], ALPISearch.prototype, "propertyStatus", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => [property_enum_1.PropertyLocation], { nullable: true }),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyCategory], { nullable: true }),
     __metadata("design:type", Array)
-], ALPISearch.prototype, "propertyLocationList", void 0);
+], ALPISearch.prototype, "propertyCategory", void 0);
 ALPISearch = __decorate([
     (0, graphql_1.InputType)()
 ], ALPISearch);
@@ -4863,7 +5001,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
-    __metadata("design:type", typeof (_l = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _l : Object)
+    __metadata("design:type", typeof (_s = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _s : Object)
 ], AllPropertiesInquiry.prototype, "direction", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
@@ -4897,10 +5035,10 @@ exports.OrdinaryInquiry = OrdinaryInquiry = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/property/property.ts":
-/*!***********************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/property/property.ts ***!
-  \***********************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/property/property.ts":
+/*!************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/property/property.ts ***!
+  \************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4913,33 +5051,40 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Properties = exports.Property = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/nestar-api/src/libs/enums/property.enum.ts");
-const member_1 = __webpack_require__(/*! ../member/member */ "./apps/nestar-api/src/libs/dto/member/member.ts");
-const like_1 = __webpack_require__(/*! ../like/like */ "./apps/nestar-api/src/libs/dto/like/like.ts");
+const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
+const member_1 = __webpack_require__(/*! ../member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/libs/dto/like/like.ts");
 let Property = class Property {
     _id;
     propertyType;
     propertyStatus;
-    propertyLocation;
-    propertyAddress;
+    propertyCategory;
+    propertyMaterial;
+    propertyColor;
+    propertySize;
     propertyTitle;
     propertyPrice;
-    propertySquare;
-    propertyBeds;
-    propertyRooms;
-    propertyViews;
-    propertyLikes;
-    propertyComments;
-    propertyRank;
+    propertySalePrice;
+    propertyIsOnSale;
+    propertySaleExpiresAt;
     propertyImages;
     propertyDesc;
     propertyBarter;
     propertyRent;
+    propertyInStock;
+    propertyCondition;
+    propertyBrand;
+    propertyOriginCountry;
+    propertyAddress;
+    propertyViews;
+    propertyLikes;
+    propertyComments;
+    propertyRank;
     memberId;
     soldAt;
     deletedAt;
@@ -4959,17 +5104,25 @@ __decorate([
     __metadata("design:type", typeof (_b = typeof property_enum_1.PropertyType !== "undefined" && property_enum_1.PropertyType) === "function" ? _b : Object)
 ], Property.prototype, "propertyType", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
     __metadata("design:type", typeof (_c = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _c : Object)
 ], Property.prototype, "propertyStatus", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => property_enum_1.PropertyLocation),
-    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyLocation !== "undefined" && property_enum_1.PropertyLocation) === "function" ? _d : Object)
-], Property.prototype, "propertyLocation", void 0);
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCategory),
+    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyCategory !== "undefined" && property_enum_1.PropertyCategory) === "function" ? _d : Object)
+], Property.prototype, "propertyCategory", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => property_enum_1.PropertyMaterial),
+    __metadata("design:type", typeof (_e = typeof property_enum_1.PropertyMaterial !== "undefined" && property_enum_1.PropertyMaterial) === "function" ? _e : Object)
+], Property.prototype, "propertyMaterial", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => property_enum_1.PropertyColor),
+    __metadata("design:type", typeof (_f = typeof property_enum_1.PropertyColor !== "undefined" && property_enum_1.PropertyColor) === "function" ? _f : Object)
+], Property.prototype, "propertyColor", void 0);
 __decorate([
     (0, graphql_1.Field)(() => String),
     __metadata("design:type", String)
-], Property.prototype, "propertyAddress", void 0);
+], Property.prototype, "propertySize", void 0);
 __decorate([
     (0, graphql_1.Field)(() => String),
     __metadata("design:type", String)
@@ -4979,35 +5132,19 @@ __decorate([
     __metadata("design:type", Number)
 ], Property.prototype, "propertyPrice", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => Number),
+    (0, graphql_1.Field)(() => Number, { nullable: true }),
     __metadata("design:type", Number)
-], Property.prototype, "propertySquare", void 0);
+], Property.prototype, "propertySalePrice", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyBeds", void 0);
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], Property.prototype, "propertyIsOnSale", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyRooms", void 0);
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], Property.prototype, "propertySaleExpiresAt", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyViews", void 0);
-__decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyLikes", void 0);
-__decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyComments", void 0);
-__decorate([
-    (0, graphql_1.Field)(() => graphql_1.Int),
-    __metadata("design:type", Number)
-], Property.prototype, "propertyRank", void 0);
-__decorate([
-    (0, graphql_1.Field)(() => [String]),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
     __metadata("design:type", Array)
 ], Property.prototype, "propertyImages", void 0);
 __decorate([
@@ -5015,36 +5152,72 @@ __decorate([
     __metadata("design:type", String)
 ], Property.prototype, "propertyDesc", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => Boolean),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
     __metadata("design:type", Boolean)
 ], Property.prototype, "propertyBarter", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => Boolean),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
     __metadata("design:type", Boolean)
 ], Property.prototype, "propertyRent", void 0);
 __decorate([
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], Property.prototype, "propertyInStock", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCondition),
+    __metadata("design:type", typeof (_h = typeof property_enum_1.PropertyCondition !== "undefined" && property_enum_1.PropertyCondition) === "function" ? _h : Object)
+], Property.prototype, "propertyCondition", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Property.prototype, "propertyBrand", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Property.prototype, "propertyOriginCountry", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Property.prototype, "propertyAddress", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyViews", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyLikes", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyComments", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyRank", void 0);
+__decorate([
     (0, graphql_1.Field)(() => String),
-    __metadata("design:type", typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object)
+    __metadata("design:type", typeof (_j = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _j : Object)
 ], Property.prototype, "memberId", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+    __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
 ], Property.prototype, "soldAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+    __metadata("design:type", typeof (_l = typeof Date !== "undefined" && Date) === "function" ? _l : Object)
 ], Property.prototype, "deletedAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+    __metadata("design:type", typeof (_m = typeof Date !== "undefined" && Date) === "function" ? _m : Object)
 ], Property.prototype, "constructedAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_j = typeof Date !== "undefined" && Date) === "function" ? _j : Object)
+    __metadata("design:type", typeof (_o = typeof Date !== "undefined" && Date) === "function" ? _o : Object)
 ], Property.prototype, "createdAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
+    __metadata("design:type", typeof (_p = typeof Date !== "undefined" && Date) === "function" ? _p : Object)
 ], Property.prototype, "updatedAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
@@ -5052,7 +5225,7 @@ __decorate([
 ], Property.prototype, "meLiked", void 0);
 __decorate([
     (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
-    __metadata("design:type", typeof (_l = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _l : Object)
+    __metadata("design:type", typeof (_q = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _q : Object)
 ], Property.prototype, "memberData", void 0);
 exports.Property = Property = __decorate([
     (0, graphql_1.ObjectType)()
@@ -5077,10 +5250,10 @@ exports.Properties = Properties = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/dto/property/property.update.ts":
-/*!******************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/dto/property/property.update.ts ***!
-  \******************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/dto/property/property.update.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/property/property.update.ts ***!
+  \*******************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5093,28 +5266,34 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyUpdate = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/nestar-api/src/libs/enums/property.enum.ts");
+const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
 let PropertyUpdate = class PropertyUpdate {
     _id;
     propertyType;
     propertyStatus;
-    propertyLocation;
-    propertyAddress;
+    propertyCategory;
+    propertyMaterial;
+    propertyColor;
+    propertySize;
     propertyTitle;
     propertyPrice;
-    propertySquare;
-    propertyBeds;
-    propertyRooms;
+    propertySalePrice;
+    propertyIsOnSale;
+    propertySaleExpiresAt;
     propertyImages;
     propertyDesc;
     propertyBarter;
     propertyRent;
+    propertyInStock;
+    propertyCondition;
+    propertyBrand;
+    propertyOriginCountry;
     soldAt;
     deletedAt;
     constructedAt;
@@ -5137,15 +5316,24 @@ __decorate([
 ], PropertyUpdate.prototype, "propertyStatus", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, graphql_1.Field)(() => property_enum_1.PropertyLocation, { nullable: true }),
-    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyLocation !== "undefined" && property_enum_1.PropertyLocation) === "function" ? _d : Object)
-], PropertyUpdate.prototype, "propertyLocation", void 0);
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCategory, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyCategory !== "undefined" && property_enum_1.PropertyCategory) === "function" ? _d : Object)
+], PropertyUpdate.prototype, "propertyCategory", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Length)(3, 100),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyMaterial, { nullable: true }),
+    __metadata("design:type", typeof (_e = typeof property_enum_1.PropertyMaterial !== "undefined" && property_enum_1.PropertyMaterial) === "function" ? _e : Object)
+], PropertyUpdate.prototype, "propertyMaterial", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyColor, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof property_enum_1.PropertyColor !== "undefined" && property_enum_1.PropertyColor) === "function" ? _f : Object)
+], PropertyUpdate.prototype, "propertyColor", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
-], PropertyUpdate.prototype, "propertyAddress", void 0);
+], PropertyUpdate.prototype, "propertySize", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Length)(3, 100),
@@ -5161,21 +5349,17 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => Number, { nullable: true }),
     __metadata("design:type", Number)
-], PropertyUpdate.prototype, "propertySquare", void 0);
+], PropertyUpdate.prototype, "propertySalePrice", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
-    __metadata("design:type", Number)
-], PropertyUpdate.prototype, "propertyBeds", void 0);
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyUpdate.prototype, "propertyIsOnSale", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
-    __metadata("design:type", Number)
-], PropertyUpdate.prototype, "propertyRooms", void 0);
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], PropertyUpdate.prototype, "propertySaleExpiresAt", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => [String], { nullable: true }),
@@ -5199,8 +5383,28 @@ __decorate([
 ], PropertyUpdate.prototype, "propertyRent", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyUpdate.prototype, "propertyInStock", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyCondition, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof property_enum_1.PropertyCondition !== "undefined" && property_enum_1.PropertyCondition) === "function" ? _h : Object)
+], PropertyUpdate.prototype, "propertyCondition", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyUpdate.prototype, "propertyBrand", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyUpdate.prototype, "propertyOriginCountry", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+    __metadata("design:type", typeof (_j = typeof Date !== "undefined" && Date) === "function" ? _j : Object)
 ], PropertyUpdate.prototype, "constructedAt", void 0);
 exports.PropertyUpdate = PropertyUpdate = __decorate([
     (0, graphql_1.InputType)()
@@ -5209,10 +5413,10 @@ exports.PropertyUpdate = PropertyUpdate = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/board-article.enum.ts":
-/*!**************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/board-article.enum.ts ***!
-  \**************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts":
+/*!***************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/board-article.enum.ts ***!
+  \***************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5241,10 +5445,10 @@ var BoardArticleStatus;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/comment.enum.ts":
-/*!********************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/comment.enum.ts ***!
-  \********************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts":
+/*!*********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/comment.enum.ts ***!
+  \*********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5272,10 +5476,10 @@ var CommentGroup;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/common_enum.ts":
-/*!*******************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/common_enum.ts ***!
-  \*******************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/common_enum.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/common_enum.ts ***!
+  \********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5314,10 +5518,10 @@ var Direction;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/like.enum.ts":
-/*!*****************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/like.enum.ts ***!
-  \*****************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/like.enum.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/like.enum.ts ***!
+  \******************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5337,10 +5541,10 @@ var LikeGroup;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/member.enum.ts":
-/*!*******************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/member.enum.ts ***!
-  \*******************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/member.enum.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/member.enum.ts ***!
+  \********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5352,6 +5556,7 @@ var MemberType;
     MemberType["USER"] = "USER";
     MemberType["AGENT"] = "AGENT";
     MemberType["ADMIN"] = "ADMIN";
+    MemberType["TECHNICIAN"] = "TECHNICIAN";
 })(MemberType || (exports.MemberType = MemberType = {}));
 (0, graphql_1.registerEnumType)(MemberType, {
     name: "MemberType",
@@ -5378,27 +5583,33 @@ var MemberAuthType;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/property.enum.ts":
-/*!*********************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/property.enum.ts ***!
-  \*********************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/property.enum.ts":
+/*!**********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/property.enum.ts ***!
+  \**********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PropertyLocation = exports.PropertyStatus = exports.PropertyType = void 0;
+exports.PropertyCondition = exports.PropertyColor = exports.PropertyMaterial = exports.PropertyCategory = exports.PropertyStatus = exports.PropertyType = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 var PropertyType;
 (function (PropertyType) {
-    PropertyType["APARTMENT"] = "APARTMENT";
-    PropertyType["VILLA"] = "VILLA";
-    PropertyType["HOUSE"] = "HOUSE";
+    PropertyType["STOOL"] = "STOOL";
+    PropertyType["TABLE"] = "TABLE";
+    PropertyType["BED"] = "BED";
+    PropertyType["SOFA"] = "SOFA";
+    PropertyType["CABINET"] = "CABINET";
+    PropertyType["CHAIR"] = "CHAIR";
+    PropertyType["SHELF"] = "SHELF";
+    PropertyType["OTHER"] = "OTHER";
 })(PropertyType || (exports.PropertyType = PropertyType = {}));
 (0, graphql_1.registerEnumType)(PropertyType, {
     name: 'PropertyType',
 });
 var PropertyStatus;
 (function (PropertyStatus) {
+    PropertyStatus["HOLD"] = "HOLD";
     PropertyStatus["ACTIVE"] = "ACTIVE";
     PropertyStatus["SOLD"] = "SOLD";
     PropertyStatus["DELETE"] = "DELETE";
@@ -5406,29 +5617,56 @@ var PropertyStatus;
 (0, graphql_1.registerEnumType)(PropertyStatus, {
     name: 'PropertyStatus',
 });
-var PropertyLocation;
-(function (PropertyLocation) {
-    PropertyLocation["SEOUL"] = "SEOUL";
-    PropertyLocation["BUSAN"] = "BUSAN";
-    PropertyLocation["INCHEON"] = "INCHEON";
-    PropertyLocation["DAEGU"] = "DAEGU";
-    PropertyLocation["GYEONGJU"] = "GYEONGJU";
-    PropertyLocation["GWANGJU"] = "GWANGJU";
-    PropertyLocation["CHONJU"] = "CHONJU";
-    PropertyLocation["DAEJON"] = "DAEJON";
-    PropertyLocation["JEJU"] = "JEJU";
-})(PropertyLocation || (exports.PropertyLocation = PropertyLocation = {}));
-(0, graphql_1.registerEnumType)(PropertyLocation, {
-    name: 'PropertyLocation',
+var PropertyCategory;
+(function (PropertyCategory) {
+    PropertyCategory["HOME"] = "HOME";
+    PropertyCategory["OFFICE"] = "OFFICE";
+    PropertyCategory["OUTDOOR"] = "OUTDOOR";
+    PropertyCategory["KITCHEN"] = "KITCHEN";
+    PropertyCategory["BATHROOM"] = "BATHROOM";
+})(PropertyCategory || (exports.PropertyCategory = PropertyCategory = {}));
+(0, graphql_1.registerEnumType)(PropertyCategory, {
+    name: 'PropertyCategory',
+});
+var PropertyMaterial;
+(function (PropertyMaterial) {
+    PropertyMaterial["WOOD"] = "WOOD";
+    PropertyMaterial["METAL"] = "METAL";
+    PropertyMaterial["PLASTIC"] = "PLASTIC";
+    PropertyMaterial["GLASS"] = "GLASS";
+})(PropertyMaterial || (exports.PropertyMaterial = PropertyMaterial = {}));
+(0, graphql_1.registerEnumType)(PropertyMaterial, {
+    name: 'PropertyMaterial',
+});
+var PropertyColor;
+(function (PropertyColor) {
+    PropertyColor["WHITE"] = "WHITE";
+    PropertyColor["BLACK"] = "BLACK";
+    PropertyColor["BROWN"] = "BROWN";
+    PropertyColor["GRAY"] = "GRAY";
+    PropertyColor["BEIGE"] = "BEIGE";
+    PropertyColor["BLUE"] = "BLUE";
+    PropertyColor["GREEN"] = "GREEN";
+})(PropertyColor || (exports.PropertyColor = PropertyColor = {}));
+(0, graphql_1.registerEnumType)(PropertyColor, {
+    name: 'PropertyColor',
+});
+var PropertyCondition;
+(function (PropertyCondition) {
+    PropertyCondition["NEW"] = "NEW";
+    PropertyCondition["USED"] = "USED";
+})(PropertyCondition || (exports.PropertyCondition = PropertyCondition = {}));
+(0, graphql_1.registerEnumType)(PropertyCondition, {
+    name: 'PropertyCondition',
 });
 
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/enums/view.enum.ts":
-/*!*****************************************************!*\
-  !*** ./apps/nestar-api/src/libs/enums/view.enum.ts ***!
-  \*****************************************************/
+/***/ "./apps/zinfurn-api/src/libs/enums/view.enum.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/view.enum.ts ***!
+  \******************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5448,10 +5686,10 @@ var ViewGroup;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/libs/interceptor/Logging.interceptor.ts":
-/*!*********************************************************************!*\
-  !*** ./apps/nestar-api/src/libs/interceptor/Logging.interceptor.ts ***!
-  \*********************************************************************/
+/***/ "./apps/zinfurn-api/src/libs/interceptor/Logging.interceptor.ts":
+/*!**********************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/interceptor/Logging.interceptor.ts ***!
+  \**********************************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5496,16 +5734,16 @@ exports.LoggingInterceptor = LoggingInterceptor = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/BoardArticle.model.ts":
-/*!***********************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/BoardArticle.model.ts ***!
-  \***********************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/BoardArticle.model.ts":
+/*!************************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/BoardArticle.model.ts ***!
+  \************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const board_article_enum_1 = __webpack_require__(/*! ../libs/enums/board-article.enum */ "./apps/nestar-api/src/libs/enums/board-article.enum.ts");
+const board_article_enum_1 = __webpack_require__(/*! ../libs/enums/board-article.enum */ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts");
 const BoardArticleSchema = new mongoose_1.Schema({
     articleCategory: {
         type: String,
@@ -5551,16 +5789,16 @@ exports["default"] = BoardArticleSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/Comment.model.ts":
-/*!******************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/Comment.model.ts ***!
-  \******************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/Comment.model.ts":
+/*!*******************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Comment.model.ts ***!
+  \*******************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const comment_enum_1 = __webpack_require__(/*! ../libs/enums/comment.enum */ "./apps/nestar-api/src/libs/enums/comment.enum.ts");
+const comment_enum_1 = __webpack_require__(/*! ../libs/enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
 const CommentSchema = new mongoose_1.Schema({
     commentStatus: {
         type: String,
@@ -5590,10 +5828,10 @@ exports["default"] = CommentSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/Follow.model.ts":
-/*!*****************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/Follow.model.ts ***!
-  \*****************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/Follow.model.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Follow.model.ts ***!
+  \******************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -5615,16 +5853,16 @@ exports["default"] = FollowSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/Like.model.ts":
-/*!***************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/Like.model.ts ***!
-  \***************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/Like.model.ts":
+/*!****************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Like.model.ts ***!
+  \****************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const view_enum_1 = __webpack_require__(/*! ../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
+const view_enum_1 = __webpack_require__(/*! ../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
 const LikeSchema = new mongoose_1.Schema({
     likeGroup: {
         type: String,
@@ -5647,30 +5885,30 @@ exports["default"] = LikeSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/Member.model.ts":
-/*!*****************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/Member.model.ts ***!
-  \*****************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/Member.model.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Member.model.ts ***!
+  \******************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const member_enum_1 = __webpack_require__(/*! ../libs/enums/member.enum */ "./apps/nestar-api/src/libs/enums/member.enum.ts");
+const member_enum_1 = __webpack_require__(/*! ../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
 const MemberSchema = new mongoose_1.Schema({
     memberType: {
         type: String,
-        enum: member_enum_1.MemberType,
+        enum: Object.values(member_enum_1.MemberType),
         default: member_enum_1.MemberType.USER,
     },
     memberStatus: {
         type: String,
-        enum: member_enum_1.MemberStatus,
+        enum: Object.values(member_enum_1.MemberStatus),
         default: member_enum_1.MemberStatus.ACTIVE,
     },
     memberAuthType: {
         type: String,
-        enum: member_enum_1.MemberAuthType,
+        enum: Object.values(member_enum_1.MemberAuthType),
         default: member_enum_1.MemberAuthType.PHONE,
     },
     memberPhone: {
@@ -5682,6 +5920,10 @@ const MemberSchema = new mongoose_1.Schema({
         type: String,
         index: { unique: true, sparse: true },
         required: true,
+    },
+    memberEmail: {
+        type: String,
+        index: { unique: true, sparse: true },
     },
     memberPassword: {
         type: String,
@@ -5754,16 +5996,16 @@ exports["default"] = MemberSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/Property.model.ts":
-/*!*******************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/Property.model.ts ***!
-  \*******************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/Property.model.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Property.model.ts ***!
+  \********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const property_enum_1 = __webpack_require__(/*! ../libs/enums/property.enum */ "./apps/nestar-api/src/libs/enums/property.enum.ts");
+const property_enum_1 = __webpack_require__(/*! ../libs/enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
 const PropertySchema = new mongoose_1.Schema({
     propertyType: {
         type: String,
@@ -5775,12 +6017,22 @@ const PropertySchema = new mongoose_1.Schema({
         enum: property_enum_1.PropertyStatus,
         default: property_enum_1.PropertyStatus.ACTIVE,
     },
-    propertyLocation: {
+    propertyCategory: {
         type: String,
-        enum: property_enum_1.PropertyLocation,
+        enum: property_enum_1.PropertyCategory,
         required: true,
     },
-    propertyAddress: {
+    propertyMaterial: {
+        type: String,
+        enum: property_enum_1.PropertyMaterial,
+        required: true,
+    },
+    propertyColor: {
+        type: String,
+        enum: property_enum_1.PropertyColor,
+        required: true,
+    },
+    propertySize: {
         type: String,
         required: true,
     },
@@ -5792,17 +6044,15 @@ const PropertySchema = new mongoose_1.Schema({
         type: Number,
         required: true,
     },
-    propertySquare: {
+    propertySalePrice: {
         type: Number,
-        required: true,
     },
-    propertyBeds: {
-        type: Number,
-        required: true,
+    propertyIsOnSale: {
+        type: Boolean,
+        default: false,
     },
-    propertyRooms: {
-        type: Number,
-        required: true,
+    propertySaleExpiresAt: {
+        type: Date,
     },
     propertyViews: {
         type: Number,
@@ -5835,6 +6085,21 @@ const PropertySchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    propertyInStock: {
+        type: Boolean,
+        default: true,
+    },
+    propertyCondition: {
+        type: String,
+        enum: property_enum_1.PropertyCondition,
+        required: true,
+    },
+    propertyBrand: {
+        type: String,
+    },
+    propertyOriginCountry: {
+        type: String,
+    },
     memberId: {
         type: mongoose_1.Schema.Types.ObjectId,
         required: true,
@@ -5846,26 +6111,28 @@ const PropertySchema = new mongoose_1.Schema({
     deletedAt: {
         type: Date,
     },
-    constructedAt: {
-        type: Date,
-    },
 }, { timestamps: true, collection: 'properties' });
-PropertySchema.index({ propertyType: 1, propertyLocation: 1, propertyTitle: 1, propertyPrice: 1 }, { unique: true });
+PropertySchema.index({
+    propertyType: 1,
+    propertyCategory: 1,
+    propertyTitle: 1,
+    propertyPrice: 1,
+}, { unique: true });
 exports["default"] = PropertySchema;
 
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/schemas/View.model.ts":
-/*!***************************************************!*\
-  !*** ./apps/nestar-api/src/schemas/View.model.ts ***!
-  \***************************************************/
+/***/ "./apps/zinfurn-api/src/schemas/View.model.ts":
+/*!****************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/View.model.ts ***!
+  \****************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const view_enum_1 = __webpack_require__(/*! ../libs/enums/view.enum */ "./apps/nestar-api/src/libs/enums/view.enum.ts");
+const view_enum_1 = __webpack_require__(/*! ../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
 const ViewSchema = new mongoose_1.Schema({
     viewGroup: {
         type: String,
@@ -5888,10 +6155,10 @@ exports["default"] = ViewSchema;
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/socket/socket.gateway.ts":
-/*!******************************************************!*\
-  !*** ./apps/nestar-api/src/socket/socket.gateway.ts ***!
-  \******************************************************/
+/***/ "./apps/zinfurn-api/src/socket/socket.gateway.ts":
+/*!*******************************************************!*\
+  !*** ./apps/zinfurn-api/src/socket/socket.gateway.ts ***!
+  \*******************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5911,7 +6178,7 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const websockets_1 = __webpack_require__(/*! @nestjs/websockets */ "@nestjs/websockets");
 const ws_1 = __webpack_require__(/*! ws */ "ws");
 const WebSocket = __webpack_require__(/*! ws */ "ws");
-const auth_service_1 = __webpack_require__(/*! ../components/auth/auth.service */ "./apps/nestar-api/src/components/auth/auth.service.ts");
+const auth_service_1 = __webpack_require__(/*! ../components/auth/auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
 const url = __webpack_require__(/*! url */ "url");
 let SocketGateway = class SocketGateway {
     authService;
@@ -6009,10 +6276,10 @@ exports.SocketGateway = SocketGateway = __decorate([
 
 /***/ }),
 
-/***/ "./apps/nestar-api/src/socket/socket.module.ts":
-/*!*****************************************************!*\
-  !*** ./apps/nestar-api/src/socket/socket.module.ts ***!
-  \*****************************************************/
+/***/ "./apps/zinfurn-api/src/socket/socket.module.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/socket/socket.module.ts ***!
+  \******************************************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6025,8 +6292,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SocketModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const socket_gateway_1 = __webpack_require__(/*! ./socket.gateway */ "./apps/nestar-api/src/socket/socket.gateway.ts");
-const auth_module_1 = __webpack_require__(/*! ../components/auth/auth.module */ "./apps/nestar-api/src/components/auth/auth.module.ts");
+const socket_gateway_1 = __webpack_require__(/*! ./socket.gateway */ "./apps/zinfurn-api/src/socket/socket.gateway.ts");
+const auth_module_1 = __webpack_require__(/*! ../components/auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
 let SocketModule = class SocketModule {
 };
 exports.SocketModule = SocketModule;
@@ -6301,15 +6568,15 @@ var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
 var exports = __webpack_exports__;
-/*!*************************************!*\
-  !*** ./apps/nestar-api/src/main.ts ***!
-  \*************************************/
+/*!**************************************!*\
+  !*** ./apps/zinfurn-api/src/main.ts ***!
+  \**************************************/
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
-const app_module_1 = __webpack_require__(/*! ./app.module */ "./apps/nestar-api/src/app.module.ts");
+const app_module_1 = __webpack_require__(/*! ./app.module */ "./apps/zinfurn-api/src/app.module.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const Logging_interceptor_1 = __webpack_require__(/*! ./libs/interceptor/Logging.interceptor */ "./apps/nestar-api/src/libs/interceptor/Logging.interceptor.ts");
+const Logging_interceptor_1 = __webpack_require__(/*! ./libs/interceptor/Logging.interceptor */ "./apps/zinfurn-api/src/libs/interceptor/Logging.interceptor.ts");
 const graphql_upload_1 = __webpack_require__(/*! graphql-upload */ "graphql-upload");
 const express = __webpack_require__(/*! express */ "express");
 const platform_ws_1 = __webpack_require__(/*! @nestjs/platform-ws */ "@nestjs/platform-ws");

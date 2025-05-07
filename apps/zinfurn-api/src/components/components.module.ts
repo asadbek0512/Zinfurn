@@ -11,13 +11,13 @@ import { ViewModule } from './view/view.module';
 @Module({
   imports: [
     MemberModule,
-    PropertyModule,
     AuthModule,
+    PropertyModule,
     BoardArticleModule,
     CommentModule,
-    FollowModule,
     LikeModule,
-    ViewModule
+    ViewModule,
+    FollowModule,
   ],
 })
 export class ComponentsModule { }
