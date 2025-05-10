@@ -12,6 +12,14 @@ export const availablePropertySorts = [
     'propertyRank',
     'propertyPrice',
 ]
+export const availableRepairPropertySorts = [
+    'createdAt',
+    'updatedAt',
+    'propertyLikes',
+    'propertyViews',
+    'propertyRank',
+    'propertyPrice',
+]
 export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews']
 export const availableCommentSorts = ['createdAt', 'updatedAt']
 
@@ -134,11 +142,30 @@ export const lookupFavorite = {
     },
 };
 
+export const lookupRepairFavorite = {
+    $lookup: {
+        from: 'members',
+        localField: 'favoriteRepairProperty.memberId',
+        foreignField: '_id',
+        as: 'favoriteRepairProperty.memberData',
+    },
+};
+
+
 export const lookupVisit = {
     $lookup: {
         from: 'members',
         localField: 'visitedProperty.memberId',
         foreignField: '_id',
         as: 'visitedProperty.memberData',
+    },
+};
+
+export const lookupRepairVisit = {
+    $lookup: {
+        from: 'members',
+        localField: 'visitedRepairProperty.memberId',
+        foreignField: '_id',
+        as: 'visitedRepairProperty.memberData',
     },
 };

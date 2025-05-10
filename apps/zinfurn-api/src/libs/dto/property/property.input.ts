@@ -88,11 +88,11 @@ export class PropertyInput {
     @Field(() => Date, { nullable: true })
     soldAt?: Date;
 
+    memberId?: ObjectId;
 
     @IsOptional()
     @Field(() => Date, { nullable: true })
     constructedAt?: Date;
-    memberId: import("mongoose").Schema.Types.ObjectId;
 }
 
 @InputType()
@@ -148,10 +148,6 @@ export class PISearch {
   @Field(() => [String], { nullable: true })
   colorList?: string[]; // misol: ['oq', 'qora', 'kulrang']
 
-//   @IsOptional()
-//   @Field(() => DimensionsRange, { nullable: true })
-//   dimensionsRange?: DimensionsRange; // o‘lchamlar (U/E/B)
-
   @IsOptional()
   @Field(() => PricesRange, { nullable: true })
   pricesRange?: PricesRange;
@@ -165,34 +161,6 @@ export class PISearch {
   @Field(() => String, { nullable: true })
   text?: string;
 }
-
-// @InputType()
-// export class DimensionsRange {
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   minLength?: number;
-
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   maxLength?: number;
-
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   minWidth?: number;
-
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   maxWidth?: number;
-
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   minHeight?: number;
-
-//   @IsOptional()
-//   @Field(() => Int, { nullable: true })
-//   maxHeight?: number;
-// }
-
 
 @InputType()
 export class PropertiesInquiry {

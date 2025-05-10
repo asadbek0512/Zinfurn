@@ -7,7 +7,9 @@ import { T } from '../../libs/types/common';
 import { OrdinaryInquiry } from '../../libs/dto/property/property.input';
 import { Properties } from '../../libs/dto/property/property';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { lookupVisit } from '../../libs/config';
+import { lookupRepairVisit, lookupVisit } from '../../libs/config';
+import { RepairOrdinaryInquiry } from '../../libs/dto/repairProperty/repairProperty.input';
+import { RepairProperties } from '../../libs/dto/repairProperty/repairProperty';
 
 @Injectable()
 export class ViewService {
@@ -63,4 +65,42 @@ export class ViewService {
     
         return result;
     }
+
+    public async getVisitedRepairProperties(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
+        const { page, limit } = input;
+        const match: T = { viewGroup: ViewGroup.REPAIRPROPERTY, memberId: memberId };
+    
+        const data: T = await this.viewModel
+            .aggregate([
+                { $match: match },
+                { $sort: { updatedAt: -1 } },
+                {
+                    $lookup: {
+                        from: 'repair_requests',
+                        localField: 'viewRefId',
+                        foreignField: '_id',
+                        as: 'visitedRepairProperty',
+                    },
+                },
+                { $unwind: '$visitedRepairProperty' },
+                {
+                    $facet: {
+                        list: [
+                            { $skip: (page - 1) * limit },
+                            { $limit: limit },
+                            lookupRepairVisit,
+                            { $unwind: '$visitedRepairProperty.memberData' },
+                        ],
+                        metaCounter: [{ $count: 'total' }],
+                    },
+                },
+            ])
+            .exec();
+            console.log("=======>", data)
+        const result: RepairProperties = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.visitedRepairProperty);
+    
+        return result;
+    }
+    
 }

@@ -8,7 +8,9 @@ import { Message } from '../../libs/enums/common_enum';
 import { OrdinaryInquiry } from '../../libs/dto/property/property.input';
 import { Properties } from '../../libs/dto/property/property';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { lookupFavorite } from '../../libs/config';
+import { lookupFavorite, lookupRepairFavorite } from '../../libs/config';
+import { RepairOrdinaryInquiry } from '../../libs/dto/repairProperty/repairProperty.input';
+import { RepairProperties } from '../../libs/dto/repairProperty/repairProperty';
 
 @Injectable()
 export class LikeService {
@@ -74,5 +76,45 @@ export class LikeService {
         result.list = data[0].list.map((ele) => ele.favoriteProperty);
         return result;
     }
+
+    public async getFavoriteRepairProperties(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
+        const { page, limit } = input;
+        const match: T = {
+            likeGroup: LikeGroup.REPAIRPROPERTY,
+            memberId: memberId,
+        };
+    
+        const data: T = await this.likeModel
+            .aggregate([
+                { $match: match },
+                { $sort: { updatedAt: -1 } },
+                {
+                    $lookup: {
+                        from: 'repair_requests',
+                        localField: 'likeRefId',
+                        foreignField: '_id',
+                        as: 'favoriteRepairProperty',
+                    },
+                },
+                { $unwind: '$favoriteRepairProperty' },
+                {
+                    $facet: {
+                        list: [
+                            { $skip: (page - 1) * limit },
+                            { $limit: limit },
+                            lookupRepairFavorite,
+                            { $unwind: '$favoriteRepairProperty.memberData' },
+                        ],
+                        metaCounter: [{ $count: 'total' }],
+                    },
+                },
+            ])
+            .exec();
+    
+        const result: RepairProperties = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.favoriteRepairProperty);
+        return result;
+    }
+    
 
 }

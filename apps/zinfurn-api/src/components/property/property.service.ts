@@ -138,7 +138,6 @@ export class PropertyService {
             conditionList,
             materialList,
             colorList,
-            // dimensionsRange,
             pricesRange,
             options,
             text,
@@ -150,17 +149,6 @@ export class PropertyService {
         if (conditionList && conditionList.length) match.propertyCondition = { $in: conditionList };
         if (materialList && materialList.length) match.propertyMaterial = { $in: materialList };
         if (colorList && colorList.length) match.propertyColor = { $in: colorList };
-
-        // if (dimensionsRange) {
-        //     const dim: any = {};
-        //     if (dimensionsRange.minLength !== undefined) dim['propertyLength'] = { ...dim['propertyLength'], $gte: dimensionsRange.minLength };
-        //     if (dimensionsRange.maxLength !== undefined) dim['propertyLength'] = { ...dim['propertyLength'], $lte: dimensionsRange.maxLength };
-        //     if (dimensionsRange.minWidth !== undefined) dim['propertyWidth'] = { ...dim['propertyWidth'], $gte: dimensionsRange.minWidth };
-        //     if (dimensionsRange.maxWidth !== undefined) dim['propertyWidth'] = { ...dim['propertyWidth'], $lte: dimensionsRange.maxWidth };
-        //     if (dimensionsRange.minHeight !== undefined) dim['propertyHeight'] = { ...dim['propertyHeight'], $gte: dimensionsRange.minHeight };
-        //     if (dimensionsRange.maxHeight !== undefined) dim['propertyHeight'] = { ...dim['propertyHeight'], $lte: dimensionsRange.maxHeight };
-        //     Object.assign(match, dim);
-        // }
 
         if (pricesRange) {
             match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };

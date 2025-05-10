@@ -1231,6 +1231,7 @@ const comment_module_1 = __webpack_require__(/*! ./comment/comment.module */ "./
 const follow_module_1 = __webpack_require__(/*! ./follow/follow.module */ "./apps/zinfurn-api/src/components/follow/follow.module.ts");
 const like_module_1 = __webpack_require__(/*! ./like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
 const view_module_1 = __webpack_require__(/*! ./view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
+const repair_property_module_1 = __webpack_require__(/*! ./repair-property/repair-property.module */ "./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts");
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -1245,6 +1246,7 @@ exports.ComponentsModule = ComponentsModule = __decorate([
             like_module_1.LikeModule,
             view_module_1.ViewModule,
             follow_module_1.FollowModule,
+            repair_property_module_1.RepairPropertyModule,
         ],
     })
 ], ComponentsModule);
@@ -1678,6 +1680,42 @@ let LikeService = class LikeService {
             .exec();
         const result = { list: [], metaCounter: data[0].metaCounter };
         result.list = data[0].list.map((ele) => ele.favoriteProperty);
+        return result;
+    }
+    async getFavoriteRepairProperties(memberId, input) {
+        const { page, limit } = input;
+        const match = {
+            likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY,
+            memberId: memberId,
+        };
+        const data = await this.likeModel
+            .aggregate([
+            { $match: match },
+            { $sort: { updatedAt: -1 } },
+            {
+                $lookup: {
+                    from: 'repair_requests',
+                    localField: 'likeRefId',
+                    foreignField: '_id',
+                    as: 'favoriteRepairProperty',
+                },
+            },
+            { $unwind: '$favoriteRepairProperty' },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        config_1.lookupRepairFavorite,
+                        { $unwind: '$favoriteRepairProperty.memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        const result = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.favoriteRepairProperty);
         return result;
     }
 };
@@ -2787,6 +2825,496 @@ exports.PropertyService = PropertyService = __decorate([
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts":
+/*!***********************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts ***!
+  \***********************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairPropertyModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const repair_property_service_1 = __webpack_require__(/*! ./repair-property.service */ "./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts");
+const repair_property_resolver_1 = __webpack_require__(/*! ./repair-property.resolver */ "./apps/zinfurn-api/src/components/repair-property/repair-property.resolver.ts");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const RepairProperty_1 = __webpack_require__(/*! ../../schemas/RepairProperty */ "./apps/zinfurn-api/src/schemas/RepairProperty.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
+const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
+let RepairPropertyModule = class RepairPropertyModule {
+};
+exports.RepairPropertyModule = RepairPropertyModule;
+exports.RepairPropertyModule = RepairPropertyModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
+                {
+                    name: 'RepairProperty',
+                    schema: RepairProperty_1.default,
+                },
+            ]),
+            auth_module_1.AuthModule,
+            view_module_1.ViewModule,
+            member_module_1.MemberModule,
+            like_module_1.LikeModule,
+        ],
+        providers: [repair_property_service_1.RepairPropertyService, repair_property_resolver_1.RepairPropertyResolver],
+        exports: [repair_property_service_1.RepairPropertyService]
+    })
+], RepairPropertyModule);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/repair-property/repair-property.resolver.ts":
+/*!*************************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/repair-property/repair-property.resolver.ts ***!
+  \*************************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairPropertyResolver = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const repair_property_service_1 = __webpack_require__(/*! ./repair-property.service */ "./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
+const repairProperty_1 = __webpack_require__(/*! ../../libs/dto/repairProperty/repairProperty */ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const repairProperty_input_1 = __webpack_require__(/*! ../../libs/dto/repairProperty/repairProperty.input */ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.input.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const repairProperty_update_1 = __webpack_require__(/*! ../../libs/dto/repairProperty/repairProperty.update */ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.update.ts");
+let RepairPropertyResolver = class RepairPropertyResolver {
+    repairPropertyService;
+    constructor(repairPropertyService) {
+        this.repairPropertyService = repairPropertyService;
+    }
+    async createRepairProperty(input, memberId) {
+        console.log('Mutation: createRepairProperty');
+        input.memberId = memberId;
+        console.log('memberId from context:', memberId);
+        return await this.repairPropertyService.createRepairProperty(input);
+    }
+    async getRepairProperty(input, memberId) {
+        console.log('Query: getRepairProperty');
+        console.log("=====> ", memberId);
+        const repairId = (0, config_1.ShapeIntoMongoObjectId)(input);
+        return await this.repairPropertyService.getRepairProperty(memberId, repairId);
+    }
+    async getRepairProperties(input, memberId) {
+        console.log('Mutation: getRepairProperties');
+        return await this.repairPropertyService.getRepairProperties(memberId, input);
+    }
+    async getTechnicianProperties(input, memberId) {
+        console.log('Mutation: getTechnicianProperties');
+        return await this.repairPropertyService.getTechnicianProperties(memberId, input);
+    }
+    async getRepairFavorites(input, memberId) {
+        console.log('Query: getRepairFavorites');
+        return await this.repairPropertyService.getRepairFavorites(memberId, input);
+    }
+    async getRepairVisited(input, memberId) {
+        console.log('Query: getRepairVisited');
+        return await this.repairPropertyService.getRepairVisited(memberId, input);
+    }
+    async likeTargetRepairProperty(input, memberId) {
+        console.log('Mutation: likeTargetRepairProperty');
+        const likeRefId = (0, config_1.ShapeIntoMongoObjectId)(input);
+        return await this.repairPropertyService.likeTargetRepairProperty(memberId, likeRefId);
+    }
+    async getAllRepairPropertiesByAdmin(input, memberId) {
+        console.log('Query: getAllPropertiesByAdmin');
+        return await this.repairPropertyService.getAllRepairPropertiesByAdmin(input);
+    }
+    async updateRepairPropertyByAdmin(input) {
+        console.log('Mutation: updateRepairPropertyByAdmin');
+        input._id = (0, config_1.ShapeIntoMongoObjectId)(input._id);
+        return await this.repairPropertyService.updateRepairPropertyByAdmin(input);
+    }
+    async removeRepairPropertyByAdmin(input) {
+        console.log('Mutation: removePropertyByAdmin');
+        const repairId = (0, config_1.ShapeIntoMongoObjectId)(input);
+        return await this.repairPropertyService.removeRepairPropertyByAdmin(repairId);
+    }
+};
+exports.RepairPropertyResolver = RepairPropertyResolver;
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.TECHNICIAN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)(() => repairProperty_1.RepairProperty),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_b = typeof repairProperty_input_1.RepairPropertyInput !== "undefined" && repairProperty_input_1.RepairPropertyInput) === "function" ? _b : Object, typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], RepairPropertyResolver.prototype, "createRepairProperty", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperty),
+    __param(0, (0, graphql_1.Args)('repairId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], RepairPropertyResolver.prototype, "getRepairProperty", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_g = typeof repairProperty_input_1.RepairPropertiesInquiry !== "undefined" && repairProperty_input_1.RepairPropertiesInquiry) === "function" ? _g : Object, typeof (_h = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _h : Object]),
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
+], RepairPropertyResolver.prototype, "getRepairProperties", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.TECHNICIAN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_k = typeof repairProperty_input_1.TechnicianPropertiesInquiry !== "undefined" && repairProperty_input_1.TechnicianPropertiesInquiry) === "function" ? _k : Object, typeof (_l = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _l : Object]),
+    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
+], RepairPropertyResolver.prototype, "getTechnicianProperties", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_o = typeof repairProperty_input_1.RepairOrdinaryInquiry !== "undefined" && repairProperty_input_1.RepairOrdinaryInquiry) === "function" ? _o : Object, typeof (_p = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _p : Object]),
+    __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
+], RepairPropertyResolver.prototype, "getRepairFavorites", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_r = typeof repairProperty_input_1.RepairOrdinaryInquiry !== "undefined" && repairProperty_input_1.RepairOrdinaryInquiry) === "function" ? _r : Object, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
+    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+], RepairPropertyResolver.prototype, "getRepairVisited", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => repairProperty_1.RepairProperty),
+    __param(0, (0, graphql_1.Args)('repairId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_u = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+], RepairPropertyResolver.prototype, "likeTargetRepairProperty", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)((returns) => repairProperty_1.RepairProperties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_w = typeof repairProperty_input_1.AllRepairPropertiesInquiry !== "undefined" && repairProperty_input_1.AllRepairPropertiesInquiry) === "function" ? _w : Object, typeof (_x = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _x : Object]),
+    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
+], RepairPropertyResolver.prototype, "getAllRepairPropertiesByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)((returns) => repairProperty_1.RepairProperty),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_z = typeof repairProperty_update_1.RepairPropertyUpdate !== "undefined" && repairProperty_update_1.RepairPropertyUpdate) === "function" ? _z : Object]),
+    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
+], RepairPropertyResolver.prototype, "updateRepairPropertyByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)((returns) => repairProperty_1.RepairProperty),
+    __param(0, (0, graphql_1.Args)('repairId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_1 = typeof Promise !== "undefined" && Promise) === "function" ? _1 : Object)
+], RepairPropertyResolver.prototype, "removeRepairPropertyByAdmin", null);
+exports.RepairPropertyResolver = RepairPropertyResolver = __decorate([
+    (0, graphql_1.Resolver)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof repair_property_service_1.RepairPropertyService !== "undefined" && repair_property_service_1.RepairPropertyService) === "function" ? _a : Object])
+], RepairPropertyResolver);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts":
+/*!************************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts ***!
+  \************************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairPropertyService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
+const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/zinfurn-api/src/components/view/view.service.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/zinfurn-api/src/libs/enums/view.enum.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
+const repairProperty_enum_1 = __webpack_require__(/*! ../../libs/enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const moment = __webpack_require__(/*! moment */ "moment");
+let RepairPropertyService = class RepairPropertyService {
+    repairPropertyModel;
+    memberService;
+    viewService;
+    likeService;
+    constructor(repairPropertyModel, memberService, viewService, likeService) {
+        this.repairPropertyModel = repairPropertyModel;
+        this.memberService = memberService;
+        this.viewService = viewService;
+        this.likeService = likeService;
+    }
+    async createRepairProperty(input) {
+        try {
+            console.log('executed');
+            const result = await this.repairPropertyModel.create(input);
+            await this.memberService.memberStatsEditor({
+                _id: result.memberId,
+                targetKey: 'memberProperties',
+                modifier: 1,
+            });
+            return result;
+        }
+        catch (err) {
+            console.log("Error, Service.model:", err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+        }
+    }
+    async getRepairProperty(memberId, repairId) {
+        const search = {
+            _id: repairId,
+            repairPropertyStatus: repairProperty_enum_1.RepairPropertyStatus.ACTIVE,
+        };
+        const targetProperty = await this.repairPropertyModel.findById(search).lean().exec();
+        if (!targetProperty)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        if (memberId) {
+            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: view_enum_1.ViewGroup.REPAIRPROPERTY };
+            const newView = await this.viewService.recordView(viewInput);
+            if (newView) {
+                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });
+                targetProperty.repairPropertyViews++;
+            }
+            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY };
+            targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput);
+        }
+        targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
+        console.log("=====> ", targetProperty);
+        return targetProperty;
+    }
+    async getRepairProperties(memberId, input) {
+        const match = { repairPropertyStatus: repairProperty_enum_1.RepairPropertyStatus.ACTIVE };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        this.shapeMatchQuery(match, input);
+        console.log('match:', match);
+        const result = await this.repairPropertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        (0, config_1.lookupAuthMemberLiked)(memberId),
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    shapeMatchQuery(match, input) {
+        const { memberId, typeList, text, } = input.search;
+        if (memberId)
+            match.memberId = (0, config_1.ShapeIntoMongoObjectId)(memberId);
+        if (typeList && typeList.length)
+            match.propertyType = { $in: typeList };
+        if (text) {
+            match.propertyTitle = { $regex: new RegExp(text, 'i') };
+        }
+    }
+    async getTechnicianProperties(memberId, input) {
+        const { repairPropertyStatus } = input.search;
+        if (repairPropertyStatus === repairProperty_enum_1.RepairPropertyStatus.DELETE)
+            throw new common_1.BadRequestException(common_enum_1.Message.NOT_ALLOWED_REQUEST);
+        const match = {
+            memberId: memberId,
+            repairPropertyStatus: repairPropertyStatus ?? { $ne: repairProperty_enum_1.RepairPropertyStatus.DELETE },
+        };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        const result = await this.repairPropertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async getRepairFavorites(memberId, input) {
+        return await this.likeService.getFavoriteRepairProperties(memberId, input);
+    }
+    async getRepairVisited(memberId, input) {
+        return await this.viewService.getVisitedRepairProperties(memberId, input);
+    }
+    async likeTargetRepairProperty(memberId, likeRefId) {
+        const target = await this.repairPropertyModel
+            .findOne({ _id: likeRefId, repairPropertyStatus: repairProperty_enum_1.RepairPropertyStatus.ACTIVE })
+            .exec();
+        if (!target)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        const input = {
+            memberId: memberId,
+            likeRefId: likeRefId,
+            likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY
+        };
+        const modifier = await this.likeService.toggleLike(input);
+        const result = await this.repairPropertyStatsEditor({ _id: likeRefId, targetKey: 'repairPropertyLikes', modifier: modifier });
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.SOMETHING_WENT_WRONG);
+        return result;
+    }
+    async getAllRepairPropertiesByAdmin(input) {
+        const { repairPropertyStatus } = input.search;
+        const match = {};
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        if (repairPropertyStatus)
+            match.repairPropertyStatus = repairPropertyStatus;
+        const result = await this.repairPropertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async updateRepairPropertyByAdmin(input) {
+        let { repairPropertyStatus, deletedAt } = input;
+        const search = {
+            _id: input._id,
+            repairPropertyStatus: repairProperty_enum_1.RepairPropertyStatus.ACTIVE,
+        };
+        if (repairPropertyStatus === repairProperty_enum_1.RepairPropertyStatus.DELETE)
+            deletedAt = moment().toDate();
+        const result = await this.repairPropertyModel
+            .findOneAndUpdate(search, input, {
+            new: true,
+        })
+            .exec();
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
+        if (deletedAt) {
+            await this.memberService.memberStatsEditor({
+                _id: result.memberId,
+                targetKey: 'memberProperties',
+                modifier: -1,
+            });
+        }
+        return result;
+    }
+    async removeRepairPropertyByAdmin(repairId) {
+        const search = { _id: repairId, propertyStatus: repairProperty_enum_1.RepairPropertyStatus.DELETE };
+        const result = await this.repairPropertyModel.findByIdAndDelete(search).exec();
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.REMOVE_FAILED);
+        return result;
+    }
+    async repairPropertyStatsEditor(input) {
+        const { _id, targetKey, modifier } = input;
+        return await this.repairPropertyModel
+            .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, {
+            new: true,
+        })
+            .exec();
+    }
+};
+exports.RepairPropertyService = RepairPropertyService;
+exports.RepairPropertyService = RepairPropertyService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('RepairProperty')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _c : Object, typeof (_d = typeof like_service_1.LikeService !== "undefined" && like_service_1.LikeService) === "function" ? _d : Object])
+], RepairPropertyService);
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/components/view/view.module.ts":
 /*!*************************************************************!*\
   !*** ./apps/zinfurn-api/src/components/view/view.module.ts ***!
@@ -2899,6 +3427,40 @@ let ViewService = class ViewService {
         result.list = data[0].list.map((ele) => ele.visitedProperty);
         return result;
     }
+    async getVisitedRepairProperties(memberId, input) {
+        const { page, limit } = input;
+        const match = { viewGroup: view_enum_1.ViewGroup.REPAIRPROPERTY, memberId: memberId };
+        const data = await this.viewModel
+            .aggregate([
+            { $match: match },
+            { $sort: { updatedAt: -1 } },
+            {
+                $lookup: {
+                    from: 'repair_requests',
+                    localField: 'viewRefId',
+                    foreignField: '_id',
+                    as: 'visitedRepairProperty',
+                },
+            },
+            { $unwind: '$visitedRepairProperty' },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        config_1.lookupRepairVisit,
+                        { $unwind: '$visitedRepairProperty.memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        console.log("=======>", data);
+        const result = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.visitedRepairProperty);
+        return result;
+    }
 };
 exports.ViewService = ViewService;
 exports.ViewService = ViewService = __decorate([
@@ -2974,13 +3536,21 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.lookupVisit = exports.lookupFavorite = exports.lookupFollowerData = exports.lookupFollowingData = exports.lookupMember = exports.lookupAuthMemberFollowed = exports.lookupAuthMemberLiked = exports.ShapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableCommentSorts = exports.availableBoardArticleSorts = exports.availablePropertySorts = exports.availableOptions = exports.availableMemberSorts = exports.availableTechnician = exports.availableAgentSorts = void 0;
+exports.lookupRepairVisit = exports.lookupVisit = exports.lookupRepairFavorite = exports.lookupFavorite = exports.lookupFollowerData = exports.lookupFollowingData = exports.lookupMember = exports.lookupAuthMemberFollowed = exports.lookupAuthMemberLiked = exports.ShapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableCommentSorts = exports.availableBoardArticleSorts = exports.availableRepairPropertySorts = exports.availablePropertySorts = exports.availableOptions = exports.availableMemberSorts = exports.availableTechnician = exports.availableAgentSorts = void 0;
 const bson_1 = __webpack_require__(/*! bson */ "bson");
 exports.availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 exports.availableTechnician = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 exports.availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 exports.availableOptions = ['propertyBarter', 'propertyRent'];
 exports.availablePropertySorts = [
+    'createdAt',
+    'updatedAt',
+    'propertyLikes',
+    'propertyViews',
+    'propertyRank',
+    'propertyPrice',
+];
+exports.availableRepairPropertySorts = [
     'createdAt',
     'updatedAt',
     'propertyLikes',
@@ -3097,12 +3667,28 @@ exports.lookupFavorite = {
         as: 'favoriteProperty.memberData',
     },
 };
+exports.lookupRepairFavorite = {
+    $lookup: {
+        from: 'members',
+        localField: 'favoriteRepairProperty.memberId',
+        foreignField: '_id',
+        as: 'favoriteRepairProperty.memberData',
+    },
+};
 exports.lookupVisit = {
     $lookup: {
         from: 'members',
         localField: 'visitedProperty.memberId',
         foreignField: '_id',
         as: 'visitedProperty.memberData',
+    },
+};
+exports.lookupRepairVisit = {
+    $lookup: {
+        from: 'members',
+        localField: 'visitedRepairProperty.memberId',
+        foreignField: '_id',
+        as: 'visitedRepairProperty.memberData',
     },
 };
 
@@ -4643,8 +5229,8 @@ let PropertyInput = class PropertyInput {
     propertyBrand;
     propertyOriginCountry;
     soldAt;
-    constructedAt;
     memberId;
+    constructedAt;
 };
 exports.PropertyInput = PropertyInput;
 __decorate([
@@ -5413,6 +5999,453 @@ exports.PropertyUpdate = PropertyUpdate = __decorate([
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.input.ts":
+/*!******************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.input.ts ***!
+  \******************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AllRepairPropertiesInquiry = exports.TechnicianPropertiesInquiry = exports.RepairOrdinaryInquiry = exports.RepairPropertiesInquiry = exports.RepairPISearch = exports.RepairPropertyInput = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/zinfurn-api/src/libs/enums/property.enum.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
+const repairProperty_enum_1 = __webpack_require__(/*! ../../enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
+let RepairPropertyInput = class RepairPropertyInput {
+    repairUserId;
+    repairPropertyType;
+    repairPropertyStatus;
+    repairPropertyAddress;
+    repairPropertyDescription;
+    repairPropertyImages;
+    constructedAt;
+    memberId;
+};
+exports.RepairPropertyInput = RepairPropertyInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], RepairPropertyInput.prototype, "repairUserId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyType),
+    __metadata("design:type", typeof (_a = typeof property_enum_1.PropertyType !== "undefined" && property_enum_1.PropertyType) === "function" ? _a : Object)
+], RepairPropertyInput.prototype, "repairPropertyType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _b : Object)
+], RepairPropertyInput.prototype, "repairPropertyStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Length)(3, 100),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], RepairPropertyInput.prototype, "repairPropertyAddress", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Length)(5, 500),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], RepairPropertyInput.prototype, "repairPropertyDescription", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], RepairPropertyInput.prototype, "repairPropertyImages", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof Date !== "undefined" && Date) === "function" ? _c : Object)
+], RepairPropertyInput.prototype, "constructedAt", void 0);
+exports.RepairPropertyInput = RepairPropertyInput = __decorate([
+    (0, graphql_1.InputType)()
+], RepairPropertyInput);
+let RepairPISearch = class RepairPISearch {
+    memberId;
+    typeList;
+    repairPropertyStatus;
+    text;
+};
+exports.RepairPISearch = RepairPISearch;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _d : Object)
+], RepairPISearch.prototype, "memberId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [repairProperty_enum_1.RepairPropertyType], { nullable: true }),
+    __metadata("design:type", Array)
+], RepairPISearch.prototype, "typeList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_e = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _e : Object)
+], RepairPISearch.prototype, "repairPropertyStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], RepairPISearch.prototype, "text", void 0);
+exports.RepairPISearch = RepairPISearch = __decorate([
+    (0, graphql_1.InputType)()
+], RepairPISearch);
+let RepairPropertiesInquiry = class RepairPropertiesInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.RepairPropertiesInquiry = RepairPropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairPropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairPropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableRepairPropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], RepairPropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _f : Object)
+], RepairPropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => RepairPISearch),
+    __metadata("design:type", RepairPISearch)
+], RepairPropertiesInquiry.prototype, "search", void 0);
+exports.RepairPropertiesInquiry = RepairPropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], RepairPropertiesInquiry);
+let RepairOrdinaryInquiry = class RepairOrdinaryInquiry {
+    page;
+    limit;
+};
+exports.RepairOrdinaryInquiry = RepairOrdinaryInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairOrdinaryInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairOrdinaryInquiry.prototype, "limit", void 0);
+exports.RepairOrdinaryInquiry = RepairOrdinaryInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], RepairOrdinaryInquiry);
+let RAPISearch = class RAPISearch {
+    repairPropertyStatus;
+};
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _g : Object)
+], RAPISearch.prototype, "repairPropertyStatus", void 0);
+RAPISearch = __decorate([
+    (0, graphql_1.InputType)()
+], RAPISearch);
+let TechnicianPropertiesInquiry = class TechnicianPropertiesInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.TechnicianPropertiesInquiry = TechnicianPropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], TechnicianPropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], TechnicianPropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableRepairPropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], TechnicianPropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _h : Object)
+], TechnicianPropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => RAPISearch),
+    __metadata("design:type", RAPISearch)
+], TechnicianPropertiesInquiry.prototype, "search", void 0);
+exports.TechnicianPropertiesInquiry = TechnicianPropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], TechnicianPropertiesInquiry);
+let AllRepairPropertiesInquiry = class AllRepairPropertiesInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.AllRepairPropertiesInquiry = AllRepairPropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AllRepairPropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AllRepairPropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableRepairPropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AllRepairPropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_j = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _j : Object)
+], AllRepairPropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => RAPISearch),
+    __metadata("design:type", RAPISearch)
+], AllRepairPropertiesInquiry.prototype, "search", void 0);
+exports.AllRepairPropertiesInquiry = AllRepairPropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], AllRepairPropertiesInquiry);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.ts":
+/*!************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.ts ***!
+  \************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairProperties = exports.RepairProperty = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const member_1 = __webpack_require__(/*! ../member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/libs/dto/like/like.ts");
+const repairProperty_enum_1 = __webpack_require__(/*! ../../enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
+let RepairProperty = class RepairProperty {
+    _id;
+    repairUserId;
+    repairPropertyType;
+    repairPropertyStatus;
+    repairPropertyAddress;
+    repairPropertyDescription;
+    repairPropertyImages;
+    repairPropertyViews;
+    repairPropertyLikes;
+    repairPropertyComments;
+    memberId;
+    deletedAt;
+    constructedAt;
+    createdAt;
+    meLiked;
+    memberData;
+};
+exports.RepairProperty = RepairProperty;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], RepairProperty.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
+], RepairProperty.prototype, "repairUserId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyType),
+    __metadata("design:type", typeof (_c = typeof repairProperty_enum_1.RepairPropertyType !== "undefined" && repairProperty_enum_1.RepairPropertyType) === "function" ? _c : Object)
+], RepairProperty.prototype, "repairPropertyType", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _d : Object)
+], RepairProperty.prototype, "repairPropertyStatus", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], RepairProperty.prototype, "repairPropertyAddress", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], RepairProperty.prototype, "repairPropertyDescription", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], RepairProperty.prototype, "repairPropertyImages", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairProperty.prototype, "repairPropertyViews", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairProperty.prototype, "repairPropertyLikes", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RepairProperty.prototype, "repairPropertyComments", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object)
+], RepairProperty.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], RepairProperty.prototype, "deletedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], RepairProperty.prototype, "constructedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+], RepairProperty.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
+    __metadata("design:type", Array)
+], RepairProperty.prototype, "meLiked", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
+    __metadata("design:type", typeof (_j = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _j : Object)
+], RepairProperty.prototype, "memberData", void 0);
+exports.RepairProperty = RepairProperty = __decorate([
+    (0, graphql_1.ObjectType)()
+], RepairProperty);
+let RepairProperties = class RepairProperties {
+    list;
+    metaCounter;
+};
+exports.RepairProperties = RepairProperties;
+__decorate([
+    (0, graphql_1.Field)(() => [RepairProperty]),
+    __metadata("design:type", Array)
+], RepairProperties.prototype, "list", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [member_1.TotalCounter], { nullable: true }),
+    __metadata("design:type", Array)
+], RepairProperties.prototype, "metaCounter", void 0);
+exports.RepairProperties = RepairProperties = __decorate([
+    (0, graphql_1.ObjectType)()
+], RepairProperties);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.update.ts":
+/*!*******************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/repairProperty/repairProperty.update.ts ***!
+  \*******************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairPropertyUpdate = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const repairProperty_enum_1 = __webpack_require__(/*! ../../enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
+let RepairPropertyUpdate = class RepairPropertyUpdate {
+    _id;
+    repairPropertyType;
+    repairPropertyStatus;
+    deletedAt;
+    constructedAt;
+};
+exports.RepairPropertyUpdate = RepairPropertyUpdate;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], RepairPropertyUpdate.prototype, "_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyType, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof repairProperty_enum_1.RepairPropertyType !== "undefined" && repairProperty_enum_1.RepairPropertyType) === "function" ? _b : Object)
+], RepairPropertyUpdate.prototype, "repairPropertyType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _c : Object)
+], RepairPropertyUpdate.prototype, "repairPropertyStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
+], RepairPropertyUpdate.prototype, "constructedAt", void 0);
+exports.RepairPropertyUpdate = RepairPropertyUpdate = __decorate([
+    (0, graphql_1.InputType)()
+], RepairPropertyUpdate);
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/libs/enums/board-article.enum.ts":
 /*!***************************************************************!*\
   !*** ./apps/zinfurn-api/src/libs/enums/board-article.enum.ts ***!
@@ -5533,6 +6566,7 @@ var LikeGroup;
     LikeGroup["MEMBER"] = "MEMBER";
     LikeGroup["PROPERTY"] = "PROPERTY";
     LikeGroup["ARTICLE"] = "ARTICLE";
+    LikeGroup["REPAIRPROPERTY"] = "REPAIRPROPERTY";
 })(LikeGroup || (exports.LikeGroup = LikeGroup = {}));
 (0, graphql_1.registerEnumType)(LikeGroup, {
     name: 'LikeGroup',
@@ -5663,6 +6697,43 @@ var PropertyCondition;
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts":
+/*!****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts ***!
+  \****************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RepairPropertyStatus = exports.RepairPropertyType = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+var RepairPropertyType;
+(function (RepairPropertyType) {
+    RepairPropertyType["STOOL"] = "STOOL";
+    RepairPropertyType["TABLE"] = "TABLE";
+    RepairPropertyType["BED"] = "BED";
+    RepairPropertyType["SOFA"] = "SOFA";
+    RepairPropertyType["CABINET"] = "CABINET";
+    RepairPropertyType["CHAIR"] = "CHAIR";
+    RepairPropertyType["SHELF"] = "SHELF";
+    RepairPropertyType["OTHER"] = "OTHER";
+})(RepairPropertyType || (exports.RepairPropertyType = RepairPropertyType = {}));
+(0, graphql_1.registerEnumType)(RepairPropertyType, {
+    name: 'RepairPropertyType',
+});
+var RepairPropertyStatus;
+(function (RepairPropertyStatus) {
+    RepairPropertyStatus["ACTIVE"] = "ACTIVE";
+    RepairPropertyStatus["DELETE"] = "DELETE";
+    RepairPropertyStatus["PAUSE"] = "PAUSE";
+})(RepairPropertyStatus || (exports.RepairPropertyStatus = RepairPropertyStatus = {}));
+(0, graphql_1.registerEnumType)(RepairPropertyStatus, {
+    name: 'RepairPropertyStatus',
+});
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/libs/enums/view.enum.ts":
 /*!******************************************************!*\
   !*** ./apps/zinfurn-api/src/libs/enums/view.enum.ts ***!
@@ -5678,6 +6749,7 @@ var ViewGroup;
     ViewGroup["MEMBER"] = "MEMBER";
     ViewGroup["ARTICLE"] = "ARTICLE";
     ViewGroup["PROPERTY"] = "PROPERTY";
+    ViewGroup["REPAIRPROPERTY"] = "REPAIRPROPERTY";
 })(ViewGroup || (exports.ViewGroup = ViewGroup = {}));
 (0, graphql_1.registerEnumType)(ViewGroup, {
     name: 'ViewGroup',
@@ -6119,6 +7191,73 @@ PropertySchema.index({
     propertyPrice: 1,
 }, { unique: true });
 exports["default"] = PropertySchema;
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/schemas/RepairProperty.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/RepairProperty.ts ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const repairProperty_enum_1 = __webpack_require__(/*! ../libs/enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
+const RepairSchema = new mongoose_1.Schema({
+    repairUserId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Member',
+        required: true,
+    },
+    repairPropertyType: {
+        type: String,
+        enum: repairProperty_enum_1.RepairPropertyType,
+        required: true,
+    },
+    repairPropertyStatus: {
+        type: String,
+        enum: repairProperty_enum_1.RepairPropertyStatus,
+        default: repairProperty_enum_1.RepairPropertyStatus.ACTIVE,
+    },
+    repairPropertyAddress: {
+        type: String,
+        required: true,
+    },
+    repairPropertyDescription: {
+        type: String,
+        required: true,
+    },
+    repairPropertyImages: {
+        type: [String],
+        required: false,
+    },
+    repairPropertyViews: {
+        type: Number,
+        default: 0,
+    },
+    repairPropertyLikes: {
+        type: Number,
+        default: 0,
+    },
+    repairPropertyComments: {
+        type: Number,
+        default: 0,
+    },
+    memberId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Member',
+    },
+    deletedAt: {
+        type: Date,
+    },
+    constructedAt: {
+        type: Date,
+    },
+}, { timestamps: true, collection: 'repair_requests' });
+exports["default"] = RepairSchema;
 
 
 /***/ }),
