@@ -3,12 +3,6 @@ import { RepairPropertyStatus, RepairPropertyType } from '../libs/enums/repairPr
 
 const RepairSchema = new Schema(
   {
-    repairUserId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Member',
-      required: true,
-    },
-
     repairPropertyType: {
       type: String,
       enum: RepairPropertyType,
@@ -16,15 +10,15 @@ const RepairSchema = new Schema(
     },
 
     repairPropertyStatus: {
-			type: String,
-			enum: RepairPropertyStatus,
-			default: RepairPropertyStatus.ACTIVE,
-		},
+      type: String,
+      enum: RepairPropertyStatus,
+      default: RepairPropertyStatus.ACTIVE,
+    },
 
     repairPropertyAddress: {
-			type: String,
-			required: true,
-		},
+      type: String,
+      required: true,
+    },
 
     repairPropertyDescription: {
       type: String,
@@ -52,18 +46,18 @@ const RepairSchema = new Schema(
     },
 
     memberId: {
-			type: Schema.Types.ObjectId,
-			required: true,
-			ref: 'Member',
-		},
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'Member',
+    },
 
     deletedAt: {
-			type: Date,
-		},
+      type: Date,
+    },
 
     constructedAt: {
-			type: Date,
-		},
+      type: Date,
+    },
   },
   { timestamps: true, collection: 'repair_requests' }
 );

@@ -10,10 +10,6 @@ import { RepairPropertyStatus, RepairPropertyType } from '../../enums/repairProp
 export class RepairPropertyInput {
 
     @IsNotEmpty()
-    @Field(() => String)
-    repairUserId: string;
-
-    @IsNotEmpty()
     @Field(() => RepairPropertyType)
     repairPropertyType: PropertyType;
 
@@ -85,7 +81,7 @@ export class RepairPropertiesInquiry {
     @IsNotEmpty()
     @Field(() => RepairPISearch)
     search: RepairPISearch;
-    
+
 }
 
 @InputType()

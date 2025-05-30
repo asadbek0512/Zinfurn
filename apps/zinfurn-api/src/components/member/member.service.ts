@@ -18,6 +18,9 @@ import { lookupAuthMemberLiked } from '../../libs/config';
 
 @Injectable()
 export class MemberService {
+    repairPropertyStatsEditor(arg0: { _id: import("mongoose").Schema.Types.ObjectId; targetKey: string; modifier: number; }) {
+        throw new Error('Method not implemented.');
+    }
     constructor(
         @InjectModel('Member') private readonly memberModel: Model<Member>,
         @InjectModel('Follow') private readonly followModel: Model<Follower | Following>,

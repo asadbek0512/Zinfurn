@@ -4,7 +4,7 @@ export enum LikeGroup {
 	MEMBER = 'MEMBER',
 	PROPERTY = 'PROPERTY',
 	ARTICLE = 'ARTICLE',
-	REPAIRPROPERTY = 'REPAIRPROPERTY',
+	REPAIR_PROPERTY = 'REPAIR_PROPERTY',
 }
 registerEnumType(LikeGroup, {
 	name: 'LikeGroup',

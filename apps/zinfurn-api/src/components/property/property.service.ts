@@ -34,7 +34,12 @@ export class PropertyService {
     public async createProperty(input: PropertyInput): Promise<Property> {
         try {
             console.log('executed');
-            const result = await this.propertyModel.create(input);
+            const propertyData = {
+                ...input,
+                propertyInStock: true,     // Majburiy true qilamiz
+            };
+
+            const result = await this.propertyModel.create(propertyData);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
                 targetKey: 'memberProperties',

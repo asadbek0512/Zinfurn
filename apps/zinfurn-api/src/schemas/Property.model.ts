@@ -42,7 +42,7 @@ const PropertySchema = new Schema(
 
 		propertySize: {
 			type: String,
-			required: true,
+			// required: true,
 		},
 
 		propertyTitle: {

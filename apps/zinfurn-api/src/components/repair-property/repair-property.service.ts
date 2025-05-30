@@ -59,7 +59,7 @@ export class RepairPropertyService {
                 targetProperty.repairPropertyViews++;
             }
             // melicked
-            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: LikeGroup.REPAIRPROPERTY };
+            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: LikeGroup.REPAIR_PROPERTY };
             targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput)
         }
 
@@ -164,7 +164,7 @@ export class RepairPropertyService {
         const input: LikeInput = {
             memberId: memberId,
             likeRefId: likeRefId,
-            likeGroup: LikeGroup.REPAIRPROPERTY
+            likeGroup: LikeGroup.REPAIR_PROPERTY
         }
 
         const modifier: number = await this.likeService.toggleLike(input)

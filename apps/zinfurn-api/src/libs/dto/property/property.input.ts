@@ -26,9 +26,9 @@ export class PropertyInput {
     @Field(() => PropertyColor)
     propertyColor: PropertyColor;
 
-    @IsNotEmpty()
+    @IsOptional()
     @Field(() => String)
-    propertySize: string;
+    propertySize?: string;
 
     @IsNotEmpty()
     @Length(3, 100)

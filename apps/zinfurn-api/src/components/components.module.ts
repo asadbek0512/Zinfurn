@@ -8,6 +8,7 @@ import { FollowModule } from './follow/follow.module';
 import { LikeModule } from './like/like.module';
 import { ViewModule } from './view/view.module';
 import { RepairPropertyModule } from './repair-property/repair-property.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RepairPropertyModule } from './repair-property/repair-property.module';
     ViewModule,
     FollowModule,
     RepairPropertyModule,
+    NotificationModule,
   ],
 })
 export class ComponentsModule { }

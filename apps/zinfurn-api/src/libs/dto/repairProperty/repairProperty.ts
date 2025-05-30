@@ -9,15 +9,12 @@ export class RepairProperty {
     @Field(() => String)
     _id: ObjectId;
 
-    @Field(() => String)
-    repairUserId: ObjectId;
-
     @Field(() => RepairPropertyType)
     repairPropertyType: RepairPropertyType;
 
     @Field(() => RepairPropertyStatus, { nullable: true })
     repairPropertyStatus?: RepairPropertyStatus;
-    
+
     @Field(() => String)
     repairPropertyAddress: string;
 
@@ -47,7 +44,7 @@ export class RepairProperty {
 
     @Field(() => Date, { nullable: true })
     createdAt?: Date;
- 
+
     // from aggregation /
 
     @Field(() => [MeLiked], { nullable: true })

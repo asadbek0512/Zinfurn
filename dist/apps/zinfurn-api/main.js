@@ -945,6 +945,9 @@ const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./ap
 const property_module_1 = __webpack_require__(/*! ../property/property.module */ "./apps/zinfurn-api/src/components/property/property.module.ts");
 const board_article_module_1 = __webpack_require__(/*! ../board-article/board-article.module */ "./apps/zinfurn-api/src/components/board-article/board-article.module.ts");
 const comment_service_1 = __webpack_require__(/*! ./comment.service */ "./apps/zinfurn-api/src/components/comment/comment.service.ts");
+const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/zinfurn-api/src/schemas/Member.model.ts");
+const notification_module_1 = __webpack_require__(/*! ../notification/notification.module */ "./apps/zinfurn-api/src/components/notification/notification.module.ts");
+const repair_property_module_1 = __webpack_require__(/*! ../repair-property/repair-property.module */ "./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts");
 let CommentModule = class CommentModule {
 };
 exports.CommentModule = CommentModule;
@@ -952,17 +955,17 @@ exports.CommentModule = CommentModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([
-                {
-                    name: 'Comment',
-                    schema: Comment_model_1.default,
-                },
+                { name: 'Comment', schema: Comment_model_1.default },
+                { name: 'Member', schema: Member_model_1.default },
             ]),
+            notification_module_1.NotificationModule,
             auth_module_1.AuthModule,
             member_module_1.MemberModule,
             property_module_1.PropertyModule,
             board_article_module_1.BoardArticleModule,
+            repair_property_module_1.RepairPropertyModule
         ],
-        providers: [comment_resolver_1.CommentResolver, comment_service_1.CommentService]
+        providers: [comment_resolver_1.CommentResolver, comment_service_1.CommentService],
     })
 ], CommentModule);
 
@@ -1094,7 +1097,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d;
+var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -1106,63 +1109,135 @@ const board_article_service_1 = __webpack_require__(/*! ../board-article/board-a
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 const comment_enum_1 = __webpack_require__(/*! ../../libs/enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const notification_service_1 = __webpack_require__(/*! ../notification/notification.service */ "./apps/zinfurn-api/src/components/notification/notification.service.ts");
+const notification_enum_1 = __webpack_require__(/*! ../../libs/enums/notification.enum */ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts");
+const repair_property_service_1 = __webpack_require__(/*! ../repair-property/repair-property.service */ "./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts");
 let CommentService = class CommentService {
     commentModule;
     memberService;
     propertyService;
     boardArticleService;
-    constructor(commentModule, memberService, propertyService, boardArticleService) {
+    repairPropertyService;
+    notificationService;
+    memberModel;
+    constructor(commentModule, memberService, propertyService, boardArticleService, repairPropertyService, notificationService, memberModel) {
         this.commentModule = commentModule;
         this.memberService = memberService;
         this.propertyService = propertyService;
         this.boardArticleService = boardArticleService;
+        this.repairPropertyService = repairPropertyService;
+        this.notificationService = notificationService;
+        this.memberModel = memberModel;
     }
     async createComment(memberId, input) {
         input.memberId = memberId;
         let result = null;
         try {
             result = await this.commentModule.create(input);
+            let ownerId = null;
+            switch (input.commentGroup) {
+                case comment_enum_1.CommentGroup.MEMBER:
+                    ownerId = input.commentRefId.toString();
+                    await this.memberService.memberStatsEditor({
+                        _id: input.commentRefId,
+                        targetKey: 'memberComments',
+                        modifier: 1,
+                    });
+                    break;
+                case comment_enum_1.CommentGroup.PROPERTY:
+                    const property = await this.propertyService.getProperty(null, input.commentRefId);
+                    ownerId = property.memberId.toString();
+                    await this.propertyService.propertyStatsEditor({
+                        _id: input.commentRefId,
+                        targetKey: 'propertyComments',
+                        modifier: 1,
+                    });
+                    break;
+                case comment_enum_1.CommentGroup.ARTICLE:
+                    const article = await this.boardArticleService.getBoardArticle(null, input.commentRefId);
+                    ownerId = article.memberId.toString();
+                    await this.boardArticleService.boardArticleStatsEditor({
+                        _id: input.commentRefId,
+                        targetKey: 'articleComments',
+                        modifier: 1,
+                    });
+                    break;
+                case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
+                    const repairaProperty = await this.repairPropertyService.getRepairProperty(null, input.commentRefId);
+                    ownerId = repairaProperty.memberId.toString();
+                    await this.repairPropertyService.repairPropertyStatsEditor({
+                        _id: input.commentRefId,
+                        targetKey: 'repairPropertyComments',
+                        modifier: 1,
+                    });
+                    break;
+            }
+            if (ownerId && ownerId !== memberId.toString()) {
+                await this.sendCommentNotification(memberId.toString(), ownerId, input.commentGroup, input.commentContent, input.commentRefId.toString());
+            }
         }
         catch (err) {
             console.log('Error, Service.model:', err.message);
             throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
         }
-        switch (input.commentGroup) {
-            case comment_enum_1.CommentGroup.PROPERTY:
-                await this.propertyService.propertyStatsEditor({
-                    _id: input.commentRefId,
-                    targetKey: 'propertyComments',
-                    modifier: 1,
-                });
-                break;
-            case comment_enum_1.CommentGroup.ARTICLE:
-                await this.boardArticleService.boardArticleStatsEditor({
-                    _id: input.commentRefId,
-                    targetKey: 'articleComments',
-                    modifier: 1,
-                });
-                break;
-            case comment_enum_1.CommentGroup.MEMBER:
-                await this.memberService.memberStatsEditor({
-                    _id: input.commentRefId,
-                    targetKey: 'memberComments',
-                    modifier: 1,
-                });
-                break;
-        }
         if (!result)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.CREATE_FAILED);
         return result;
     }
+    async sendCommentNotification(authorId, receiverId, commentGroup, commentContent, refId) {
+        const commenter = await this.memberModel.findById(authorId).exec();
+        const commenterName = commenter ? commenter.memberNick : 'Someone';
+        let notificationDesc = '';
+        switch (commentGroup) {
+            case comment_enum_1.CommentGroup.PROPERTY:
+                const property = await this.propertyService.getProperty(null, refId);
+                notificationDesc = `${commenterName} commented on your property "${property.propertyTitle}"`;
+                break;
+            case comment_enum_1.CommentGroup.ARTICLE:
+                const article = await this.boardArticleService.getBoardArticle(null, refId);
+                notificationDesc = ` ${commenterName} commented on your article "${article.articleTitle}"`;
+                break;
+            case comment_enum_1.CommentGroup.MEMBER:
+                notificationDesc = `${commenterName} commented on your profile`;
+                break;
+            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
+                notificationDesc = `${commenterName} commented on your Repair Property`;
+                break;
+        }
+        await this.notificationService.createNotification({
+            notificationType: notification_enum_1.NotificationType.COMMENT,
+            notificationGroup: this.mapCommentGroupToNotificationGroup(commentGroup),
+            notificationTitle: 'New Comment',
+            notificationDesc,
+            authorId,
+            receiverId,
+        });
+    }
+    mapCommentGroupToNotificationGroup(commentGroup) {
+        switch (commentGroup) {
+            case comment_enum_1.CommentGroup.PROPERTY:
+                return notification_enum_1.NotificationGroup.PROPERTY;
+            case comment_enum_1.CommentGroup.ARTICLE:
+                return notification_enum_1.NotificationGroup.ARTICLE;
+            case comment_enum_1.CommentGroup.MEMBER:
+                return notification_enum_1.NotificationGroup.MEMBER;
+            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
+                return notification_enum_1.NotificationGroup.REPAIR_PROPERTY;
+            default:
+                return notification_enum_1.NotificationGroup.MEMBER;
+        }
+    }
     async updateComment(memberId, input) {
         const { _id } = input;
-        const result = await this.commentModule.findOneAndUpdate({
+        const result = await this.commentModule
+            .findOneAndUpdate({
             _id: _id,
             memberId: memberId,
-            commentStatus: comment_enum_1.CommentStatus.ACTIVE
+            commentStatus: comment_enum_1.CommentStatus.ACTIVE,
         }, input, {
             new: true,
-        }).exec();
+        })
+            .exec();
         if (!result)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
         return result;
@@ -1171,7 +1246,8 @@ let CommentService = class CommentService {
         const { commentRefId } = input.search;
         const match = { commentRefId: commentRefId, commentStatus: comment_enum_1.CommentStatus.ACTIVE };
         const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
-        const result = await this.commentModule.aggregate([
+        const result = await this.commentModule
+            .aggregate([
             { $match: match },
             { $sort: sort },
             {
@@ -1185,7 +1261,8 @@ let CommentService = class CommentService {
                     metaCounter: [{ $count: 'total' }],
                 },
             },
-        ]).exec();
+        ])
+            .exec();
         if (!result.length)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         return result[0];
@@ -1201,7 +1278,8 @@ exports.CommentService = CommentService;
 exports.CommentService = CommentService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Comment')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _c : Object, typeof (_d = typeof board_article_service_1.BoardArticleService !== "undefined" && board_article_service_1.BoardArticleService) === "function" ? _d : Object])
+    __param(6, (0, mongoose_1.InjectModel)('Member')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _c : Object, typeof (_d = typeof board_article_service_1.BoardArticleService !== "undefined" && board_article_service_1.BoardArticleService) === "function" ? _d : Object, typeof (_e = typeof repair_property_service_1.RepairPropertyService !== "undefined" && repair_property_service_1.RepairPropertyService) === "function" ? _e : Object, typeof (_f = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _f : Object, typeof (_g = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _g : Object])
 ], CommentService);
 
 
@@ -1232,6 +1310,7 @@ const follow_module_1 = __webpack_require__(/*! ./follow/follow.module */ "./app
 const like_module_1 = __webpack_require__(/*! ./like/like.module */ "./apps/zinfurn-api/src/components/like/like.module.ts");
 const view_module_1 = __webpack_require__(/*! ./view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
 const repair_property_module_1 = __webpack_require__(/*! ./repair-property/repair-property.module */ "./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts");
+const notification_module_1 = __webpack_require__(/*! ./notification/notification.module */ "./apps/zinfurn-api/src/components/notification/notification.module.ts");
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -1247,6 +1326,7 @@ exports.ComponentsModule = ComponentsModule = __decorate([
             view_module_1.ViewModule,
             follow_module_1.FollowModule,
             repair_property_module_1.RepairPropertyModule,
+            notification_module_1.NotificationModule,
         ],
     })
 ], ComponentsModule);
@@ -1571,6 +1651,10 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const like_service_1 = __webpack_require__(/*! ./like.service */ "./apps/zinfurn-api/src/components/like/like.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const Like_model_1 = __webpack_require__(/*! ../../schemas/Like.model */ "./apps/zinfurn-api/src/schemas/Like.model.ts");
+const notification_module_1 = __webpack_require__(/*! ../notification/notification.module */ "./apps/zinfurn-api/src/components/notification/notification.module.ts");
+const BoardArticle_model_1 = __webpack_require__(/*! ../../schemas/BoardArticle.model */ "./apps/zinfurn-api/src/schemas/BoardArticle.model.ts");
+const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/zinfurn-api/src/schemas/Member.model.ts");
+const Property_model_1 = __webpack_require__(/*! ../../schemas/Property.model */ "./apps/zinfurn-api/src/schemas/Property.model.ts");
 let LikeModule = class LikeModule {
 };
 exports.LikeModule = LikeModule;
@@ -1578,11 +1662,12 @@ exports.LikeModule = LikeModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([
-                {
-                    name: 'Like',
-                    schema: Like_model_1.default,
-                }
+                { name: 'Like', schema: Like_model_1.default },
+                { name: 'Property', schema: Property_model_1.default },
+                { name: 'BoardArticle', schema: BoardArticle_model_1.default },
+                { name: 'Member', schema: Member_model_1.default },
             ]),
+            notification_module_1.NotificationModule,
         ],
         providers: [like_service_1.LikeService],
         exports: [like_service_1.LikeService],
@@ -1611,7 +1696,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
+var _a, _b, _c, _d, _e;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LikeService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -1620,10 +1705,20 @@ const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/zinfurn-api/src/libs/enums/like.enum.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const notification_service_1 = __webpack_require__(/*! ../notification/notification.service */ "./apps/zinfurn-api/src/components/notification/notification.service.ts");
+const notification_enum_1 = __webpack_require__(/*! ../../libs/enums/notification.enum */ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts");
 let LikeService = class LikeService {
     likeModel;
-    constructor(likeModel) {
+    notificationService;
+    propertyModel;
+    boardArticleModel;
+    memberModel;
+    constructor(likeModel, notificationService, propertyModel, boardArticleModel, memberModel) {
         this.likeModel = likeModel;
+        this.notificationService = notificationService;
+        this.propertyModel = propertyModel;
+        this.boardArticleModel = boardArticleModel;
+        this.memberModel = memberModel;
     }
     async toggleLike(input) {
         const search = { memberId: input.memberId, likeRefId: input.likeRefId }, exist = await this.likeModel.findOne(search).exec();
@@ -1635,6 +1730,38 @@ let LikeService = class LikeService {
         else {
             try {
                 await this.likeModel.create(input);
+                let receiverId = input.likeRefId.toString();
+                let notificationDesc = '';
+                const liker = await this.memberModel.findById(input.memberId).exec();
+                const likerName = liker ? liker.memberNick : 'Someone';
+                if (input.likeGroup === like_enum_1.LikeGroup.PROPERTY) {
+                    const property = await this.propertyModel.findById(input.likeRefId).exec();
+                    if (property) {
+                        receiverId = property.memberId.toString();
+                        notificationDesc = `${likerName} liked your property "${property.propertyTitle}"`;
+                    }
+                }
+                else if (input.likeGroup === like_enum_1.LikeGroup.ARTICLE) {
+                    const article = await this.boardArticleModel.findById(input.likeRefId).exec();
+                    if (article) {
+                        receiverId = article.memberId.toString();
+                        notificationDesc = `${likerName} liked your article "${article.articleTitle}"`;
+                    }
+                }
+                else if (input.likeGroup === like_enum_1.LikeGroup.MEMBER) {
+                    notificationDesc = `${likerName} liked your profile`;
+                }
+                else if (input.likeGroup === like_enum_1.LikeGroup.REPAIR_PROPERTY) {
+                    notificationDesc = `${likerName} liked your Repair Property`;
+                }
+                await this.notificationService.createNotification({
+                    notificationType: notification_enum_1.NotificationType.LIKE,
+                    notificationGroup: this.mapLikeGroupToNotificationGroup(input.likeGroup),
+                    notificationTitle: 'New Like',
+                    notificationDesc: notificationDesc,
+                    authorId: input.memberId.toString(),
+                    receiverId: receiverId,
+                });
             }
             catch (err) {
                 console.log('Error, Service.model: ', err.message);
@@ -1643,6 +1770,20 @@ let LikeService = class LikeService {
         }
         console.log(`- Like modifier ${modifier} -`);
         return modifier;
+    }
+    mapLikeGroupToNotificationGroup(likeGroup) {
+        switch (likeGroup) {
+            case like_enum_1.LikeGroup.PROPERTY:
+                return notification_enum_1.NotificationGroup.PROPERTY;
+            case like_enum_1.LikeGroup.ARTICLE:
+                return notification_enum_1.NotificationGroup.ARTICLE;
+            case like_enum_1.LikeGroup.MEMBER:
+                return notification_enum_1.NotificationGroup.MEMBER;
+            case like_enum_1.LikeGroup.REPAIR_PROPERTY:
+                return notification_enum_1.NotificationGroup.REPAIR_PROPERTY;
+            default:
+                return notification_enum_1.NotificationGroup.MEMBER;
+        }
     }
     async checkLikeExistence(input) {
         const { memberId, likeRefId } = input;
@@ -1685,7 +1826,7 @@ let LikeService = class LikeService {
     async getFavoriteRepairProperties(memberId, input) {
         const { page, limit } = input;
         const match = {
-            likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY,
+            likeGroup: like_enum_1.LikeGroup.REPAIR_PROPERTY,
             memberId: memberId,
         };
         const data = await this.likeModel
@@ -1723,7 +1864,10 @@ exports.LikeService = LikeService;
 exports.LikeService = LikeService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Like')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+    __param(2, (0, mongoose_1.InjectModel)('Property')),
+    __param(3, (0, mongoose_1.InjectModel)('BoardArticle')),
+    __param(4, (0, mongoose_1.InjectModel)('Member')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _b : Object, typeof (_c = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _c : Object, typeof (_d = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _d : Object, typeof (_e = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _e : Object])
 ], LikeService);
 
 
@@ -2075,6 +2219,9 @@ let MemberService = class MemberService {
     authService;
     viewService;
     likeService;
+    repairPropertyStatsEditor(arg0) {
+        throw new Error('Method not implemented.');
+    }
     constructor(memberModel, followModel, authService, viewService, likeService) {
         this.memberModel = memberModel;
         this.followModel = followModel;
@@ -2274,6 +2421,173 @@ exports.MemberService = MemberService = __decorate([
     __param(1, (0, mongoose_1.InjectModel)('Follow')),
     __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object, typeof (_c = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _c : Object, typeof (_d = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _d : Object, typeof (_e = typeof like_service_1.LikeService !== "undefined" && like_service_1.LikeService) === "function" ? _e : Object])
 ], MemberService);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/notification/notification.module.ts":
+/*!*****************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/notification/notification.module.ts ***!
+  \*****************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const Notification_model_1 = __webpack_require__(/*! ../../schemas/Notification.model */ "./apps/zinfurn-api/src/schemas/Notification.model.ts");
+const notification_service_1 = __webpack_require__(/*! ./notification.service */ "./apps/zinfurn-api/src/components/notification/notification.service.ts");
+const socket_module_1 = __webpack_require__(/*! ../../socket/socket.module */ "./apps/zinfurn-api/src/socket/socket.module.ts");
+let NotificationModule = class NotificationModule {
+};
+exports.NotificationModule = NotificationModule;
+exports.NotificationModule = NotificationModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: 'Notification', schema: Notification_model_1.default }]),
+            (0, common_1.forwardRef)(() => socket_module_1.SocketModule),
+        ],
+        providers: [notification_service_1.NotificationService],
+        exports: [notification_service_1.NotificationService],
+    })
+], NotificationModule);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/notification/notification.service.ts":
+/*!******************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/notification/notification.service.ts ***!
+  \******************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const notification_enum_1 = __webpack_require__(/*! ../../libs/enums/notification.enum */ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts");
+const socket_gateway_1 = __webpack_require__(/*! ../../socket/socket.gateway */ "./apps/zinfurn-api/src/socket/socket.gateway.ts");
+let NotificationService = class NotificationService {
+    notificationModel;
+    socketGateway;
+    constructor(notificationModel, socketGateway) {
+        this.notificationModel = notificationModel;
+        this.socketGateway = socketGateway;
+    }
+    async createNotification(input) {
+        const notification = await this.notificationModel.create({
+            ...input,
+            notificationStatus: notification_enum_1.NotificationStatus.WAIT,
+        });
+        this.socketGateway.sendNotification(notification.receiverId.toString(), {
+            id: notification._id.toString(),
+            title: notification.notificationTitle,
+            desc: notification.notificationDesc,
+            type: notification.notificationType,
+            status: notification.notificationStatus,
+            createdAt: notification.createdAt,
+        });
+        return notification;
+    }
+    async getUnreadNotifications(userId) {
+        return this.notificationModel
+            .find({
+            receiverId: userId,
+            notificationStatus: notification_enum_1.NotificationStatus.WAIT,
+        })
+            .sort({ createdAt: -1 })
+            .exec();
+    }
+    async getNotificationsByIds(notificationIds, userId) {
+        return this.notificationModel
+            .find({
+            _id: { $in: notificationIds },
+            receiverId: userId,
+            notificationStatus: notification_enum_1.NotificationStatus.WAIT,
+        })
+            .exec();
+    }
+    async markAsRead(notificationId, userId) {
+        try {
+            const notification = await this.notificationModel.findOneAndUpdate({
+                _id: notificationId,
+                receiverId: userId,
+                notificationStatus: notification_enum_1.NotificationStatus.WAIT,
+            }, {
+                notificationStatus: notification_enum_1.NotificationStatus.READ,
+            }, { new: true });
+            if (notification) {
+                this.socketGateway.sendNotification(userId, {
+                    id: notification._id.toString(),
+                    title: notification.notificationTitle,
+                    desc: notification.notificationDesc,
+                    type: notification.notificationType,
+                    status: notification_enum_1.NotificationStatus.READ,
+                    createdAt: notification.createdAt,
+                });
+                return true;
+            }
+            return false;
+        }
+        catch (error) {
+            return false;
+        }
+    }
+    async markMultipleAsRead(userId, notifications) {
+        try {
+            const notificationIds = notifications.map((n) => n._id);
+            await this.notificationModel.updateMany({
+                _id: { $in: notificationIds },
+                receiverId: userId,
+                notificationStatus: notification_enum_1.NotificationStatus.WAIT,
+            }, {
+                notificationStatus: notification_enum_1.NotificationStatus.READ,
+            });
+            for (const notification of notifications) {
+                this.socketGateway.sendNotification(userId, {
+                    id: notification._id.toString(),
+                    title: notification.notificationTitle,
+                    desc: notification.notificationDesc,
+                    type: notification.notificationType,
+                    status: notification_enum_1.NotificationStatus.READ,
+                    createdAt: notification.createdAt,
+                });
+            }
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+};
+exports.NotificationService = NotificationService;
+exports.NotificationService = NotificationService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Notification')),
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => socket_gateway_1.SocketGateway))),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof socket_gateway_1.SocketGateway !== "undefined" && socket_gateway_1.SocketGateway) === "function" ? _b : Object])
+], NotificationService);
 
 
 /***/ }),
@@ -2579,7 +2893,11 @@ let PropertyService = class PropertyService {
     async createProperty(input) {
         try {
             console.log('executed');
-            const result = await this.propertyModel.create(input);
+            const propertyData = {
+                ...input,
+                propertyInStock: true,
+            };
+            const result = await this.propertyModel.create(propertyData);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
                 targetKey: 'memberProperties',
@@ -3141,7 +3459,7 @@ let RepairPropertyService = class RepairPropertyService {
                 await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });
                 targetProperty.repairPropertyViews++;
             }
-            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY };
+            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: like_enum_1.LikeGroup.REPAIR_PROPERTY };
             targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput);
         }
         targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
@@ -3230,7 +3548,7 @@ let RepairPropertyService = class RepairPropertyService {
         const input = {
             memberId: memberId,
             likeRefId: likeRefId,
-            likeGroup: like_enum_1.LikeGroup.REPAIRPROPERTY
+            likeGroup: like_enum_1.LikeGroup.REPAIR_PROPERTY
         };
         const modifier = await this.likeService.toggleLike(input);
         const result = await this.repairPropertyStatsEditor({ _id: likeRefId, targetKey: 'repairPropertyLikes', modifier: modifier });
@@ -5259,7 +5577,7 @@ __decorate([
     __metadata("design:type", typeof (_e = typeof property_enum_1.PropertyColor !== "undefined" && property_enum_1.PropertyColor) === "function" ? _e : Object)
 ], PropertyInput.prototype, "propertyColor", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => String),
     __metadata("design:type", String)
 ], PropertyInput.prototype, "propertySize", void 0);
@@ -6026,7 +6344,6 @@ const common_enum_1 = __webpack_require__(/*! ../../enums/common_enum */ "./apps
 const config_1 = __webpack_require__(/*! ../../config */ "./apps/zinfurn-api/src/libs/config.ts");
 const repairProperty_enum_1 = __webpack_require__(/*! ../../enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
 let RepairPropertyInput = class RepairPropertyInput {
-    repairUserId;
     repairPropertyType;
     repairPropertyStatus;
     repairPropertyAddress;
@@ -6036,11 +6353,6 @@ let RepairPropertyInput = class RepairPropertyInput {
     memberId;
 };
 exports.RepairPropertyInput = RepairPropertyInput;
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, graphql_1.Field)(() => String),
-    __metadata("design:type", String)
-], RepairPropertyInput.prototype, "repairUserId", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyType),
@@ -6274,7 +6586,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+var _a, _b, _c, _d, _e, _f, _g, _h;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RepairProperties = exports.RepairProperty = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -6284,7 +6596,6 @@ const like_1 = __webpack_require__(/*! ../like/like */ "./apps/zinfurn-api/src/l
 const repairProperty_enum_1 = __webpack_require__(/*! ../../enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
 let RepairProperty = class RepairProperty {
     _id;
-    repairUserId;
     repairPropertyType;
     repairPropertyStatus;
     repairPropertyAddress;
@@ -6306,16 +6617,12 @@ __decorate([
     __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
 ], RepairProperty.prototype, "_id", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => String),
-    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
-], RepairProperty.prototype, "repairUserId", void 0);
-__decorate([
     (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyType),
-    __metadata("design:type", typeof (_c = typeof repairProperty_enum_1.RepairPropertyType !== "undefined" && repairProperty_enum_1.RepairPropertyType) === "function" ? _c : Object)
+    __metadata("design:type", typeof (_b = typeof repairProperty_enum_1.RepairPropertyType !== "undefined" && repairProperty_enum_1.RepairPropertyType) === "function" ? _b : Object)
 ], RepairProperty.prototype, "repairPropertyType", void 0);
 __decorate([
     (0, graphql_1.Field)(() => repairProperty_enum_1.RepairPropertyStatus, { nullable: true }),
-    __metadata("design:type", typeof (_d = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _d : Object)
+    __metadata("design:type", typeof (_c = typeof repairProperty_enum_1.RepairPropertyStatus !== "undefined" && repairProperty_enum_1.RepairPropertyStatus) === "function" ? _c : Object)
 ], RepairProperty.prototype, "repairPropertyStatus", void 0);
 __decorate([
     (0, graphql_1.Field)(() => String),
@@ -6343,19 +6650,19 @@ __decorate([
 ], RepairProperty.prototype, "repairPropertyComments", void 0);
 __decorate([
     (0, graphql_1.Field)(() => String),
-    __metadata("design:type", typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object)
+    __metadata("design:type", typeof (_d = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _d : Object)
 ], RepairProperty.prototype, "memberId", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
 ], RepairProperty.prototype, "deletedAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
 ], RepairProperty.prototype, "constructedAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date, { nullable: true }),
-    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
 ], RepairProperty.prototype, "createdAt", void 0);
 __decorate([
     (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
@@ -6363,7 +6670,7 @@ __decorate([
 ], RepairProperty.prototype, "meLiked", void 0);
 __decorate([
     (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
-    __metadata("design:type", typeof (_j = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _j : Object)
+    __metadata("design:type", typeof (_h = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _h : Object)
 ], RepairProperty.prototype, "memberData", void 0);
 exports.RepairProperty = RepairProperty = __decorate([
     (0, graphql_1.ObjectType)()
@@ -6501,6 +6808,7 @@ var CommentGroup;
     CommentGroup["MEMBER"] = "MEMBER";
     CommentGroup["ARTICLE"] = "ARTICLE";
     CommentGroup["PROPERTY"] = "PROPERTY";
+    CommentGroup["REPAIR_PROPERTY"] = "REPAIR_PROPERTY";
 })(CommentGroup || (exports.CommentGroup = CommentGroup = {}));
 (0, graphql_1.registerEnumType)(CommentGroup, {
     name: 'CommentGroup',
@@ -6566,7 +6874,7 @@ var LikeGroup;
     LikeGroup["MEMBER"] = "MEMBER";
     LikeGroup["PROPERTY"] = "PROPERTY";
     LikeGroup["ARTICLE"] = "ARTICLE";
-    LikeGroup["REPAIRPROPERTY"] = "REPAIRPROPERTY";
+    LikeGroup["REPAIR_PROPERTY"] = "REPAIR_PROPERTY";
 })(LikeGroup || (exports.LikeGroup = LikeGroup = {}));
 (0, graphql_1.registerEnumType)(LikeGroup, {
     name: 'LikeGroup',
@@ -6612,6 +6920,46 @@ var MemberAuthType;
 })(MemberAuthType || (exports.MemberAuthType = MemberAuthType = {}));
 (0, graphql_1.registerEnumType)(MemberAuthType, {
     name: "MemberAuthType",
+});
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/notification.enum.ts ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NotificationGroup = exports.NotificationStatus = exports.NotificationType = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+var NotificationType;
+(function (NotificationType) {
+    NotificationType["LIKE"] = "LIKE";
+    NotificationType["COMMENT"] = "COMMENT";
+})(NotificationType || (exports.NotificationType = NotificationType = {}));
+(0, graphql_1.registerEnumType)(NotificationType, {
+    name: 'NotificationType',
+});
+var NotificationStatus;
+(function (NotificationStatus) {
+    NotificationStatus["WAIT"] = "WAIT";
+    NotificationStatus["READ"] = "READ";
+})(NotificationStatus || (exports.NotificationStatus = NotificationStatus = {}));
+(0, graphql_1.registerEnumType)(NotificationStatus, {
+    name: 'NotificationStatus',
+});
+var NotificationGroup;
+(function (NotificationGroup) {
+    NotificationGroup["MEMBER"] = "MEMBER";
+    NotificationGroup["ARTICLE"] = "ARTICLE";
+    NotificationGroup["PROPERTY"] = "PROPERTY";
+    NotificationGroup["REPAIR_PROPERTY"] = "REPAIR_PROPERTY";
+})(NotificationGroup || (exports.NotificationGroup = NotificationGroup = {}));
+(0, graphql_1.registerEnumType)(NotificationGroup, {
+    name: 'NotificationGroup',
 });
 
 
@@ -7068,6 +7416,63 @@ exports["default"] = MemberSchema;
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/schemas/Notification.model.ts":
+/*!************************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Notification.model.ts ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const notification_enum_1 = __webpack_require__(/*! ../libs/enums/notification.enum */ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts");
+const NotificationSchema = new mongoose_1.Schema({
+    notificationType: {
+        type: String,
+        enum: notification_enum_1.NotificationType,
+        required: true,
+    },
+    notificationStatus: {
+        type: String,
+        enum: notification_enum_1.NotificationStatus,
+        default: notification_enum_1.NotificationStatus.WAIT,
+    },
+    notificationGroup: {
+        type: String,
+        enum: notification_enum_1.NotificationGroup,
+        required: true,
+    },
+    notificationTitle: {
+        type: String,
+        required: true,
+    },
+    notificationDesc: {
+        type: String,
+    },
+    authorId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Member',
+    },
+    receiverId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Member',
+    },
+    propertyId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Property',
+    },
+    articleId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'BoardArticle',
+    },
+}, { timestamps: true, collection: 'notifications' });
+exports["default"] = NotificationSchema;
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/schemas/Property.model.ts":
 /*!********************************************************!*\
   !*** ./apps/zinfurn-api/src/schemas/Property.model.ts ***!
@@ -7106,7 +7511,6 @@ const PropertySchema = new mongoose_1.Schema({
     },
     propertySize: {
         type: String,
-        required: true,
     },
     propertyTitle: {
         type: String,
@@ -7206,11 +7610,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const repairProperty_enum_1 = __webpack_require__(/*! ../libs/enums/repairProperty.enum */ "./apps/zinfurn-api/src/libs/enums/repairProperty.enum.ts");
 const RepairSchema = new mongoose_1.Schema({
-    repairUserId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Member',
-        required: true,
-    },
     repairPropertyType: {
         type: String,
         enum: repairProperty_enum_1.RepairPropertyType,
@@ -7310,7 +7709,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d;
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SocketGateway = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -7319,14 +7721,17 @@ const ws_1 = __webpack_require__(/*! ws */ "ws");
 const WebSocket = __webpack_require__(/*! ws */ "ws");
 const auth_service_1 = __webpack_require__(/*! ../components/auth/auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
 const url = __webpack_require__(/*! url */ "url");
+const notification_service_1 = __webpack_require__(/*! ../components/notification/notification.service */ "./apps/zinfurn-api/src/components/notification/notification.service.ts");
 let SocketGateway = class SocketGateway {
     authService;
+    notificationService;
     logger = new common_1.Logger('SocketEventsGateway');
     summaryClient = 0;
     clientsAuthMap = new Map();
     messagesList = [];
-    constructor(authService) {
+    constructor(authService, notificationService) {
         this.authService = authService;
+        this.notificationService = notificationService;
     }
     server;
     afterInit(server) {
@@ -7344,9 +7749,13 @@ let SocketGateway = class SocketGateway {
     }
     async handleConnection(client, req) {
         const authMember = await this.retrieveAuth(req);
+        if (!authMember) {
+            client.close();
+            return;
+        }
         this.summaryClient++;
         this.clientsAuthMap.set(client, authMember);
-        const clientNick = authMember?.memberNick ?? 'Guest';
+        const clientNick = authMember.memberNick;
         this.logger.verbose(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
         const infoMsg = {
             event: 'info',
@@ -7356,6 +7765,58 @@ let SocketGateway = class SocketGateway {
         };
         this.emitMessage(infoMsg);
         client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+        await this.handleGetNotifications(client);
+    }
+    async handleGetNotifications(client) {
+        try {
+            const authMember = this.clientsAuthMap.get(client);
+            if (!authMember)
+                return;
+            const allNotifications = await this.notificationService.getUnreadNotifications(authMember._id.toString());
+            client.send(JSON.stringify({
+                event: 'notifications_list',
+                data: allNotifications.map((notification) => ({
+                    id: notification._id.toString(),
+                    title: notification.notificationTitle,
+                    desc: notification.notificationDesc,
+                    type: notification.notificationType,
+                    status: notification.notificationStatus,
+                    createdAt: notification.createdAt,
+                })),
+            }));
+        }
+        catch (error) {
+            this.logger.error('Error in handleGetNotifications:', error);
+        }
+    }
+    async handleGetNotificationsEvent(client) {
+        await this.handleGetNotifications(client);
+    }
+    async handleMarkNotificationsAsRead(client, data) {
+        try {
+            const authMember = this.clientsAuthMap.get(client);
+            if (!authMember)
+                return;
+            const notificationIds = Array.isArray(data) ? data : [data];
+            if (!notificationIds.length)
+                return;
+            const notifications = await this.notificationService.getNotificationsByIds(notificationIds, authMember._id.toString());
+            if (notifications.length > 0) {
+                await this.notificationService.markMultipleAsRead(authMember._id.toString(), notifications);
+                notifications.forEach((notification) => {
+                    client.send(JSON.stringify({
+                        event: 'notificationStatus',
+                        payload: {
+                            id: notification._id.toString(),
+                            status: 'READ',
+                        },
+                    }));
+                });
+            }
+        }
+        catch (error) {
+            this.logger.error('Error in handleMarkNotificationsAsRead:', error);
+        }
     }
     handleDisconnect(client) {
         const authMember = this.clientsAuthMap.get(client);
@@ -7395,21 +7856,49 @@ let SocketGateway = class SocketGateway {
             }
         });
     }
+    sendNotification(userId, notification) {
+        let notificationsSent = 0;
+        this.server.clients.forEach((client) => {
+            const authMember = this.clientsAuthMap.get(client);
+            if (client.readyState === WebSocket.OPEN) {
+                if (authMember && authMember._id.toString() === userId) {
+                    client.send(JSON.stringify({
+                        event: 'notification',
+                        payload: notification,
+                    }));
+                    notificationsSent++;
+                }
+            }
+        });
+    }
 };
 exports.SocketGateway = SocketGateway;
 __decorate([
     (0, websockets_1.WebSocketServer)(),
-    __metadata("design:type", typeof (_b = typeof ws_1.Server !== "undefined" && ws_1.Server) === "function" ? _b : Object)
+    __metadata("design:type", typeof (_c = typeof ws_1.Server !== "undefined" && ws_1.Server) === "function" ? _c : Object)
 ], SocketGateway.prototype, "server", void 0);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('get_notifications'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_d = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _d : Object]),
+    __metadata("design:returntype", typeof (_e = typeof Promise !== "undefined" && Promise) === "function" ? _e : Object)
+], SocketGateway.prototype, "handleGetNotificationsEvent", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('markNotificationsAsRead'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_f = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _f : Object, Object]),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+], SocketGateway.prototype, "handleMarkNotificationsAsRead", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('message'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_c = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _c : Object, String]),
-    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+    __metadata("design:paramtypes", [typeof (_h = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _h : Object, String]),
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], SocketGateway.prototype, "handleMessage", null);
 exports.SocketGateway = SocketGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({ transport: ['websocket'], secure: false }),
-    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => notification_service_1.NotificationService))),
+    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object, typeof (_b = typeof notification_service_1.NotificationService !== "undefined" && notification_service_1.NotificationService) === "function" ? _b : Object])
 ], SocketGateway);
 
 
@@ -7433,13 +7922,15 @@ exports.SocketModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const socket_gateway_1 = __webpack_require__(/*! ./socket.gateway */ "./apps/zinfurn-api/src/socket/socket.gateway.ts");
 const auth_module_1 = __webpack_require__(/*! ../components/auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const notification_module_1 = __webpack_require__(/*! ../components/notification/notification.module */ "./apps/zinfurn-api/src/components/notification/notification.module.ts");
 let SocketModule = class SocketModule {
 };
 exports.SocketModule = SocketModule;
 exports.SocketModule = SocketModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule],
-        providers: [socket_gateway_1.SocketGateway]
+        providers: [socket_gateway_1.SocketGateway],
+        imports: [auth_module_1.AuthModule, (0, common_1.forwardRef)(() => notification_module_1.NotificationModule)],
+        exports: [socket_gateway_1.SocketGateway],
     })
 ], SocketModule);
 
