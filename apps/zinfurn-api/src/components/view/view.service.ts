@@ -68,7 +68,7 @@ export class ViewService {
 
     public async getVisitedRepairProperties(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
         const { page, limit } = input;
-        const match: T = { viewGroup: ViewGroup.REPAIRPROPERTY, memberId: memberId };
+        const match: T = { viewGroup: ViewGroup.REPAIR_PROPERTY, memberId: memberId };
     
         const data: T = await this.viewModel
             .aggregate([

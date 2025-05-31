@@ -3453,7 +3453,7 @@ let RepairPropertyService = class RepairPropertyService {
         if (!targetProperty)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: view_enum_1.ViewGroup.REPAIRPROPERTY };
+            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: view_enum_1.ViewGroup.REPAIR_PROPERTY };
             const newView = await this.viewService.recordView(viewInput);
             if (newView) {
                 await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });
@@ -3747,7 +3747,7 @@ let ViewService = class ViewService {
     }
     async getVisitedRepairProperties(memberId, input) {
         const { page, limit } = input;
-        const match = { viewGroup: view_enum_1.ViewGroup.REPAIRPROPERTY, memberId: memberId };
+        const match = { viewGroup: view_enum_1.ViewGroup.REPAIR_PROPERTY, memberId: memberId };
         const data = await this.viewModel
             .aggregate([
             { $match: match },
@@ -7097,7 +7097,7 @@ var ViewGroup;
     ViewGroup["MEMBER"] = "MEMBER";
     ViewGroup["ARTICLE"] = "ARTICLE";
     ViewGroup["PROPERTY"] = "PROPERTY";
-    ViewGroup["REPAIRPROPERTY"] = "REPAIRPROPERTY";
+    ViewGroup["REPAIR_PROPERTY"] = "REPAIR_PROPERTY";
 })(ViewGroup || (exports.ViewGroup = ViewGroup = {}));
 (0, graphql_1.registerEnumType)(ViewGroup, {
     name: 'ViewGroup',
@@ -7772,18 +7772,20 @@ let SocketGateway = class SocketGateway {
             const authMember = this.clientsAuthMap.get(client);
             if (!authMember)
                 return;
-            const allNotifications = await this.notificationService.getUnreadNotifications(authMember._id.toString());
-            client.send(JSON.stringify({
-                event: 'notifications_list',
-                data: allNotifications.map((notification) => ({
-                    id: notification._id.toString(),
-                    title: notification.notificationTitle,
-                    desc: notification.notificationDesc,
-                    type: notification.notificationType,
-                    status: notification.notificationStatus,
-                    createdAt: notification.createdAt,
-                })),
-            }));
+            const unreadNotifications = await this.notificationService.getUnreadNotifications(authMember._id.toString());
+            if (unreadNotifications.length > 0) {
+                client.send(JSON.stringify({
+                    event: 'notifications_list',
+                    data: unreadNotifications.map((notification) => ({
+                        id: notification._id.toString(),
+                        title: notification.notificationTitle,
+                        desc: notification.notificationDesc,
+                        type: notification.notificationType,
+                        status: notification.notificationStatus,
+                        createdAt: notification.createdAt,
+                    })),
+                }));
+            }
         }
         catch (error) {
             this.logger.error('Error in handleGetNotifications:', error);

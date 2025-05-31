@@ -52,7 +52,7 @@ export class RepairPropertyService {
         if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIRPROPERTY };
+            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIR_PROPERTY };
             const newView = await this.viewService.recordView(viewInput);
             if (newView) {
                 await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });

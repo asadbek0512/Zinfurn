@@ -4,7 +4,7 @@ export enum ViewGroup {
 	MEMBER = 'MEMBER',
 	ARTICLE = 'ARTICLE',
 	PROPERTY = 'PROPERTY',
-	REPAIRPROPERTY = 'REPAIRPROPERTY',
+	REPAIR_PROPERTY = 'REPAIR_PROPERTY',
 }
 registerEnumType(ViewGroup, {
 	name: 'ViewGroup',
