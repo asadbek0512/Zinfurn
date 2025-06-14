@@ -49,6 +49,9 @@ export class Member {
     @Field(() => Int)
     memberFollowers: number;
 
+    @Field(() => String, { nullable: true })
+    memberEmail?: string;
+
     @Field(() => Int)
     memberFollowings: number;
 

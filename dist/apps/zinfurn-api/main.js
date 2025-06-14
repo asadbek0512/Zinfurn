@@ -1105,12 +1105,12 @@ const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose
 const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/zinfurn-api/src/components/member/member.service.ts");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const property_service_1 = __webpack_require__(/*! ../property/property.service */ "./apps/zinfurn-api/src/components/property/property.service.ts");
-const board_article_service_1 = __webpack_require__(/*! ../board-article/board-article.service */ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 const comment_enum_1 = __webpack_require__(/*! ../../libs/enums/comment.enum */ "./apps/zinfurn-api/src/libs/enums/comment.enum.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
 const notification_service_1 = __webpack_require__(/*! ../notification/notification.service */ "./apps/zinfurn-api/src/components/notification/notification.service.ts");
 const notification_enum_1 = __webpack_require__(/*! ../../libs/enums/notification.enum */ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts");
+const board_article_service_1 = __webpack_require__(/*! ../board-article/board-article.service */ "./apps/zinfurn-api/src/components/board-article/board-article.service.ts");
 const repair_property_service_1 = __webpack_require__(/*! ../repair-property/repair-property.service */ "./apps/zinfurn-api/src/components/repair-property/repair-property.service.ts");
 let CommentService = class CommentService {
     commentModule;
@@ -1163,8 +1163,8 @@ let CommentService = class CommentService {
                     });
                     break;
                 case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
-                    const repairaProperty = await this.repairPropertyService.getRepairProperty(null, input.commentRefId);
-                    ownerId = repairaProperty.memberId.toString();
+                    const repairProperty = await this.repairPropertyService.getRepairProperty(null, input.commentRefId);
+                    ownerId = repairProperty.memberId.toString();
                     await this.repairPropertyService.repairPropertyStatsEditor({
                         _id: input.commentRefId,
                         targetKey: 'repairPropertyComments',
@@ -1193,15 +1193,16 @@ let CommentService = class CommentService {
                 const property = await this.propertyService.getProperty(null, refId);
                 notificationDesc = `${commenterName} commented on your property "${property.propertyTitle}"`;
                 break;
+            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
+                const repairProperty = await this.repairPropertyService.getRepairProperty(null, refId);
+                notificationDesc = `${commenterName} commented on your property "${repairProperty.repairPropertyType}"`;
+                break;
             case comment_enum_1.CommentGroup.ARTICLE:
-                const article = await this.boardArticleService.getBoardArticle(null, refId);
-                notificationDesc = ` ${commenterName} commented on your article "${article.articleTitle}"`;
+                const article = await this.boardArticleService.getBlog(null, refId);
+                notificationDesc = `${commenterName} commented on your article "${article.articleTitle}"`;
                 break;
             case comment_enum_1.CommentGroup.MEMBER:
                 notificationDesc = `${commenterName} commented on your profile`;
-                break;
-            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
-                notificationDesc = `${commenterName} commented on your Repair Property`;
                 break;
         }
         await this.notificationService.createNotification({
@@ -1217,27 +1218,25 @@ let CommentService = class CommentService {
         switch (commentGroup) {
             case comment_enum_1.CommentGroup.PROPERTY:
                 return notification_enum_1.NotificationGroup.PROPERTY;
+            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
+                return notification_enum_1.NotificationGroup.REPAIR_PROPERTY;
             case comment_enum_1.CommentGroup.ARTICLE:
                 return notification_enum_1.NotificationGroup.ARTICLE;
             case comment_enum_1.CommentGroup.MEMBER:
                 return notification_enum_1.NotificationGroup.MEMBER;
-            case comment_enum_1.CommentGroup.REPAIR_PROPERTY:
-                return notification_enum_1.NotificationGroup.REPAIR_PROPERTY;
             default:
                 return notification_enum_1.NotificationGroup.MEMBER;
         }
     }
     async updateComment(memberId, input) {
         const { _id } = input;
-        const result = await this.commentModule
-            .findOneAndUpdate({
+        const result = await this.commentModule.findOneAndUpdate({
             _id: _id,
             memberId: memberId,
             commentStatus: comment_enum_1.CommentStatus.ACTIVE,
         }, input, {
             new: true,
-        })
-            .exec();
+        });
         if (!result)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
         return result;
@@ -1246,8 +1245,7 @@ let CommentService = class CommentService {
         const { commentRefId } = input.search;
         const match = { commentRefId: commentRefId, commentStatus: comment_enum_1.CommentStatus.ACTIVE };
         const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
-        const result = await this.commentModule
-            .aggregate([
+        const result = await this.commentModule.aggregate([
             { $match: match },
             { $sort: sort },
             {
@@ -1256,19 +1254,18 @@ let CommentService = class CommentService {
                         { $skip: (input.page - 1) * input.limit },
                         { $limit: input.limit },
                         config_1.lookupMember,
-                        { $unwind: '$memberData' },
+                        { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
                     ],
                     metaCounter: [{ $count: 'total' }],
                 },
             },
-        ])
-            .exec();
+        ]);
         if (!result.length)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         return result[0];
     }
     async removeCommentByAdmin(commentId) {
-        const result = await this.commentModule.findOneAndDelete(commentId).exec();
+        const result = await this.commentModule.findOneAndDelete(commentId);
         if (!result)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.REMOVE_FAILED);
         return result;
@@ -1311,6 +1308,7 @@ const like_module_1 = __webpack_require__(/*! ./like/like.module */ "./apps/zinf
 const view_module_1 = __webpack_require__(/*! ./view/view.module */ "./apps/zinfurn-api/src/components/view/view.module.ts");
 const repair_property_module_1 = __webpack_require__(/*! ./repair-property/repair-property.module */ "./apps/zinfurn-api/src/components/repair-property/repair-property.module.ts");
 const notification_module_1 = __webpack_require__(/*! ./notification/notification.module */ "./apps/zinfurn-api/src/components/notification/notification.module.ts");
+const notice_module_1 = __webpack_require__(/*! ./notice/notice.module */ "./apps/zinfurn-api/src/components/notice/notice.module.ts");
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -1327,6 +1325,7 @@ exports.ComponentsModule = ComponentsModule = __decorate([
             follow_module_1.FollowModule,
             repair_property_module_1.RepairPropertyModule,
             notification_module_1.NotificationModule,
+            notice_module_1.NoticeModule,
         ],
     })
 ], ComponentsModule);
@@ -2425,6 +2424,332 @@ exports.MemberService = MemberService = __decorate([
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/components/notice/notice.module.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/notice/notice.module.ts ***!
+  \*****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticeModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const notice_resolver_1 = __webpack_require__(/*! ./notice.resolver */ "./apps/zinfurn-api/src/components/notice/notice.resolver.ts");
+const notice_service_1 = __webpack_require__(/*! ./notice.service */ "./apps/zinfurn-api/src/components/notice/notice.service.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+const Notice_model_1 = __webpack_require__(/*! ../../schemas/Notice.model */ "./apps/zinfurn-api/src/schemas/Notice.model.ts");
+let NoticeModule = class NoticeModule {
+};
+exports.NoticeModule = NoticeModule;
+exports.NoticeModule = NoticeModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: 'Notice', schema: Notice_model_1.default }]),
+            auth_module_1.AuthModule,
+        ],
+        providers: [notice_resolver_1.NoticeResolver, notice_service_1.NoticeService],
+        exports: [notice_service_1.NoticeService],
+    })
+], NoticeModule);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/notice/notice.resolver.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/notice/notice.resolver.ts ***!
+  \*******************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticeResolver = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const notice_service_1 = __webpack_require__(/*! ./notice.service */ "./apps/zinfurn-api/src/components/notice/notice.service.ts");
+const notice_1 = __webpack_require__(/*! ../../libs/dto/notice/notice */ "./apps/zinfurn-api/src/libs/dto/notice/notice.ts");
+const notice_input_1 = __webpack_require__(/*! ../../libs/dto/notice/notice.input */ "./apps/zinfurn-api/src/libs/dto/notice/notice.input.ts");
+const notice_inquiry_1 = __webpack_require__(/*! ../../libs/dto/notice/notice.inquiry */ "./apps/zinfurn-api/src/libs/dto/notice/notice.inquiry.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+const graphql_2 = __webpack_require__(/*! graphql */ "graphql");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/zinfurn-api/src/components/auth/guards/without.guard.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+let NoticeResolver = class NoticeResolver {
+    noticeService;
+    constructor(noticeService) {
+        this.noticeService = noticeService;
+    }
+    async createNotice(input, memberId) {
+        console.log('Mutation: createNotice');
+        return await this.noticeService.createNotice(memberId, input);
+    }
+    async getAllNotices(input) {
+        console.log('Query: getAllNotices');
+        return await this.noticeService.getAllNotices(input);
+    }
+    async getNotice(noticeId) {
+        console.log('Query: getNotice');
+        const objectId = (0, config_1.ShapeIntoMongoObjectId)(noticeId);
+        return await this.noticeService.getNotice(objectId);
+    }
+    async updateNotice(noticeId, input, memberId) {
+        console.log('Mutation: updateNotice');
+        const objectId = (0, config_1.ShapeIntoMongoObjectId)(noticeId);
+        return await this.noticeService.updateNotice(memberId, objectId, input);
+    }
+    async removeNotice(noticeId, memberId) {
+        console.log('Mutation: removeNotice');
+        const objectId = (0, config_1.ShapeIntoMongoObjectId)(noticeId);
+        return await this.noticeService.removeNotice(memberId, objectId);
+    }
+};
+exports.NoticeResolver = NoticeResolver;
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, graphql_1.Mutation)(() => notice_1.Notice),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_b = typeof notice_input_1.NoticeInput !== "undefined" && notice_input_1.NoticeInput) === "function" ? _b : Object, typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], NoticeResolver.prototype, "createNotice", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => notice_1.Notices),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof notice_inquiry_1.AllNoticesInquiry !== "undefined" && notice_inquiry_1.AllNoticesInquiry) === "function" ? _e : Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], NoticeResolver.prototype, "getAllNotices", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => notice_1.Notice),
+    __param(0, (0, graphql_1.Args)('noticeId', { type: () => graphql_2.GraphQLString })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+], NoticeResolver.prototype, "getNotice", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, graphql_1.Mutation)(() => notice_1.Notice),
+    __param(0, (0, graphql_1.Args)('noticeId', { type: () => graphql_2.GraphQLString })),
+    __param(1, (0, graphql_1.Args)('input')),
+    __param(2, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_h = typeof notice_input_1.NoticeUpdate !== "undefined" && notice_input_1.NoticeUpdate) === "function" ? _h : Object, typeof (_j = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _j : Object]),
+    __metadata("design:returntype", typeof (_k = typeof Promise !== "undefined" && Promise) === "function" ? _k : Object)
+], NoticeResolver.prototype, "updateNotice", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, graphql_1.Mutation)(() => notice_1.Notice),
+    __param(0, (0, graphql_1.Args)('noticeId', { type: () => graphql_2.GraphQLString })),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_l = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _l : Object]),
+    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
+], NoticeResolver.prototype, "removeNotice", null);
+exports.NoticeResolver = NoticeResolver = __decorate([
+    (0, graphql_1.Resolver)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof notice_service_1.NoticeService !== "undefined" && notice_service_1.NoticeService) === "function" ? _a : Object])
+], NoticeResolver);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/notice/notice.service.ts":
+/*!******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/notice/notice.service.ts ***!
+  \******************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticeService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const notice_enum_1 = __webpack_require__(/*! ../../libs/enums/notice.enum */ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+let NoticeService = class NoticeService {
+    noticeModel;
+    constructor(noticeModel) {
+        this.noticeModel = noticeModel;
+    }
+    async createNotice(memberId, input) {
+        try {
+            const result = await this.noticeModel.create({
+                ...input,
+                memberId,
+            });
+            return result;
+        }
+        catch (err) {
+            console.log('Error, Service.createNotice:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+        }
+    }
+    async getAllNotices(input) {
+        const { page = 1, limit = 10, noticeCategory, noticeStatus, search } = input;
+        const match = {};
+        if (noticeCategory)
+            match.noticeCategory = noticeCategory;
+        if (noticeStatus)
+            match.noticeStatus = noticeStatus;
+        if (search) {
+            match.$or = [
+                { noticeTitle: { $regex: search, $options: 'i' } },
+                { noticeContent: { $regex: search, $options: 'i' } },
+            ];
+        }
+        try {
+            const result = await this.noticeModel
+                .aggregate([
+                { $match: match },
+                { $sort: { createdAt: -1 } },
+                {
+                    $facet: {
+                        list: [
+                            { $skip: (page - 1) * limit },
+                            { $limit: limit },
+                            {
+                                $lookup: {
+                                    from: 'members',
+                                    localField: 'memberId',
+                                    foreignField: '_id',
+                                    as: 'memberData',
+                                },
+                            },
+                            {
+                                $unwind: {
+                                    path: '$memberData',
+                                    preserveNullAndEmptyArrays: true,
+                                },
+                            },
+                        ],
+                        metaCounter: [
+                            {
+                                $group: {
+                                    _id: '$noticeCategory',
+                                    count: { $sum: 1 },
+                                },
+                            },
+                        ],
+                    },
+                },
+            ])
+                .exec();
+            return result[0];
+        }
+        catch (err) {
+            console.log('Error, Service.getAllNotices:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        }
+    }
+    async getNotice(noticeId) {
+        try {
+            const result = await this.noticeModel
+                .findOne({
+                _id: noticeId,
+                noticeStatus: notice_enum_1.NoticeStatus.ACTIVE,
+            })
+                .exec();
+            if (!result)
+                throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+            return result;
+        }
+        catch (err) {
+            console.log('Error, Service.getNotice:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        }
+    }
+    async updateNotice(memberId, noticeId, input) {
+        try {
+            const result = await this.noticeModel
+                .findOneAndUpdate({
+                _id: noticeId,
+                memberId: memberId,
+                noticeStatus: { $ne: notice_enum_1.NoticeStatus.DELETE },
+            }, input, { new: true })
+                .exec();
+            if (!result)
+                throw new common_1.BadRequestException(common_enum_1.Message.UPDATE_FAILED);
+            return result;
+        }
+        catch (err) {
+            console.log('Error, Service.updateNotice:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.UPDATE_FAILED);
+        }
+    }
+    async removeNotice(memberId, noticeId) {
+        try {
+            const result = await this.noticeModel
+                .findOneAndUpdate({
+                _id: noticeId,
+                memberId: memberId,
+                noticeStatus: { $ne: notice_enum_1.NoticeStatus.DELETE },
+            }, { noticeStatus: notice_enum_1.NoticeStatus.DELETE }, { new: true })
+                .exec();
+            if (!result)
+                throw new common_1.BadRequestException(common_enum_1.Message.REMOVE_FAILED);
+            return result;
+        }
+        catch (err) {
+            console.log('Error, Service.removeNotice:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.REMOVE_FAILED);
+        }
+    }
+};
+exports.NoticeService = NoticeService;
+exports.NoticeService = NoticeService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Notice')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], NoticeService);
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/components/notification/notification.module.ts":
 /*!*****************************************************************************!*\
   !*** ./apps/zinfurn-api/src/components/notification/notification.module.ts ***!
@@ -3449,14 +3774,20 @@ let RepairPropertyService = class RepairPropertyService {
             _id: repairId,
             repairPropertyStatus: repairProperty_enum_1.RepairPropertyStatus.ACTIVE,
         };
-        const targetProperty = await this.repairPropertyModel.findById(search).lean().exec();
+        const targetProperty = await this.repairPropertyModel
+            .findOne(search)
+            .lean()
+            .exec();
         if (!targetProperty)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         if (memberId) {
             const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: view_enum_1.ViewGroup.REPAIR_PROPERTY };
+            console.log("View input:", viewInput);
             const newView = await this.viewService.recordView(viewInput);
+            console.log("New view created:", newView);
             if (newView) {
-                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });
+                console.log("Updating stats...");
+                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairPropertyViews', modifier: 1 });
                 targetProperty.repairPropertyViews++;
             }
             const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: like_enum_1.LikeGroup.REPAIR_PROPERTY };
@@ -3774,7 +4105,6 @@ let ViewService = class ViewService {
             },
         ])
             .exec();
-        console.log("=======>", data);
         const result = { list: [], metaCounter: data[0].metaCounter };
         result.list = data[0].list.map((ele) => ele.visitedRepairProperty);
         return result;
@@ -4417,7 +4747,7 @@ __decorate([
 ], CommentInput.prototype, "commentGroup", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.Length)(1, 100),
+    (0, class_validator_1.Length)(1, 1000),
     (0, graphql_1.Field)(() => String),
     __metadata("design:type", String)
 ], CommentInput.prototype, "commentContent", void 0);
@@ -5246,6 +5576,7 @@ let Member = class Member {
     memberProperties;
     memberArticles;
     memberFollowers;
+    memberEmail;
     memberFollowings;
     memberPoints;
     memberLikes;
@@ -5314,6 +5645,10 @@ __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
     __metadata("design:type", Number)
 ], Member.prototype, "memberFollowers", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Member.prototype, "memberEmail", void 0);
 __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
     __metadata("design:type", Number)
@@ -5433,6 +5768,7 @@ let MemberUpdate = class MemberUpdate {
     memberStatus;
     memberPhone;
     memberNick;
+    memberEmail;
     memberPassword;
     memberFullName;
     memberImage;
@@ -5469,6 +5805,12 @@ __decorate([
 ], MemberUpdate.prototype, "memberNick", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], MemberUpdate.prototype, "memberEmail", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Length)(5, 12),
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
@@ -5497,6 +5839,272 @@ __decorate([
 exports.MemberUpdate = MemberUpdate = __decorate([
     (0, graphql_1.InputType)()
 ], MemberUpdate);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/notice/notice.input.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/notice/notice.input.ts ***!
+  \**************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticeUpdate = exports.NoticeInput = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const notice_enum_1 = __webpack_require__(/*! ../../enums/notice.enum */ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts");
+let NoticeInput = class NoticeInput {
+    noticeCategory;
+    noticeTitle;
+    noticeContent;
+    noticeStatus;
+};
+exports.NoticeInput = NoticeInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeCategory),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeCategory),
+    __metadata("design:type", typeof (_a = typeof notice_enum_1.NoticeCategory !== "undefined" && notice_enum_1.NoticeCategory) === "function" ? _a : Object)
+], NoticeInput.prototype, "noticeCategory", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], NoticeInput.prototype, "noticeTitle", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], NoticeInput.prototype, "noticeContent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeStatus),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof notice_enum_1.NoticeStatus !== "undefined" && notice_enum_1.NoticeStatus) === "function" ? _b : Object)
+], NoticeInput.prototype, "noticeStatus", void 0);
+exports.NoticeInput = NoticeInput = __decorate([
+    (0, graphql_1.InputType)()
+], NoticeInput);
+let NoticeUpdate = class NoticeUpdate {
+    noticeTitle;
+    noticeContent;
+    noticeStatus;
+    noticeCategory;
+};
+exports.NoticeUpdate = NoticeUpdate;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], NoticeUpdate.prototype, "noticeTitle", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], NoticeUpdate.prototype, "noticeContent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeStatus),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeStatus, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof notice_enum_1.NoticeStatus !== "undefined" && notice_enum_1.NoticeStatus) === "function" ? _c : Object)
+], NoticeUpdate.prototype, "noticeStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeCategory),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeCategory, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof notice_enum_1.NoticeCategory !== "undefined" && notice_enum_1.NoticeCategory) === "function" ? _d : Object)
+], NoticeUpdate.prototype, "noticeCategory", void 0);
+exports.NoticeUpdate = NoticeUpdate = __decorate([
+    (0, graphql_1.InputType)()
+], NoticeUpdate);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/notice/notice.inquiry.ts":
+/*!****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/notice/notice.inquiry.ts ***!
+  \****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AllNoticesInquiry = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const notice_enum_1 = __webpack_require__(/*! ../../enums/notice.enum */ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts");
+let AllNoticesInquiry = class AllNoticesInquiry {
+    page = 1;
+    limit = 10;
+    noticeCategory;
+    noticeStatus;
+    search;
+};
+exports.AllNoticesInquiry = AllNoticesInquiry;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], AllNoticesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], AllNoticesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeCategory),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeCategory, { nullable: true }),
+    __metadata("design:type", typeof (_a = typeof notice_enum_1.NoticeCategory !== "undefined" && notice_enum_1.NoticeCategory) === "function" ? _a : Object)
+], AllNoticesInquiry.prototype, "noticeCategory", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(notice_enum_1.NoticeStatus),
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof notice_enum_1.NoticeStatus !== "undefined" && notice_enum_1.NoticeStatus) === "function" ? _b : Object)
+], AllNoticesInquiry.prototype, "noticeStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AllNoticesInquiry.prototype, "search", void 0);
+exports.AllNoticesInquiry = AllNoticesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], AllNoticesInquiry);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/notice/notice.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/notice/notice.ts ***!
+  \********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticesMeta = exports.Notices = exports.Notice = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const notice_enum_1 = __webpack_require__(/*! ../../enums/notice.enum */ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts");
+let Notice = class Notice {
+    _id;
+    noticeCategory;
+    noticeStatus;
+    noticeTitle;
+    noticeContent;
+    memberId;
+    createdAt;
+    updatedAt;
+};
+exports.Notice = Notice;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], Notice.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeCategory),
+    __metadata("design:type", typeof (_b = typeof notice_enum_1.NoticeCategory !== "undefined" && notice_enum_1.NoticeCategory) === "function" ? _b : Object)
+], Notice.prototype, "noticeCategory", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => notice_enum_1.NoticeStatus),
+    __metadata("design:type", typeof (_c = typeof notice_enum_1.NoticeStatus !== "undefined" && notice_enum_1.NoticeStatus) === "function" ? _c : Object)
+], Notice.prototype, "noticeStatus", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], Notice.prototype, "noticeTitle", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], Notice.prototype, "noticeContent", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_d = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _d : Object)
+], Notice.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+], Notice.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], Notice.prototype, "updatedAt", void 0);
+exports.Notice = Notice = __decorate([
+    (0, graphql_1.ObjectType)()
+], Notice);
+let Notices = class Notices {
+    list;
+    metaCounter;
+};
+exports.Notices = Notices;
+__decorate([
+    (0, graphql_1.Field)(() => [Notice]),
+    __metadata("design:type", Array)
+], Notices.prototype, "list", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [NoticesMeta], { nullable: true }),
+    __metadata("design:type", Array)
+], Notices.prototype, "metaCounter", void 0);
+exports.Notices = Notices = __decorate([
+    (0, graphql_1.ObjectType)()
+], Notices);
+let NoticesMeta = class NoticesMeta {
+    _id;
+    count;
+};
+exports.NoticesMeta = NoticesMeta;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], NoticesMeta.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], NoticesMeta.prototype, "count", void 0);
+exports.NoticesMeta = NoticesMeta = __decorate([
+    (0, graphql_1.ObjectType)()
+], NoticesMeta);
 
 
 /***/ }),
@@ -6925,6 +7533,38 @@ var MemberAuthType;
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/notice.enum.ts ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NoticeStatus = exports.NoticeCategory = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+var NoticeCategory;
+(function (NoticeCategory) {
+    NoticeCategory["FAQ"] = "FAQ";
+    NoticeCategory["TERMS"] = "TERMS";
+    NoticeCategory["NOTICE"] = "NOTICE";
+})(NoticeCategory || (exports.NoticeCategory = NoticeCategory = {}));
+(0, graphql_1.registerEnumType)(NoticeCategory, {
+    name: 'NoticeCategory',
+});
+var NoticeStatus;
+(function (NoticeStatus) {
+    NoticeStatus["HOLD"] = "HOLD";
+    NoticeStatus["ACTIVE"] = "ACTIVE";
+    NoticeStatus["DELETE"] = "DELETE";
+})(NoticeStatus || (exports.NoticeStatus = NoticeStatus = {}));
+(0, graphql_1.registerEnumType)(NoticeStatus, {
+    name: 'NoticeStatus',
+});
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/libs/enums/notification.enum.ts":
 /*!**************************************************************!*\
   !*** ./apps/zinfurn-api/src/libs/enums/notification.enum.ts ***!
@@ -7412,6 +8052,46 @@ const MemberSchema = new mongoose_1.Schema({
     },
 }, { timestamps: true, collection: 'members' });
 exports["default"] = MemberSchema;
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/schemas/Notice.model.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Notice.model.ts ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const notice_enum_1 = __webpack_require__(/*! ../libs/enums/notice.enum */ "./apps/zinfurn-api/src/libs/enums/notice.enum.ts");
+const NoticeSchema = new mongoose_1.Schema({
+    noticeCategory: {
+        type: String,
+        enum: notice_enum_1.NoticeCategory,
+        required: true,
+    },
+    noticeStatus: {
+        type: String,
+        enum: notice_enum_1.NoticeStatus,
+        default: notice_enum_1.NoticeStatus.ACTIVE,
+    },
+    noticeTitle: {
+        type: String,
+        required: true,
+    },
+    noticeContent: {
+        type: String,
+        required: true,
+    },
+    memberId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Member',
+    },
+}, { timestamps: true, collection: 'notices' });
+exports["default"] = NoticeSchema;
 
 
 /***/ }),
@@ -8076,6 +8756,16 @@ module.exports = require("class-validator");
 /***/ ((module) => {
 
 module.exports = require("express");
+
+/***/ }),
+
+/***/ "graphql":
+/*!**************************!*\
+  !*** external "graphql" ***!
+  \**************************/
+/***/ ((module) => {
+
+module.exports = require("graphql");
 
 /***/ }),
 

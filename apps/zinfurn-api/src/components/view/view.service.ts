@@ -59,12 +59,14 @@ export class ViewService {
                 },
             ])
             .exec();
-    
+            
+
         const result: Properties = { list: [], metaCounter: data[0].metaCounter };
         result.list = data[0].list.map((ele) => ele.visitedProperty);
     
         return result;
     }
+
 
     public async getVisitedRepairProperties(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
         const { page, limit } = input;
@@ -96,7 +98,6 @@ export class ViewService {
                 },
             ])
             .exec();
-            console.log("=======>", data)
         const result: RepairProperties = { list: [], metaCounter: data[0].metaCounter };
         result.list = data[0].list.map((ele) => ele.visitedRepairProperty);
     

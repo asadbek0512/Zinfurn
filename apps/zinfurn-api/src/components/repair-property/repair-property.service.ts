@@ -40,33 +40,41 @@ export class RepairPropertyService {
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }
-
     public async getRepairProperty(memberId: ObjectId, repairId: ObjectId): Promise<RepairProperty> {
+        // findById o'rniga findOne ishlatish kerak
         const search: T = {
             _id: repairId,
             repairPropertyStatus: RepairPropertyStatus.ACTIVE,
         };
-
-        const targetProperty: RepairProperty | null = await this.repairPropertyModel.findById(search).lean().exec();
-
+    
+        const targetProperty: RepairProperty | null = await this.repairPropertyModel
+            .findOne(search) // findById o'rniga findOne
+            .lean()
+            .exec();
+    
         if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
+    
         if (memberId) {
             const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIR_PROPERTY };
+            console.log("View input:", viewInput); // Debug uchun
+            
             const newView = await this.viewService.recordView(viewInput);
+            console.log("New view created:", newView); // Debug uchun
+            
             if (newView) {
-                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairViews', modifier: 1 });
+                console.log("Updating stats..."); // Debug uchun
+                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairPropertyViews', modifier: 1 });
                 targetProperty.repairPropertyViews++;
             }
-            // melicked
+            
+            // meLiked
             const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: LikeGroup.REPAIR_PROPERTY };
-            targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput)
+            targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput);
         }
-
-
+    
         targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
-        console.log("=====> ", targetProperty)
-
+        console.log("=====> ", targetProperty);
+    
         return targetProperty;
     }
 

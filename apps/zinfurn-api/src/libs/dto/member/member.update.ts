@@ -27,6 +27,11 @@ export class MemberUpdate {
     memberNick?: string;
 
     @IsOptional()
+    @IsEmail()
+    @Field(() => String, { nullable: true })
+    memberEmail?: string;
+
+    @IsOptional()
     @Length(5, 12)
     @Field(() => String, { nullable: true })
     memberPassword?: string;
