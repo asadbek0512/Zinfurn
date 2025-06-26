@@ -5,7 +5,7 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "zinfurn-api/tsconfig.app.json"
+    "tsConfigPath": "apps/zinfurn-api/tsconfig.app.json"
   },
   "monorepo": true,
   "root": "apps/zinfurn-api",
