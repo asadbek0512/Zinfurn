@@ -24,7 +24,7 @@ const MemberSchema = new Schema(
         memberPhone: {
             type: String,
             index: { unique: true, sparse: true },
-            required: true,
+            required: false,
         },
 
         memberNick: {
@@ -41,7 +41,7 @@ const MemberSchema = new Schema(
         memberPassword: {
             type: String,
             select: false,
-            required: true,
+            required: false,
         },
 
         memberFullName: {
