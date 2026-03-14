@@ -3128,7 +3128,7 @@ let AuthController = class AuthController {
     async googleAuthCallback(req, res) {
         const user = req.user;
         const result = await this.authService.googleLogin(user);
-        res.redirect(`http://localhost:3000/?token=${result.token}`);
+        res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
     }
 };
 exports.AuthController = AuthController;

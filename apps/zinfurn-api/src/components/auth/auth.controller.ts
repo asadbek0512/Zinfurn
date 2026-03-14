@@ -22,5 +22,6 @@ export class AuthController {
     
     // Frontendga JWT bilan yo'naltirish
     res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
+
   }
 }
