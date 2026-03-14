@@ -21,6 +21,6 @@ export class AuthController {
     const result = await this.authService.googleLogin(user);
     
     // Frontendga JWT bilan yo'naltirish
-    res.redirect(`http://localhost:3000/?token=${result.token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
   }
 }
