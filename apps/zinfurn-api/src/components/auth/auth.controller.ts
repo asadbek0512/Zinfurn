@@ -10,16 +10,19 @@ export class AuthController {
     private readonly telegramStrategy: TelegramStrategy,
   ) {}
 
+  // Google login
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {}
 
+  // Google callback
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: any, @Res() res: any) {
     const user = req.user;
     const result = await this.authService.googleLogin(user);
-    res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/?token=${result.token}`);
   }
 
   // Telegram login
@@ -31,5 +34,37 @@ export class AuthController {
     }
     const result = await this.authService.telegramLogin(telegramData);
     return res.json({ token: result.token });
+  }
+
+  // Mavjud akkauntga Telegram bog'lash
+  @Post('link/telegram')
+  async linkTelegram(@Body() body: any, @Res() res: any) {
+    const { memberId, ...telegramData } = body;
+    const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
+    if (!isValid) {
+      return res.status(401).json({ message: 'Invalid Telegram auth data' });
+    }
+    const result = await this.authService.linkTelegram(memberId, telegramData);
+    return res.json({ token: result.token });
+  }
+
+  // Mavjud akkauntga Google bog'lash
+  @Get('link/google')
+  @UseGuards(AuthGuard('google'))
+  async linkGoogle(@Req() req: any, @Res() res: any) {
+    const { memberId } = req.query;
+    const result = await this.authService.linkGoogle(memberId, req.user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+  }
+
+  // Google link callback
+  @Get('link/google/callback')
+  @UseGuards(AuthGuard('google'))
+  async linkGoogleCallback(@Req() req: any, @Res() res: any) {
+    const memberId = req.query.state;
+    const result = await this.authService.linkGoogle(memberId, req.user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
   }
 }

@@ -915,27 +915,36 @@ let AuthService = class AuthService {
         return member;
     }
     async googleLogin(googleUser) {
-        const { email, firstName, lastName, picture } = googleUser;
-        let member = await this.memberModel.findOne({ memberEmail: email }).exec();
-        if (!member) {
-            member = await this.memberModel.create({
-                memberNick: email.split('@')[0] + '_' + Date.now(),
-                memberEmail: email,
-                memberFullName: `${firstName} ${lastName}`,
-                memberImage: picture,
-                memberAuthType: member_enum_1.MemberAuthType.GOOGLE,
-                memberStatus: member_enum_1.MemberStatus.ACTIVE,
-                memberType: member_enum_1.MemberType.USER,
-            });
+        const { email, firstName, lastName, picture, sub } = googleUser;
+        let member = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
+        if (member) {
+            const token = await this.createToken(member);
+            return { token };
         }
+        member = await this.memberModel.findOne({ memberEmail: email }).exec();
+        if (member) {
+            member = await this.memberModel
+                .findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
+                .exec();
+            const token = await this.createToken(member);
+            return { token };
+        }
+        member = await this.memberModel.create({
+            memberNick: email.split('@')[0] + '_' + Date.now(),
+            memberEmail: email,
+            memberFullName: `${firstName} ${lastName}`,
+            memberImage: picture,
+            memberAuthType: member_enum_1.MemberAuthType.GOOGLE,
+            memberStatus: member_enum_1.MemberStatus.ACTIVE,
+            memberType: member_enum_1.MemberType.USER,
+            memberGoogleId: sub,
+        });
         const token = await this.createToken(member);
         return { token };
     }
     async telegramLogin(telegramUser) {
         const { id, first_name, last_name, username, photo_url } = telegramUser;
-        let member = await this.memberModel
-            .findOne({ memberTelegramId: String(id) })
-            .exec();
+        let member = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
         if (!member) {
             member = await this.memberModel.create({
                 memberNick: username || `tg_${id}_${Date.now()}`,
@@ -947,6 +956,28 @@ let AuthService = class AuthService {
                 memberTelegramId: String(id),
             });
         }
+        const token = await this.createToken(member);
+        return { token };
+    }
+    async linkTelegram(memberId, telegramUser) {
+        const { id, first_name, last_name, username, photo_url } = telegramUser;
+        const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
+        if (existing)
+            throw new Error('This Telegram account is already linked to another account!');
+        const member = await this.memberModel
+            .findOneAndUpdate({ _id: memberId }, { memberTelegramId: String(id) }, { new: true })
+            .exec();
+        const token = await this.createToken(member);
+        return { token };
+    }
+    async linkGoogle(memberId, googleUser) {
+        const { email, sub } = googleUser;
+        const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
+        if (existing)
+            throw new Error('This Google account is already linked to another account!');
+        const member = await this.memberModel
+            .findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
+            .exec();
         const token = await this.createToken(member);
         return { token };
     }
@@ -2187,6 +2218,7 @@ let Member = class Member {
     memberFollowers;
     memberEmail;
     memberTelegramId;
+    memberGoogleId;
     memberFollowings;
     memberPoints;
     memberLikes;
@@ -2263,6 +2295,10 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], Member.prototype, "memberTelegramId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Member.prototype, "memberGoogleId", void 0);
 __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
     __metadata("design:type", Number)
@@ -3008,8 +3044,12 @@ const MemberSchema = new mongoose_1.Schema({
         type: String,
         index: { unique: true, sparse: true },
     },
+    memberGoogleId: {
+        type: String,
+        index: { unique: true, sparse: true },
+    },
     deletedAt: {
-        type: Date
+        type: Date,
     },
 }, { timestamps: true, collection: 'members' });
 exports["default"] = MemberSchema;
@@ -3100,8 +3140,9 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
         });
     }
     async validate(accessToken, refreshToken, profile, done) {
-        const { name, emails, photos } = profile;
+        const { name, emails, photos, id } = profile;
         const user = {
+            sub: id,
             email: emails[0].value,
             firstName: name.givenName,
             lastName: name.familyName,
@@ -3159,7 +3200,8 @@ let AuthController = class AuthController {
     async googleAuthCallback(req, res) {
         const user = req.user;
         const result = await this.authService.googleLogin(user);
-        res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        res.redirect(`${frontendUrl}/?token=${result.token}`);
     }
     async telegramAuth(telegramData, res) {
         const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
@@ -3168,6 +3210,27 @@ let AuthController = class AuthController {
         }
         const result = await this.authService.telegramLogin(telegramData);
         return res.json({ token: result.token });
+    }
+    async linkTelegram(body, res) {
+        const { memberId, ...telegramData } = body;
+        const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
+        if (!isValid) {
+            return res.status(401).json({ message: 'Invalid Telegram auth data' });
+        }
+        const result = await this.authService.linkTelegram(memberId, telegramData);
+        return res.json({ token: result.token });
+    }
+    async linkGoogle(req, res) {
+        const { memberId } = req.query;
+        const result = await this.authService.linkGoogle(memberId, req.user);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+    }
+    async linkGoogleCallback(req, res) {
+        const memberId = req.query.state;
+        const result = await this.authService.linkGoogle(memberId, req.user);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
     }
 };
 exports.AuthController = AuthController;
@@ -3195,6 +3258,32 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "telegramAuth", null);
+__decorate([
+    (0, common_1.Post)('link/telegram'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "linkTelegram", null);
+__decorate([
+    (0, common_1.Get)('link/google'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "linkGoogle", null);
+__decorate([
+    (0, common_1.Get)('link/google/callback'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "linkGoogleCallback", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object, typeof (_b = typeof telegram_strategy_1.TelegramStrategy !== "undefined" && telegram_strategy_1.TelegramStrategy) === "function" ? _b : Object])

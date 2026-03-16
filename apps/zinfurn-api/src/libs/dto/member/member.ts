@@ -53,6 +53,8 @@ export class Member {
 
 	@Field(() => String, { nullable: true })
 	memberTelegramId?: string;
+	@Field(() => String, { nullable: true })
+	memberGoogleId?: string;
 
 	@Field(() => Int)
 	memberFollowings: number;

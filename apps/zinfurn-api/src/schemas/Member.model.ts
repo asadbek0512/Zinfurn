@@ -2,129 +2,134 @@ import { Schema } from 'mongoose';
 import { MemberAuthType, MemberStatus, MemberType } from '../libs/enums/member.enum';
 
 const MemberSchema = new Schema(
-    {
-        memberType: {
-            type: String,
-            enum: Object.values(MemberType),
-            default: MemberType.USER,
-        },
+	{
+		memberType: {
+			type: String,
+			enum: Object.values(MemberType),
+			default: MemberType.USER,
+		},
 
-        memberStatus: {
-            type: String,
-            enum: Object.values(MemberStatus),
-            default: MemberStatus.ACTIVE,
-        },
+		memberStatus: {
+			type: String,
+			enum: Object.values(MemberStatus),
+			default: MemberStatus.ACTIVE,
+		},
 
-        memberAuthType: {
-            type: String,
-            enum: Object.values(MemberAuthType),
-            default: MemberAuthType.PHONE,
-        },
+		memberAuthType: {
+			type: String,
+			enum: Object.values(MemberAuthType),
+			default: MemberAuthType.PHONE,
+		},
 
-        memberPhone: {
-            type: String,
-            index: { unique: true, sparse: true },
-            required: false,
-        },
+		memberPhone: {
+			type: String,
+			index: { unique: true, sparse: true },
+			required: false,
+		},
 
-        memberNick: {
-            type: String,
-            index: { unique: true, sparse: true },
-            required: true,
-        },
+		memberNick: {
+			type: String,
+			index: { unique: true, sparse: true },
+			required: true,
+		},
 
-        memberEmail: {
-            type: String,
-            index: { unique: true, sparse: true },
-          },
+		memberEmail: {
+			type: String,
+			index: { unique: true, sparse: true },
+		},
 
-        memberPassword: {
-            type: String,
-            select: false,
-            required: false,
-        },
+		memberPassword: {
+			type: String,
+			select: false,
+			required: false,
+		},
 
-        memberFullName: {
-            type: String,
-        },
+		memberFullName: {
+			type: String,
+		},
 
-        memberImage: {
-            type: String,
-            default: '',
-        },
+		memberImage: {
+			type: String,
+			default: '',
+		},
 
-        memberAddress: {
-            type: String,
-        },
+		memberAddress: {
+			type: String,
+		},
 
-        memberDesc: {
-            type: String,
-        },
+		memberDesc: {
+			type: String,
+		},
 
-        memberProperties: {
-            type: Number,
-            default: 0,
-        },
+		memberProperties: {
+			type: Number,
+			default: 0,
+		},
 
-        memberArticles: {
-            type: Number,
-            default: 0,
-        },
+		memberArticles: {
+			type: Number,
+			default: 0,
+		},
 
-        memberFollowers: {
-            type: Number,
-            default: 0,
-        },
+		memberFollowers: {
+			type: Number,
+			default: 0,
+		},
 
-        memberFollowings: {
-            type: Number,
-            default: 0,
-        },
+		memberFollowings: {
+			type: Number,
+			default: 0,
+		},
 
-        memberPoints: {
-            type: Number,
-            default: 0,
-        },
+		memberPoints: {
+			type: Number,
+			default: 0,
+		},
 
-        memberLikes: {
-            type: Number,
-            default: 0,
-        },
+		memberLikes: {
+			type: Number,
+			default: 0,
+		},
 
-        memberViews: {
-            type: Number,
-            default: 0,
-        },
+		memberViews: {
+			type: Number,
+			default: 0,
+		},
 
-        memberComments: {
-            type: Number,
-            default: 0,
-        },
+		memberComments: {
+			type: Number,
+			default: 0,
+		},
 
-        memberRank: {
-            type: Number,
-            default: 0,
-        },
+		memberRank: {
+			type: Number,
+			default: 0,
+		},
 
-        memberWarnings: {
-            type: Number,
-            default: 0,
-        },
+		memberWarnings: {
+			type: Number,
+			default: 0,
+		},
 
-        memberBlocks: {
-            type: Number,
-            default: 0,
-        },
-        memberTelegramId: {
-            type: String,
-            index: { unique: true, sparse: true },
-          },
+		memberBlocks: {
+			type: Number,
+			default: 0,
+		},
+		memberTelegramId: {
+			type: String,
+			index: { unique: true, sparse: true },
+		},
 
-        deletedAt: {
-            type: Date
-        },
-    },
-    { timestamps: true, collection: 'members' }
+		memberGoogleId: {
+			type: String,
+			index: { unique: true, sparse: true },
+		},
+
+		deletedAt: {
+			type: Date,
+		},
+	},
+	{ timestamps: true, collection: 'members' },
 );
 
 export default MemberSchema;
