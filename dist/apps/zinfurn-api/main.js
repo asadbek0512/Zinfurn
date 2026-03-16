@@ -28,8 +28,8 @@ const graphql_1 = __webpack_require__(7);
 const apollo_1 = __webpack_require__(8);
 const app_resolver_1 = __webpack_require__(9);
 const components_module_1 = __webpack_require__(10);
-const database_module_1 = __webpack_require__(109);
-const socket_module_1 = __webpack_require__(61);
+const database_module_1 = __webpack_require__(111);
+const socket_module_1 = __webpack_require__(63);
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -199,16 +199,16 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ComponentsModule = void 0;
 const common_1 = __webpack_require__(3);
 const member_module_1 = __webpack_require__(11);
-const property_module_1 = __webpack_require__(67);
+const property_module_1 = __webpack_require__(69);
 const auth_module_1 = __webpack_require__(49);
-const board_article_module_1 = __webpack_require__(74);
-const comment_module_1 = __webpack_require__(80);
-const follow_module_1 = __webpack_require__(96);
-const like_module_1 = __webpack_require__(57);
-const view_module_1 = __webpack_require__(55);
-const repair_property_module_1 = __webpack_require__(90);
-const notification_module_1 = __webpack_require__(59);
-const notice_module_1 = __webpack_require__(100);
+const board_article_module_1 = __webpack_require__(76);
+const comment_module_1 = __webpack_require__(82);
+const follow_module_1 = __webpack_require__(98);
+const like_module_1 = __webpack_require__(59);
+const view_module_1 = __webpack_require__(57);
+const repair_property_module_1 = __webpack_require__(92);
+const notification_module_1 = __webpack_require__(61);
+const notice_module_1 = __webpack_require__(102);
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -250,9 +250,9 @@ const member_service_1 = __webpack_require__(13);
 const mongoose_1 = __webpack_require__(14);
 const Member_model_1 = __webpack_require__(48);
 const auth_module_1 = __webpack_require__(49);
-const view_module_1 = __webpack_require__(55);
-const like_module_1 = __webpack_require__(57);
-const Follow_model_1 = __webpack_require__(66);
+const view_module_1 = __webpack_require__(57);
+const like_module_1 = __webpack_require__(59);
+const Follow_model_1 = __webpack_require__(68);
 let MemberModule = class MemberModule {
 };
 exports.MemberModule = MemberModule;
@@ -926,6 +926,25 @@ let AuthService = class AuthService {
                 memberAuthType: member_enum_1.MemberAuthType.GOOGLE,
                 memberStatus: member_enum_1.MemberStatus.ACTIVE,
                 memberType: member_enum_1.MemberType.USER,
+            });
+        }
+        const token = await this.createToken(member);
+        return { token };
+    }
+    async telegramLogin(telegramUser) {
+        const { id, first_name, last_name, username, photo_url } = telegramUser;
+        let member = await this.memberModel
+            .findOne({ memberTelegramId: String(id) })
+            .exec();
+        if (!member) {
+            member = await this.memberModel.create({
+                memberNick: username || `tg_${id}_${Date.now()}`,
+                memberFullName: `${first_name} ${last_name || ''}`.trim(),
+                memberImage: photo_url || '',
+                memberAuthType: member_enum_1.MemberAuthType.TELEGRAM,
+                memberStatus: member_enum_1.MemberStatus.ACTIVE,
+                memberType: member_enum_1.MemberType.USER,
+                memberTelegramId: String(id),
             });
         }
         const token = await this.createToken(member);
@@ -2167,6 +2186,7 @@ let Member = class Member {
     memberArticles;
     memberFollowers;
     memberEmail;
+    memberTelegramId;
     memberFollowings;
     memberPoints;
     memberLikes;
@@ -2239,6 +2259,10 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], Member.prototype, "memberEmail", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Member.prototype, "memberTelegramId", void 0);
 __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
     __metadata("design:type", Number)
@@ -2980,6 +3004,10 @@ const MemberSchema = new mongoose_1.Schema({
         type: Number,
         default: 0,
     },
+    memberTelegramId: {
+        type: String,
+        index: { unique: true, sparse: true },
+    },
     deletedAt: {
         type: Date
     },
@@ -3008,6 +3036,7 @@ const passport_1 = __webpack_require__(51);
 const google_strategy_1 = __webpack_require__(52);
 const auth_controller_1 = __webpack_require__(54);
 const mongoose_1 = __webpack_require__(14);
+const telegram_strategy_1 = __webpack_require__(55);
 const Member_model_1 = __webpack_require__(48);
 let AuthModule = class AuthModule {
 };
@@ -3023,7 +3052,7 @@ exports.AuthModule = AuthModule = __decorate([
                 signOptions: { expiresIn: '30d' },
             }),
         ],
-        providers: [auth_service_1.AuthService, google_strategy_1.GoogleStrategy],
+        providers: [auth_service_1.AuthService, google_strategy_1.GoogleStrategy, telegram_strategy_1.TelegramStrategy],
         controllers: [auth_controller_1.AuthController],
         exports: [auth_service_1.AuthService],
     })
@@ -3112,23 +3141,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthController = void 0;
 const common_1 = __webpack_require__(3);
 const passport_1 = __webpack_require__(51);
 const auth_service_1 = __webpack_require__(18);
+const telegram_strategy_1 = __webpack_require__(55);
 let AuthController = class AuthController {
     authService;
-    constructor(authService) {
+    telegramStrategy;
+    constructor(authService, telegramStrategy) {
         this.authService = authService;
+        this.telegramStrategy = telegramStrategy;
     }
-    async googleAuth() {
-    }
+    async googleAuth() { }
     async googleAuthCallback(req, res) {
         const user = req.user;
         const result = await this.authService.googleLogin(user);
         res.redirect(`${process.env.FRONTEND_URL}/?token=${result.token}`);
+    }
+    async telegramAuth(telegramData, res) {
+        const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
+        if (!isValid) {
+            return res.status(401).json({ message: 'Invalid Telegram auth data' });
+        }
+        const result = await this.authService.telegramLogin(telegramData);
+        return res.json({ token: result.token });
     }
 };
 exports.AuthController = AuthController;
@@ -3148,9 +3187,17 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuthCallback", null);
+__decorate([
+    (0, common_1.Post)('telegram'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "telegramAuth", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object, typeof (_b = typeof telegram_strategy_1.TelegramStrategy !== "undefined" && telegram_strategy_1.TelegramStrategy) === "function" ? _b : Object])
 ], AuthController);
 
 
@@ -3165,12 +3212,89 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TelegramStrategy = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(14);
+const mongoose_2 = __webpack_require__(15);
+const member_enum_1 = __webpack_require__(16);
+const crypto = __webpack_require__(56);
+let TelegramStrategy = class TelegramStrategy {
+    memberModel;
+    constructor(memberModel) {
+        this.memberModel = memberModel;
+    }
+    verifyTelegramAuth(data) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const secretKey = crypto.createHash('sha256').update(botToken).digest();
+        const { hash, ...userData } = data;
+        const checkString = Object.keys(userData)
+            .sort()
+            .map((key) => `${key}=${userData[key]}`)
+            .join('\n');
+        const hmac = crypto
+            .createHmac('sha256', secretKey)
+            .update(checkString)
+            .digest('hex');
+        return hmac === hash;
+    }
+    async telegramLogin(telegramUser) {
+        const { id, first_name, last_name, username, photo_url } = telegramUser;
+        let member = await this.memberModel
+            .findOne({ memberTelegramId: String(id) })
+            .exec();
+        if (!member) {
+            member = await this.memberModel.create({
+                memberNick: username || `tg_${id}`,
+                memberFullName: `${first_name} ${last_name || ''}`.trim(),
+                memberImage: photo_url || '',
+                memberAuthType: member_enum_1.MemberAuthType.TELEGRAM,
+                memberStatus: member_enum_1.MemberStatus.ACTIVE,
+                memberType: member_enum_1.MemberType.USER,
+                memberTelegramId: String(id),
+            });
+        }
+        return member;
+    }
+};
+exports.TelegramStrategy = TelegramStrategy;
+exports.TelegramStrategy = TelegramStrategy = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Member')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], TelegramStrategy);
+
+
+/***/ }),
+/* 56 */
+/***/ ((module) => {
+
+module.exports = require("crypto");
+
+/***/ }),
+/* 57 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ViewModule = void 0;
 const common_1 = __webpack_require__(3);
 const view_service_1 = __webpack_require__(25);
 const mongoose_1 = __webpack_require__(14);
-const View_model_1 = __webpack_require__(56);
+const View_model_1 = __webpack_require__(58);
 let ViewModule = class ViewModule {
 };
 exports.ViewModule = ViewModule;
@@ -3184,7 +3308,7 @@ exports.ViewModule = ViewModule = __decorate([
 
 
 /***/ }),
-/* 56 */
+/* 58 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3212,7 +3336,7 @@ exports["default"] = ViewSchema;
 
 
 /***/ }),
-/* 57 */
+/* 59 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3227,11 +3351,11 @@ exports.LikeModule = void 0;
 const common_1 = __webpack_require__(3);
 const like_service_1 = __webpack_require__(28);
 const mongoose_1 = __webpack_require__(14);
-const Like_model_1 = __webpack_require__(58);
-const notification_module_1 = __webpack_require__(59);
-const BoardArticle_model_1 = __webpack_require__(62);
+const Like_model_1 = __webpack_require__(60);
+const notification_module_1 = __webpack_require__(61);
+const BoardArticle_model_1 = __webpack_require__(64);
 const Member_model_1 = __webpack_require__(48);
-const Property_model_1 = __webpack_require__(64);
+const Property_model_1 = __webpack_require__(66);
 let LikeModule = class LikeModule {
 };
 exports.LikeModule = LikeModule;
@@ -3253,7 +3377,7 @@ exports.LikeModule = LikeModule = __decorate([
 
 
 /***/ }),
-/* 58 */
+/* 60 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3281,7 +3405,7 @@ exports["default"] = LikeSchema;
 
 
 /***/ }),
-/* 59 */
+/* 61 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3295,9 +3419,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationModule = void 0;
 const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(14);
-const Notification_model_1 = __webpack_require__(60);
+const Notification_model_1 = __webpack_require__(62);
 const notification_service_1 = __webpack_require__(29);
-const socket_module_1 = __webpack_require__(61);
+const socket_module_1 = __webpack_require__(63);
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
@@ -3314,7 +3438,7 @@ exports.NotificationModule = NotificationModule = __decorate([
 
 
 /***/ }),
-/* 60 */
+/* 62 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3367,7 +3491,7 @@ exports["default"] = NotificationSchema;
 
 
 /***/ }),
-/* 61 */
+/* 63 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3382,7 +3506,7 @@ exports.SocketModule = void 0;
 const common_1 = __webpack_require__(3);
 const socket_gateway_1 = __webpack_require__(31);
 const auth_module_1 = __webpack_require__(49);
-const notification_module_1 = __webpack_require__(59);
+const notification_module_1 = __webpack_require__(61);
 let SocketModule = class SocketModule {
 };
 exports.SocketModule = SocketModule;
@@ -3396,13 +3520,13 @@ exports.SocketModule = SocketModule = __decorate([
 
 
 /***/ }),
-/* 62 */
+/* 64 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(15);
-const board_article_enum_1 = __webpack_require__(63);
+const board_article_enum_1 = __webpack_require__(65);
 const BoardArticleSchema = new mongoose_1.Schema({
     articleCategory: {
         type: String,
@@ -3447,7 +3571,7 @@ exports["default"] = BoardArticleSchema;
 
 
 /***/ }),
-/* 63 */
+/* 65 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3475,13 +3599,13 @@ var BoardArticleStatus;
 
 
 /***/ }),
-/* 64 */
+/* 66 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(15);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 const PropertySchema = new mongoose_1.Schema({
     propertyType: {
         type: String,
@@ -3597,7 +3721,7 @@ exports["default"] = PropertySchema;
 
 
 /***/ }),
-/* 65 */
+/* 67 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3673,7 +3797,7 @@ var PropertyCondition;
 
 
 /***/ }),
-/* 66 */
+/* 68 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -3694,7 +3818,7 @@ exports["default"] = FollowSchema;
 
 
 /***/ }),
-/* 67 */
+/* 69 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3707,14 +3831,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyModule = void 0;
 const common_1 = __webpack_require__(3);
-const property_resolver_1 = __webpack_require__(68);
-const property_service_1 = __webpack_require__(69);
+const property_resolver_1 = __webpack_require__(70);
+const property_service_1 = __webpack_require__(71);
 const mongoose_1 = __webpack_require__(14);
-const Property_model_1 = __webpack_require__(64);
+const Property_model_1 = __webpack_require__(66);
 const auth_module_1 = __webpack_require__(49);
-const view_module_1 = __webpack_require__(55);
+const view_module_1 = __webpack_require__(57);
 const member_module_1 = __webpack_require__(11);
-const like_module_1 = __webpack_require__(57);
+const like_module_1 = __webpack_require__(59);
 let PropertyModule = class PropertyModule {
 };
 exports.PropertyModule = PropertyModule;
@@ -3739,7 +3863,7 @@ exports.PropertyModule = PropertyModule = __decorate([
 
 
 /***/ }),
-/* 68 */
+/* 70 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3759,18 +3883,18 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(7);
-const property_service_1 = __webpack_require__(69);
+const property_service_1 = __webpack_require__(71);
 const roles_decorator_1 = __webpack_require__(42);
 const member_enum_1 = __webpack_require__(16);
 const common_1 = __webpack_require__(3);
 const roles_guard_1 = __webpack_require__(43);
-const property_1 = __webpack_require__(71);
-const property_input_1 = __webpack_require__(72);
+const property_1 = __webpack_require__(73);
+const property_input_1 = __webpack_require__(74);
 const authMember_decorator_1 = __webpack_require__(41);
 const mongoose_1 = __webpack_require__(15);
 const without_guard_1 = __webpack_require__(45);
 const config_1 = __webpack_require__(21);
-const property_update_1 = __webpack_require__(73);
+const property_update_1 = __webpack_require__(75);
 const auth_guard_1 = __webpack_require__(40);
 let PropertyResolver = class PropertyResolver {
     propertyService;
@@ -3939,7 +4063,7 @@ exports.PropertyResolver = PropertyResolver = __decorate([
 
 
 /***/ }),
-/* 69 */
+/* 71 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3964,9 +4088,9 @@ const mongoose_2 = __webpack_require__(15);
 const common_enum_1 = __webpack_require__(17);
 const member_service_1 = __webpack_require__(13);
 const view_service_1 = __webpack_require__(25);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 const view_enum_1 = __webpack_require__(26);
-const moment = __webpack_require__(70);
+const moment = __webpack_require__(72);
 const config_1 = __webpack_require__(21);
 const like_enum_1 = __webpack_require__(27);
 const like_service_1 = __webpack_require__(28);
@@ -4233,13 +4357,13 @@ exports.PropertyService = PropertyService = __decorate([
 
 
 /***/ }),
-/* 70 */
+/* 72 */
 /***/ ((module) => {
 
 module.exports = require("moment");
 
 /***/ }),
-/* 71 */
+/* 73 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4257,7 +4381,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Properties = exports.Property = void 0;
 const graphql_1 = __webpack_require__(7);
 const mongoose_1 = __webpack_require__(15);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 const member_1 = __webpack_require__(37);
 const like_1 = __webpack_require__(38);
 let Property = class Property {
@@ -4450,7 +4574,7 @@ exports.Properties = Properties = __decorate([
 
 
 /***/ }),
-/* 72 */
+/* 74 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4468,7 +4592,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OrdinaryInquiry = exports.AllPropertiesInquiry = exports.AgentPropertiesInquiry = exports.PropertiesInquiry = exports.PISearch = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 const mongoose_1 = __webpack_require__(15);
 const config_1 = __webpack_require__(21);
 const common_enum_1 = __webpack_require__(17);
@@ -4884,7 +5008,7 @@ exports.OrdinaryInquiry = OrdinaryInquiry = __decorate([
 
 
 /***/ }),
-/* 73 */
+/* 75 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -4903,7 +5027,7 @@ exports.PropertyUpdate = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
 const mongoose_1 = __webpack_require__(15);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 let PropertyUpdate = class PropertyUpdate {
     _id;
     propertyType;
@@ -5043,7 +5167,7 @@ exports.PropertyUpdate = PropertyUpdate = __decorate([
 
 
 /***/ }),
-/* 74 */
+/* 76 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5056,14 +5180,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleModule = void 0;
 const common_1 = __webpack_require__(3);
-const board_article_resolver_1 = __webpack_require__(75);
-const board_article_service_1 = __webpack_require__(78);
+const board_article_resolver_1 = __webpack_require__(77);
+const board_article_service_1 = __webpack_require__(80);
 const mongoose_1 = __webpack_require__(14);
-const BoardArticle_model_1 = __webpack_require__(62);
+const BoardArticle_model_1 = __webpack_require__(64);
 const auth_module_1 = __webpack_require__(49);
 const member_module_1 = __webpack_require__(11);
-const view_module_1 = __webpack_require__(55);
-const like_module_1 = __webpack_require__(57);
+const view_module_1 = __webpack_require__(57);
+const like_module_1 = __webpack_require__(59);
 let BoardArticleModule = class BoardArticleModule {
 };
 exports.BoardArticleModule = BoardArticleModule;
@@ -5088,7 +5212,7 @@ exports.BoardArticleModule = BoardArticleModule = __decorate([
 
 
 /***/ }),
-/* 75 */
+/* 77 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5110,14 +5234,14 @@ exports.BoardArticleResolver = void 0;
 const common_1 = __webpack_require__(3);
 const graphql_1 = __webpack_require__(7);
 const auth_guard_1 = __webpack_require__(40);
-const board_article_1 = __webpack_require__(76);
-const board_article_input_1 = __webpack_require__(77);
+const board_article_1 = __webpack_require__(78);
+const board_article_input_1 = __webpack_require__(79);
 const authMember_decorator_1 = __webpack_require__(41);
 const mongoose_1 = __webpack_require__(15);
-const board_article_service_1 = __webpack_require__(78);
+const board_article_service_1 = __webpack_require__(80);
 const without_guard_1 = __webpack_require__(45);
 const config_1 = __webpack_require__(21);
-const board_article_update_1 = __webpack_require__(79);
+const board_article_update_1 = __webpack_require__(81);
 const roles_decorator_1 = __webpack_require__(42);
 const member_enum_1 = __webpack_require__(16);
 const roles_guard_1 = __webpack_require__(43);
@@ -5247,7 +5371,7 @@ exports.BoardArticleResolver = BoardArticleResolver = __decorate([
 
 
 /***/ }),
-/* 76 */
+/* 78 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5264,7 +5388,7 @@ var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticles = exports.BoardArticle = void 0;
 const graphql_1 = __webpack_require__(7);
-const board_article_enum_1 = __webpack_require__(63);
+const board_article_enum_1 = __webpack_require__(65);
 const mongoose_1 = __webpack_require__(15);
 const member_1 = __webpack_require__(37);
 const like_1 = __webpack_require__(38);
@@ -5363,7 +5487,7 @@ exports.BoardArticles = BoardArticles = __decorate([
 
 
 /***/ }),
-/* 77 */
+/* 79 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5382,7 +5506,7 @@ exports.AllBoardArticlesInquiry = exports.BoardArticlesInquiry = exports.BoardAr
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
 const mongoose_1 = __webpack_require__(15);
-const board_article_enum_1 = __webpack_require__(63);
+const board_article_enum_1 = __webpack_require__(65);
 const common_enum_1 = __webpack_require__(17);
 const config_1 = __webpack_require__(21);
 let BoardArticleInput = class BoardArticleInput {
@@ -5539,7 +5663,7 @@ exports.AllBoardArticlesInquiry = AllBoardArticlesInquiry = __decorate([
 
 
 /***/ }),
-/* 78 */
+/* 80 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5564,7 +5688,7 @@ const mongoose_2 = __webpack_require__(15);
 const member_service_1 = __webpack_require__(13);
 const view_service_1 = __webpack_require__(25);
 const common_enum_1 = __webpack_require__(17);
-const board_article_enum_1 = __webpack_require__(63);
+const board_article_enum_1 = __webpack_require__(65);
 const view_enum_1 = __webpack_require__(26);
 const config_1 = __webpack_require__(21);
 const like_service_1 = __webpack_require__(28);
@@ -5762,7 +5886,7 @@ exports.BoardArticleService = BoardArticleService = __decorate([
 
 
 /***/ }),
-/* 79 */
+/* 81 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5780,7 +5904,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleUpdate = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const board_article_enum_1 = __webpack_require__(63);
+const board_article_enum_1 = __webpack_require__(65);
 const mongoose_1 = __webpack_require__(15);
 let BoardArticleUpdate = class BoardArticleUpdate {
     _id;
@@ -5823,7 +5947,7 @@ exports.BoardArticleUpdate = BoardArticleUpdate = __decorate([
 
 
 /***/ }),
-/* 80 */
+/* 82 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5836,17 +5960,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentModule = void 0;
 const common_1 = __webpack_require__(3);
-const comment_resolver_1 = __webpack_require__(81);
+const comment_resolver_1 = __webpack_require__(83);
 const mongoose_1 = __webpack_require__(14);
-const Comment_model_1 = __webpack_require__(89);
+const Comment_model_1 = __webpack_require__(91);
 const auth_module_1 = __webpack_require__(49);
 const member_module_1 = __webpack_require__(11);
-const property_module_1 = __webpack_require__(67);
-const board_article_module_1 = __webpack_require__(74);
-const comment_service_1 = __webpack_require__(85);
+const property_module_1 = __webpack_require__(69);
+const board_article_module_1 = __webpack_require__(76);
+const comment_service_1 = __webpack_require__(87);
 const Member_model_1 = __webpack_require__(48);
-const notification_module_1 = __webpack_require__(59);
-const repair_property_module_1 = __webpack_require__(90);
+const notification_module_1 = __webpack_require__(61);
+const repair_property_module_1 = __webpack_require__(92);
 let CommentModule = class CommentModule {
 };
 exports.CommentModule = CommentModule;
@@ -5870,7 +5994,7 @@ exports.CommentModule = CommentModule = __decorate([
 
 
 /***/ }),
-/* 81 */
+/* 83 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5892,12 +6016,12 @@ exports.CommentResolver = void 0;
 const graphql_1 = __webpack_require__(7);
 const common_1 = __webpack_require__(3);
 const auth_guard_1 = __webpack_require__(40);
-const comment_1 = __webpack_require__(82);
-const comment_input_1 = __webpack_require__(84);
+const comment_1 = __webpack_require__(84);
+const comment_input_1 = __webpack_require__(86);
 const authMember_decorator_1 = __webpack_require__(41);
 const mongoose_1 = __webpack_require__(15);
-const comment_service_1 = __webpack_require__(85);
-const comment_update_1 = __webpack_require__(88);
+const comment_service_1 = __webpack_require__(87);
+const comment_update_1 = __webpack_require__(90);
 const config_1 = __webpack_require__(21);
 const without_guard_1 = __webpack_require__(45);
 const roles_decorator_1 = __webpack_require__(42);
@@ -5972,7 +6096,7 @@ exports.CommentResolver = CommentResolver = __decorate([
 
 
 /***/ }),
-/* 82 */
+/* 84 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -5990,7 +6114,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Comments = exports.Comment = void 0;
 const graphql_1 = __webpack_require__(7);
 const mongoose_1 = __webpack_require__(15);
-const comment_enum_1 = __webpack_require__(83);
+const comment_enum_1 = __webpack_require__(85);
 const member_1 = __webpack_require__(37);
 let Comment = class Comment {
     _id;
@@ -6062,7 +6186,7 @@ exports.Comments = Comments = __decorate([
 
 
 /***/ }),
-/* 83 */
+/* 85 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -6090,7 +6214,7 @@ var CommentGroup;
 
 
 /***/ }),
-/* 84 */
+/* 86 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6109,7 +6233,7 @@ exports.CommentsInquiry = exports.CommentInput = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
 const mongoose_1 = __webpack_require__(15);
-const comment_enum_1 = __webpack_require__(83);
+const comment_enum_1 = __webpack_require__(85);
 const config_1 = __webpack_require__(21);
 const common_enum_1 = __webpack_require__(17);
 let CommentInput = class CommentInput {
@@ -6191,7 +6315,7 @@ exports.CommentsInquiry = CommentsInquiry = __decorate([
 
 
 /***/ }),
-/* 85 */
+/* 87 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6214,14 +6338,14 @@ const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(14);
 const member_service_1 = __webpack_require__(13);
 const mongoose_2 = __webpack_require__(15);
-const property_service_1 = __webpack_require__(69);
+const property_service_1 = __webpack_require__(71);
 const common_enum_1 = __webpack_require__(17);
-const comment_enum_1 = __webpack_require__(83);
+const comment_enum_1 = __webpack_require__(85);
 const config_1 = __webpack_require__(21);
 const notification_service_1 = __webpack_require__(29);
 const notification_enum_1 = __webpack_require__(30);
-const board_article_service_1 = __webpack_require__(78);
-const repair_property_service_1 = __webpack_require__(86);
+const board_article_service_1 = __webpack_require__(80);
+const repair_property_service_1 = __webpack_require__(88);
 let CommentService = class CommentService {
     commentModule;
     memberService;
@@ -6391,7 +6515,7 @@ exports.CommentService = CommentService = __decorate([
 
 
 /***/ }),
-/* 86 */
+/* 88 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6419,9 +6543,9 @@ const mongoose_2 = __webpack_require__(15);
 const common_enum_1 = __webpack_require__(17);
 const view_enum_1 = __webpack_require__(26);
 const like_enum_1 = __webpack_require__(27);
-const repairProperty_enum_1 = __webpack_require__(87);
+const repairProperty_enum_1 = __webpack_require__(89);
 const config_1 = __webpack_require__(21);
-const moment = __webpack_require__(70);
+const moment = __webpack_require__(72);
 let RepairPropertyService = class RepairPropertyService {
     repairPropertyModel;
     memberService;
@@ -6643,7 +6767,7 @@ exports.RepairPropertyService = RepairPropertyService = __decorate([
 
 
 /***/ }),
-/* 87 */
+/* 89 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -6676,7 +6800,7 @@ var RepairPropertyStatus;
 
 
 /***/ }),
-/* 88 */
+/* 90 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6694,7 +6818,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommentUpdate = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const comment_enum_1 = __webpack_require__(83);
+const comment_enum_1 = __webpack_require__(85);
 const mongoose_1 = __webpack_require__(15);
 let CommentUpdate = class CommentUpdate {
     _id;
@@ -6724,13 +6848,13 @@ exports.CommentUpdate = CommentUpdate = __decorate([
 
 
 /***/ }),
-/* 89 */
+/* 91 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(15);
-const comment_enum_1 = __webpack_require__(83);
+const comment_enum_1 = __webpack_require__(85);
 const CommentSchema = new mongoose_1.Schema({
     commentStatus: {
         type: String,
@@ -6759,7 +6883,7 @@ exports["default"] = CommentSchema;
 
 
 /***/ }),
-/* 90 */
+/* 92 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6772,14 +6896,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RepairPropertyModule = void 0;
 const common_1 = __webpack_require__(3);
-const repair_property_service_1 = __webpack_require__(86);
-const repair_property_resolver_1 = __webpack_require__(91);
+const repair_property_service_1 = __webpack_require__(88);
+const repair_property_resolver_1 = __webpack_require__(93);
 const mongoose_1 = __webpack_require__(14);
-const RepairProperty_1 = __webpack_require__(95);
+const RepairProperty_1 = __webpack_require__(97);
 const auth_module_1 = __webpack_require__(49);
-const view_module_1 = __webpack_require__(55);
+const view_module_1 = __webpack_require__(57);
 const member_module_1 = __webpack_require__(11);
-const like_module_1 = __webpack_require__(57);
+const like_module_1 = __webpack_require__(59);
 let RepairPropertyModule = class RepairPropertyModule {
 };
 exports.RepairPropertyModule = RepairPropertyModule;
@@ -6804,7 +6928,7 @@ exports.RepairPropertyModule = RepairPropertyModule = __decorate([
 
 
 /***/ }),
-/* 91 */
+/* 93 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -6824,19 +6948,19 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RepairPropertyResolver = void 0;
 const graphql_1 = __webpack_require__(7);
-const repair_property_service_1 = __webpack_require__(86);
+const repair_property_service_1 = __webpack_require__(88);
 const roles_decorator_1 = __webpack_require__(42);
 const member_enum_1 = __webpack_require__(16);
 const common_1 = __webpack_require__(3);
 const roles_guard_1 = __webpack_require__(43);
-const repairProperty_1 = __webpack_require__(92);
+const repairProperty_1 = __webpack_require__(94);
 const authMember_decorator_1 = __webpack_require__(41);
 const mongoose_1 = __webpack_require__(15);
-const repairProperty_input_1 = __webpack_require__(93);
+const repairProperty_input_1 = __webpack_require__(95);
 const config_1 = __webpack_require__(21);
 const without_guard_1 = __webpack_require__(45);
 const auth_guard_1 = __webpack_require__(40);
-const repairProperty_update_1 = __webpack_require__(94);
+const repairProperty_update_1 = __webpack_require__(96);
 let RepairPropertyResolver = class RepairPropertyResolver {
     repairPropertyService;
     constructor(repairPropertyService) {
@@ -6991,7 +7115,7 @@ exports.RepairPropertyResolver = RepairPropertyResolver = __decorate([
 
 
 /***/ }),
-/* 92 */
+/* 94 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7011,7 +7135,7 @@ const graphql_1 = __webpack_require__(7);
 const mongoose_1 = __webpack_require__(15);
 const member_1 = __webpack_require__(37);
 const like_1 = __webpack_require__(38);
-const repairProperty_enum_1 = __webpack_require__(87);
+const repairProperty_enum_1 = __webpack_require__(89);
 let RepairProperty = class RepairProperty {
     _id;
     repairPropertyType;
@@ -7112,7 +7236,7 @@ exports.RepairProperties = RepairProperties = __decorate([
 
 
 /***/ }),
-/* 93 */
+/* 95 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7130,11 +7254,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AllRepairPropertiesInquiry = exports.TechnicianPropertiesInquiry = exports.RepairOrdinaryInquiry = exports.RepairPropertiesInquiry = exports.RepairPISearch = exports.RepairPropertyInput = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const property_enum_1 = __webpack_require__(65);
+const property_enum_1 = __webpack_require__(67);
 const mongoose_1 = __webpack_require__(15);
 const common_enum_1 = __webpack_require__(17);
 const config_1 = __webpack_require__(21);
-const repairProperty_enum_1 = __webpack_require__(87);
+const repairProperty_enum_1 = __webpack_require__(89);
 let RepairPropertyInput = class RepairPropertyInput {
     repairPropertyType;
     repairPropertyStatus;
@@ -7361,7 +7485,7 @@ exports.AllRepairPropertiesInquiry = AllRepairPropertiesInquiry = __decorate([
 
 
 /***/ }),
-/* 94 */
+/* 96 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7380,7 +7504,7 @@ exports.RepairPropertyUpdate = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
 const mongoose_1 = __webpack_require__(15);
-const repairProperty_enum_1 = __webpack_require__(87);
+const repairProperty_enum_1 = __webpack_require__(89);
 let RepairPropertyUpdate = class RepairPropertyUpdate {
     _id;
     repairPropertyType;
@@ -7415,13 +7539,13 @@ exports.RepairPropertyUpdate = RepairPropertyUpdate = __decorate([
 
 
 /***/ }),
-/* 95 */
+/* 97 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(15);
-const repairProperty_enum_1 = __webpack_require__(87);
+const repairProperty_enum_1 = __webpack_require__(89);
 const RepairSchema = new mongoose_1.Schema({
     repairPropertyType: {
         type: String,
@@ -7473,7 +7597,7 @@ exports["default"] = RepairSchema;
 
 
 /***/ }),
-/* 96 */
+/* 98 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7487,9 +7611,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FollowModule = void 0;
 const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(14);
-const follow_resolver_1 = __webpack_require__(97);
-const follow_service_1 = __webpack_require__(98);
-const Follow_model_1 = __webpack_require__(66);
+const follow_resolver_1 = __webpack_require__(99);
+const follow_service_1 = __webpack_require__(100);
+const Follow_model_1 = __webpack_require__(68);
 const auth_module_1 = __webpack_require__(49);
 const member_module_1 = __webpack_require__(11);
 let FollowModule = class FollowModule {
@@ -7514,7 +7638,7 @@ exports.FollowModule = FollowModule = __decorate([
 
 
 /***/ }),
-/* 97 */
+/* 99 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7534,7 +7658,7 @@ var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FollowResolver = void 0;
 const graphql_1 = __webpack_require__(7);
-const follow_service_1 = __webpack_require__(98);
+const follow_service_1 = __webpack_require__(100);
 const auth_guard_1 = __webpack_require__(40);
 const common_1 = __webpack_require__(3);
 const follow_1 = __webpack_require__(39);
@@ -7542,7 +7666,7 @@ const authMember_decorator_1 = __webpack_require__(41);
 const mongoose_1 = __webpack_require__(15);
 const config_1 = __webpack_require__(21);
 const without_guard_1 = __webpack_require__(45);
-const follow_input_1 = __webpack_require__(99);
+const follow_input_1 = __webpack_require__(101);
 let FollowResolver = class FollowResolver {
     followService;
     constructor(followService) {
@@ -7615,7 +7739,7 @@ exports.FollowResolver = FollowResolver = __decorate([
 
 
 /***/ }),
-/* 98 */
+/* 100 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7759,7 +7883,7 @@ exports.FollowService = FollowService = __decorate([
 
 
 /***/ }),
-/* 99 */
+/* 101 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7824,7 +7948,7 @@ exports.FollowInquiry = FollowInquiry = __decorate([
 
 
 /***/ }),
-/* 100 */
+/* 102 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7838,10 +7962,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NoticeModule = void 0;
 const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(14);
-const notice_resolver_1 = __webpack_require__(101);
-const notice_service_1 = __webpack_require__(102);
+const notice_resolver_1 = __webpack_require__(103);
+const notice_service_1 = __webpack_require__(104);
 const auth_module_1 = __webpack_require__(49);
-const Notice_model_1 = __webpack_require__(108);
+const Notice_model_1 = __webpack_require__(110);
 let NoticeModule = class NoticeModule {
 };
 exports.NoticeModule = NoticeModule;
@@ -7858,7 +7982,7 @@ exports.NoticeModule = NoticeModule = __decorate([
 
 
 /***/ }),
-/* 101 */
+/* 103 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7880,16 +8004,16 @@ exports.NoticeResolver = void 0;
 const graphql_1 = __webpack_require__(7);
 const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(15);
-const notice_service_1 = __webpack_require__(102);
-const notice_1 = __webpack_require__(104);
-const notice_input_1 = __webpack_require__(105);
-const notice_inquiry_1 = __webpack_require__(106);
+const notice_service_1 = __webpack_require__(104);
+const notice_1 = __webpack_require__(106);
+const notice_input_1 = __webpack_require__(107);
+const notice_inquiry_1 = __webpack_require__(108);
 const authMember_decorator_1 = __webpack_require__(41);
 const auth_guard_1 = __webpack_require__(40);
 const roles_guard_1 = __webpack_require__(43);
 const roles_decorator_1 = __webpack_require__(42);
 const member_enum_1 = __webpack_require__(16);
-const graphql_2 = __webpack_require__(107);
+const graphql_2 = __webpack_require__(109);
 const without_guard_1 = __webpack_require__(45);
 const config_1 = __webpack_require__(21);
 let NoticeResolver = class NoticeResolver {
@@ -7976,7 +8100,7 @@ exports.NoticeResolver = NoticeResolver = __decorate([
 
 
 /***/ }),
-/* 102 */
+/* 104 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -7998,7 +8122,7 @@ exports.NoticeService = void 0;
 const common_1 = __webpack_require__(3);
 const mongoose_1 = __webpack_require__(14);
 const mongoose_2 = __webpack_require__(15);
-const notice_enum_1 = __webpack_require__(103);
+const notice_enum_1 = __webpack_require__(105);
 const common_enum_1 = __webpack_require__(17);
 let NoticeService = class NoticeService {
     noticeModel;
@@ -8138,7 +8262,7 @@ exports.NoticeService = NoticeService = __decorate([
 
 
 /***/ }),
-/* 103 */
+/* 105 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -8166,7 +8290,7 @@ var NoticeStatus;
 
 
 /***/ }),
-/* 104 */
+/* 106 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8184,7 +8308,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NoticesMeta = exports.Notices = exports.Notice = void 0;
 const graphql_1 = __webpack_require__(7);
 const mongoose_1 = __webpack_require__(15);
-const notice_enum_1 = __webpack_require__(103);
+const notice_enum_1 = __webpack_require__(105);
 let Notice = class Notice {
     _id;
     noticeCategory;
@@ -8266,7 +8390,7 @@ exports.NoticesMeta = NoticesMeta = __decorate([
 
 
 /***/ }),
-/* 105 */
+/* 107 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8284,7 +8408,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NoticeUpdate = exports.NoticeInput = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const notice_enum_1 = __webpack_require__(103);
+const notice_enum_1 = __webpack_require__(105);
 let NoticeInput = class NoticeInput {
     noticeCategory;
     noticeTitle;
@@ -8356,7 +8480,7 @@ exports.NoticeUpdate = NoticeUpdate = __decorate([
 
 
 /***/ }),
-/* 106 */
+/* 108 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8374,7 +8498,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AllNoticesInquiry = void 0;
 const graphql_1 = __webpack_require__(7);
 const class_validator_1 = __webpack_require__(36);
-const notice_enum_1 = __webpack_require__(103);
+const notice_enum_1 = __webpack_require__(105);
 let AllNoticesInquiry = class AllNoticesInquiry {
     page = 1;
     limit = 10;
@@ -8420,19 +8544,19 @@ exports.AllNoticesInquiry = AllNoticesInquiry = __decorate([
 
 
 /***/ }),
-/* 107 */
+/* 109 */
 /***/ ((module) => {
 
 module.exports = require("graphql");
 
 /***/ }),
-/* 108 */
+/* 110 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const mongoose_1 = __webpack_require__(15);
-const notice_enum_1 = __webpack_require__(103);
+const notice_enum_1 = __webpack_require__(105);
 const NoticeSchema = new mongoose_1.Schema({
     noticeCategory: {
         type: String,
@@ -8462,7 +8586,7 @@ exports["default"] = NoticeSchema;
 
 
 /***/ }),
-/* 109 */
+/* 111 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8514,7 +8638,7 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 /***/ }),
-/* 110 */
+/* 112 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8528,7 +8652,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LoggingInterceptor = void 0;
 const common_1 = __webpack_require__(3);
 const graphql_1 = __webpack_require__(7);
-const operators_1 = __webpack_require__(111);
+const operators_1 = __webpack_require__(113);
 let LoggingInterceptor = class LoggingInterceptor {
     logger = new common_1.Logger();
     intercept(context, next) {
@@ -8558,19 +8682,19 @@ exports.LoggingInterceptor = LoggingInterceptor = __decorate([
 
 
 /***/ }),
-/* 111 */
+/* 113 */
 /***/ ((module) => {
 
 module.exports = require("rxjs/operators");
 
 /***/ }),
-/* 112 */
+/* 114 */
 /***/ ((module) => {
 
 module.exports = require("express");
 
 /***/ }),
-/* 113 */
+/* 115 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/platform-ws");
@@ -8612,10 +8736,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(1);
 const app_module_1 = __webpack_require__(2);
 const common_1 = __webpack_require__(3);
-const Logging_interceptor_1 = __webpack_require__(110);
+const Logging_interceptor_1 = __webpack_require__(112);
 const graphql_upload_1 = __webpack_require__(46);
-const express = __webpack_require__(112);
-const platform_ws_1 = __webpack_require__(113);
+const express = __webpack_require__(114);
+const platform_ws_1 = __webpack_require__(115);
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.useGlobalPipes(new common_1.ValidationPipe());

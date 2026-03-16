@@ -115,6 +115,10 @@ const MemberSchema = new Schema(
             type: Number,
             default: 0,
         },
+        memberTelegramId: {
+            type: String,
+            index: { unique: true, sparse: true },
+          },
 
         deletedAt: {
             type: Date

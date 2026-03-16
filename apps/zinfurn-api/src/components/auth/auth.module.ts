@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './google.strategy';
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TelegramStrategy } from './telegram.strategy';
 import MemberSchema from '../../schemas/Member.model';
 
 @Module({
@@ -18,7 +19,7 @@ import MemberSchema from '../../schemas/Member.model';
       signOptions: { expiresIn: '30d' },
     }),
   ],
-  providers: [AuthService, GoogleStrategy],
+  providers: [AuthService, GoogleStrategy, TelegramStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

@@ -61,4 +61,29 @@ export class AuthService {
 		const token = await this.createToken(member);
 		return { token };
 	}
+
+	public async telegramLogin(telegramUser: any): Promise<{ token: string }> {
+		const { id, first_name, last_name, username, photo_url } = telegramUser;
+	
+		// DB da shu telegram id bilan user bormi tekshiramiz
+		let member = await this.memberModel
+			.findOne({ memberTelegramId: String(id) })
+			.exec();
+	
+		if (!member) {
+			// Yangi Telegram user yaratamiz
+			member = await this.memberModel.create({
+				memberNick: username || `tg_${id}_${Date.now()}`,
+				memberFullName: `${first_name} ${last_name || ''}`.trim(),
+				memberImage: photo_url || '',
+				memberAuthType: MemberAuthType.TELEGRAM,
+				memberStatus: MemberStatus.ACTIVE,
+				memberType: MemberType.USER,
+				memberTelegramId: String(id),
+			});
+		}
+	
+		const token = await this.createToken(member);
+		return { token };
+	}
 }
