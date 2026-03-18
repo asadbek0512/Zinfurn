@@ -2252,7 +2252,7 @@ __decorate([
     __metadata("design:type", typeof (_d = typeof member_enum_1.MemberAuthType !== "undefined" && member_enum_1.MemberAuthType) === "function" ? _d : Object)
 ], Member.prototype, "memberAuthType", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => String),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], Member.prototype, "memberPhone", void 0);
 __decorate([
@@ -2968,6 +2968,7 @@ const MemberSchema = new mongoose_1.Schema({
         type: String,
         index: { unique: true, sparse: true },
         required: false,
+        default: '',
     },
     memberNick: {
         type: String,

@@ -19,8 +19,8 @@ export class Member {
 	@Field(() => MemberAuthType)
 	memberAuthType: MemberAuthType;
 
-	@Field(() => String) //for graphql, js
-	memberPhone: string; //static ts type
+	@Field(() => String, { nullable: true }) //for graphql, js
+	memberPhone?: string; //static ts type
 
 	@Field(() => String)
 	memberNick: string;
