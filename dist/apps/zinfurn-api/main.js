@@ -1750,14 +1750,11 @@ let SocketGateway = class SocketGateway {
     }
     async handleConnection(client, req) {
         const authMember = await this.retrieveAuth(req);
-        if (!authMember) {
-            client.close();
-            return;
-        }
         this.summaryClient++;
         this.clientsAuthMap.set(client, authMember);
-        const clientNick = authMember.memberNick;
-        this.logger.verbose(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
+        const clientNick = authMember?.memberNick ?? 'Guest';
+        this.logger.log(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
+        console.log(`✅ Connection [${clientNick}] & total: [${this.summaryClient}]`);
         const infoMsg = {
             event: 'info',
             totalClients: this.summaryClient,
@@ -1766,7 +1763,13 @@ let SocketGateway = class SocketGateway {
         };
         this.emitMessage(infoMsg);
         client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
-        await this.handleGetNotifications(client);
+        if (authMember) {
+            setTimeout(() => {
+                this.handleGetNotifications(client).catch((err) => {
+                    this.logger.error('Error sending notifications on connection:', err);
+                });
+            }, 100);
+        }
     }
     async handleGetNotifications(client) {
         try {
@@ -1837,9 +1840,20 @@ let SocketGateway = class SocketGateway {
     }
     async handleMessage(client, payload) {
         const authMember = this.clientsAuthMap.get(client);
-        const newMessage = { event: 'message', text: payload, memberData: authMember ?? null };
+        let messageText;
+        if (typeof payload === 'string') {
+            messageText = payload;
+        }
+        else if (payload && typeof payload === 'object' && payload.data) {
+            messageText = payload.data;
+        }
+        else {
+            messageText = String(payload);
+        }
+        const newMessage = { event: 'message', text: messageText, memberData: authMember ?? null };
         const clientNick = authMember?.memberNick ?? 'Guest';
-        this.logger.verbose(`NEW MESSAGE [${clientNick}] : ${payload}`);
+        this.logger.log(`NEW MESSAGE [${clientNick}] : ${messageText}`);
+        console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`);
         this.messagesList.push(newMessage);
         if (this.messagesList.length >= 5)
             this.messagesList.splice(0, this.messagesList.length - 5);
@@ -1895,7 +1909,7 @@ __decorate([
 __decorate([
     (0, websockets_1.SubscribeMessage)('message'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_h = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _h : Object, String]),
+    __metadata("design:paramtypes", [typeof (_h = typeof WebSocket !== "undefined" && WebSocket) === "function" ? _h : Object, Object]),
     __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], SocketGateway.prototype, "handleMessage", null);
 exports.SocketGateway = SocketGateway = __decorate([

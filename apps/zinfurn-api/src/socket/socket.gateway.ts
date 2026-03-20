@@ -37,7 +37,7 @@ interface MarkReadPayload {
 export class SocketGateway implements OnGatewayInit {
 	private logger: Logger = new Logger('SocketEventsGateway');
 	private summaryClient: number = 0;
-	private clientsAuthMap = new Map<WebSocket, Member>();
+	private clientsAuthMap = new Map<WebSocket, Member | null>();
 	private messagesList: MessagePayload[] = [];
 
 	constructor(
@@ -66,16 +66,12 @@ export class SocketGateway implements OnGatewayInit {
 	public async handleConnection(client: WebSocket, req: any) {
 		const authMember = await this.retrieveAuth(req);
 
-		if (!authMember) {
-			client.close();
-			return;
-		}
-
 		this.summaryClient++;
 		this.clientsAuthMap.set(client, authMember);
 
-		const clientNick: string = authMember.memberNick;
-		this.logger.verbose(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
+		const clientNick: string = authMember?.memberNick ?? 'Guest';
+		this.logger.log(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
+		console.log(`✅ Connection [${clientNick}] & total: [${this.summaryClient}]`);
 
 		// Send connection info
 		const infoMsg: InfoPayload = {
@@ -87,7 +83,14 @@ export class SocketGateway implements OnGatewayInit {
 		this.emitMessage(infoMsg);
 		client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
 
-		await this.handleGetNotifications(client);
+		// Send notifications after connection is established (only for authenticated users)
+		if (authMember) {
+			setTimeout(() => {
+				this.handleGetNotifications(client).catch((err) => {
+					this.logger.error('Error sending notifications on connection:', err);
+				});
+			}, 100);
+		}
 	}
 
 	private async handleGetNotifications(client: WebSocket) {
@@ -182,12 +185,24 @@ export class SocketGateway implements OnGatewayInit {
 	}
 
 	@SubscribeMessage('message')
-	public async handleMessage(client: WebSocket, payload: string): Promise<void> {
+	public async handleMessage(client: WebSocket, payload: any): Promise<void> {
 		const authMember = this.clientsAuthMap.get(client);
-		const newMessage: MessagePayload = { event: 'message', text: payload, memberData: authMember ?? null };
+		
+		// Parse payload - could be string or object with 'data' field
+		let messageText: string;
+		if (typeof payload === 'string') {
+			messageText = payload;
+		} else if (payload && typeof payload === 'object' && payload.data) {
+			messageText = payload.data;
+		} else {
+			messageText = String(payload);
+		}
+
+		const newMessage: MessagePayload = { event: 'message', text: messageText, memberData: authMember ?? null };
 
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.verbose(`NEW MESSAGE [${clientNick}] : ${payload}`);
+		this.logger.log(`NEW MESSAGE [${clientNick}] : ${messageText}`);
+		console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`);
 
 		this.messagesList.push(newMessage);
 		if (this.messagesList.length >= 5) this.messagesList.splice(0, this.messagesList.length - 5);
