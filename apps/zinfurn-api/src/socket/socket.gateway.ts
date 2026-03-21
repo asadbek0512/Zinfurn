@@ -11,6 +11,10 @@ interface MessagePayload {
 	event: string;
 	text: string;
 	memberData: Member | null;
+	replyTo?: {
+		text: string;
+		memberNick: string;
+	};
 }
 
 interface InfoPayload {
@@ -187,22 +191,65 @@ export class SocketGateway implements OnGatewayInit {
 	@SubscribeMessage('message')
 	public async handleMessage(client: WebSocket, payload: any): Promise<void> {
 		const authMember = this.clientsAuthMap.get(client);
-		
-		// Parse payload - could be string or object with 'data' field
-		let messageText: string;
+
+		// Parse payload - could be string or object with 'data' and 'replyTo' fields
+		let messageText: string = '';
+		let replyTo: { text: string; memberNick: string } | undefined;
+
+		// First, try to parse payload as JSON if it's a string
+		let parsedPayload: any = payload;
 		if (typeof payload === 'string') {
-			messageText = payload;
-		} else if (payload && typeof payload === 'object' && payload.data) {
-			messageText = payload.data;
-		} else {
+			try {
+				parsedPayload = JSON.parse(payload);
+			} catch (e) {
+				// If parsing fails, treat as plain text message
+				messageText = payload;
+				parsedPayload = null;
+			}
+		}
+
+		// If we successfully parsed JSON or got an object
+		if (parsedPayload && typeof parsedPayload === 'object') {
+			// Check if payload has 'data' field (new format) or is direct message
+			if (parsedPayload.data !== undefined) {
+				messageText = parsedPayload.data;
+				// Extract replyTo if present
+				if (parsedPayload.replyTo) {
+					replyTo = {
+						text: parsedPayload.replyTo.text,
+						memberNick: parsedPayload.replyTo.memberNick,
+					};
+				}
+			} else if (parsedPayload.text !== undefined) {
+				messageText = parsedPayload.text;
+				// Also check for replyTo in direct format
+				if (parsedPayload.replyTo) {
+					replyTo = {
+						text: parsedPayload.replyTo.text,
+						memberNick: parsedPayload.replyTo.memberNick,
+					};
+				}
+			} else {
+				messageText = String(parsedPayload);
+			}
+		} else if (!messageText) {
+			// Fallback for plain string messages
 			messageText = String(payload);
 		}
 
-		const newMessage: MessagePayload = { event: 'message', text: messageText, memberData: authMember ?? null };
+		const newMessage: MessagePayload = {
+			event: 'message',
+			text: messageText,
+			memberData: authMember ?? null,
+			replyTo,
+		};
 
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
 		this.logger.log(`NEW MESSAGE [${clientNick}] : ${messageText}`);
-		console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`);
+		if (replyTo) {
+			this.logger.log(`Replying to: ${replyTo.memberNick} - ${replyTo.text}`);
+		}
+		console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`, replyTo ? `Replying to: ${replyTo.memberNick}` : '');
 
 		this.messagesList.push(newMessage);
 		if (this.messagesList.length >= 5) this.messagesList.splice(0, this.messagesList.length - 5);

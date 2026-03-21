@@ -1841,19 +1841,55 @@ let SocketGateway = class SocketGateway {
     async handleMessage(client, payload) {
         const authMember = this.clientsAuthMap.get(client);
         let messageText;
+        let replyTo;
+        let parsedPayload = payload;
         if (typeof payload === 'string') {
-            messageText = payload;
+            try {
+                parsedPayload = JSON.parse(payload);
+            }
+            catch (e) {
+                messageText = payload;
+                parsedPayload = null;
+            }
         }
-        else if (payload && typeof payload === 'object' && payload.data) {
-            messageText = payload.data;
+        if (parsedPayload && typeof parsedPayload === 'object') {
+            if (parsedPayload.data !== undefined) {
+                messageText = parsedPayload.data;
+                if (parsedPayload.replyTo) {
+                    replyTo = {
+                        text: parsedPayload.replyTo.text,
+                        memberNick: parsedPayload.replyTo.memberNick,
+                    };
+                }
+            }
+            else if (parsedPayload.text !== undefined) {
+                messageText = parsedPayload.text;
+                if (parsedPayload.replyTo) {
+                    replyTo = {
+                        text: parsedPayload.replyTo.text,
+                        memberNick: parsedPayload.replyTo.memberNick,
+                    };
+                }
+            }
+            else {
+                messageText = String(parsedPayload);
+            }
         }
-        else {
+        else if (messageText === undefined) {
             messageText = String(payload);
         }
-        const newMessage = { event: 'message', text: messageText, memberData: authMember ?? null };
+        const newMessage = {
+            event: 'message',
+            text: messageText,
+            memberData: authMember ?? null,
+            replyTo,
+        };
         const clientNick = authMember?.memberNick ?? 'Guest';
         this.logger.log(`NEW MESSAGE [${clientNick}] : ${messageText}`);
-        console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`);
+        if (replyTo) {
+            this.logger.log(`Replying to: ${replyTo.memberNick} - ${replyTo.text}`);
+        }
+        console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`, replyTo ? `Replying to: ${replyTo.memberNick}` : '');
         this.messagesList.push(newMessage);
         if (this.messagesList.length >= 5)
             this.messagesList.splice(0, this.messagesList.length - 5);
