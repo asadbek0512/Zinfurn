@@ -120,15 +120,30 @@ export class AuthService {
 	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string }> {
 		const { email, sub } = googleUser;
 
+		console.log('🔗 linkGoogle called with memberId:', memberId, 'googleUser:', googleUser);
+
 		// Bu Google ID boshqa akkauntda bog'liq emasmi tekshiramiz
 		const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-		if (existing) throw new Error('This Google account is already linked to another account!');
+		if (existing) {
+			console.log('⚠️ Google ID already linked to another account');
+			throw new Error('This Google account is already linked to another account!');
+		}
 
-		const member = await this.memberModel
+		// Memberni topamiz
+		const member = await this.memberModel.findOne({ _id: memberId }).exec();
+		if (!member) {
+			console.log('❌ Member not found with id:', memberId);
+			throw new Error('Member not found!');
+		}
+
+		// Google ID va email ni bog'laymiz
+		const updatedMember = await this.memberModel
 			.findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
 			.exec();
 
-		const token = await this.createToken(member!);
+		console.log('✅ Google linked successfully for member:', updatedMember.memberNick);
+
+		const token = await this.createToken(updatedMember);
 		return { token };
 	}
 }

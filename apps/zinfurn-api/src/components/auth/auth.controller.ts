@@ -53,29 +53,44 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async linkGoogle(@Req() req: any, @Res() res: any) {
     const memberId = req.query.state;
+    console.log('📥 link/google endpoint - memberId from state:', memberId);
+    
     if (!memberId) {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       return res.redirect(`${frontendUrl}/mypage?error=No memberId provided`);
     }
+    
     // Store memberId in session for callback
     req.session = req.session || {};
     req.session.linkMemberId = memberId;
+    console.log('💾 Stored memberId in session:', req.session.linkMemberId);
   }
 
   // Google link callback
   @Get('link/google/callback')
   @UseGuards(AuthGuard('google'))
   async linkGoogleCallback(@Req() req: any, @Res() res: any) {
-    // Get memberId from state or session
-    const memberId = req.query.state || req.session?.linkMemberId;
-    
-    if (!memberId) {
+    try {
+      // Get memberId from state or session
+      const memberId = req.query.state || req.session?.linkMemberId;
+      console.log('📥 link/google/callback - memberId:', memberId);
+      console.log('📥 req.user:', req.user);
+      
+      if (!memberId) {
+        console.log('❌ No memberId found');
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
+      }
+      
+      const result = await this.authService.linkGoogle(memberId, req.user);
+      console.log('✅ Google linked, token received');
+      
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
+      res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+    } catch (err: any) {
+      console.error('❌ linkGoogleCallback error:', err.message);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/mypage?error=${encodeURIComponent(err.message)}`);
     }
-    
-    const result = await this.authService.linkGoogle(memberId, req.user);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
   }
 }
