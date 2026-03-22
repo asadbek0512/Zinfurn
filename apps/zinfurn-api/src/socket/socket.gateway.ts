@@ -1,5 +1,5 @@
 import { Logger, Inject, forwardRef } from '@nestjs/common';
-import { OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { OnGatewayInit, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'ws';
 import * as WebSocket from 'ws';
 import { AuthService } from '../components/auth/auth.service';
@@ -15,6 +15,7 @@ interface MessagePayload {
 		text: string;
 		memberNick: string;
 	};
+	createdAt?: string;
 }
 
 interface InfoPayload {
@@ -31,10 +32,6 @@ interface NotificationPayload {
 	type: string;
 	status: string;
 	createdAt: Date;
-}
-
-interface MarkReadPayload {
-	notificationIds: string[];
 }
 
 @WebSocketGateway({ transport: ['websocket'], secure: false })
@@ -75,9 +72,7 @@ export class SocketGateway implements OnGatewayInit {
 
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
 		this.logger.log(`Connection [${clientNick}] & total: [${this.summaryClient}]`);
-		console.log(`✅ Connection [${clientNick}] & total: [${this.summaryClient}]`);
 
-		// Send connection info
 		const infoMsg: InfoPayload = {
 			event: 'info',
 			totalClients: this.summaryClient,
@@ -87,7 +82,43 @@ export class SocketGateway implements OnGatewayInit {
 		this.emitMessage(infoMsg);
 		client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
 
-		// Send notifications after connection is established (only for authenticated users)
+		client.on('message', async (data: any) => {
+			try {
+				const parsed = JSON.parse(data.toString());
+
+				if (parsed.event === 'message') {
+					let messageText = parsed.data ?? parsed.text ?? '';
+					let replyTo: { text: string; memberNick: string } | undefined = undefined;
+
+					if (parsed.replyTo) {
+						replyTo = {
+							text: String(parsed.replyTo.text ?? ''),
+							memberNick: String(parsed.replyTo.memberNick ?? 'User'),
+						};
+					}
+
+					const newMessage: MessagePayload = {
+						event: 'message',
+						text: messageText,
+						memberData: authMember ?? null,
+						replyTo: replyTo,
+						createdAt: new Date().toISOString(),
+					};
+
+					this.messagesList.push(newMessage);
+					if (this.messagesList.length > 50) this.messagesList = this.messagesList.slice(-50);
+
+					this.emitMessage(newMessage);
+				} else if (parsed.event === 'getMessages') {
+					client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+				} else if (parsed.event === 'get_notifications') {
+					await this.handleGetNotifications(client);
+				} else if (parsed.event === 'markNotificationsAsRead') {
+					await this.handleMarkNotificationsAsRead(client, parsed.data);
+				}
+			} catch (e) {}
+		});
+
 		if (authMember) {
 			setTimeout(() => {
 				this.handleGetNotifications(client).catch((err) => {
@@ -102,10 +133,8 @@ export class SocketGateway implements OnGatewayInit {
 			const authMember = this.clientsAuthMap.get(client);
 			if (!authMember) return;
 
-			// Get unread notifications
 			const unreadNotifications = await this.notificationService.getUnreadNotifications(authMember._id.toString());
 
-			// Send notifications to the client
 			if (unreadNotifications.length > 0) {
 				client.send(
 					JSON.stringify({
@@ -122,38 +151,26 @@ export class SocketGateway implements OnGatewayInit {
 				);
 			}
 		} catch (error) {
-			// Silent fail to maintain user experience
 			this.logger.error('Error in handleGetNotifications:', error);
 		}
 	}
 
-	@SubscribeMessage('get_notifications')
-	public async handleGetNotificationsEvent(client: WebSocket): Promise<void> {
-		await this.handleGetNotifications(client);
-	}
-
-	@SubscribeMessage('markNotificationsAsRead')
-	public async handleMarkNotificationsAsRead(client: WebSocket, data: any): Promise<void> {
+	private async handleMarkNotificationsAsRead(client: WebSocket, data: any): Promise<void> {
 		try {
 			const authMember = this.clientsAuthMap.get(client);
 			if (!authMember) return;
 
-			// Handle both array of IDs or single ID
 			const notificationIds = Array.isArray(data) ? data : [data];
-
 			if (!notificationIds.length) return;
 
-			// Get the notifications to mark as read
 			const notifications = await this.notificationService.getNotificationsByIds(
 				notificationIds,
 				authMember._id.toString(),
 			);
 
 			if (notifications.length > 0) {
-				// Mark notifications as read
 				await this.notificationService.markMultipleAsRead(authMember._id.toString(), notifications);
 
-				// Send status updates for notifications that were marked as read
 				notifications.forEach((notification) => {
 					client.send(
 						JSON.stringify({
@@ -177,7 +194,7 @@ export class SocketGateway implements OnGatewayInit {
 		this.clientsAuthMap.delete(client);
 
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.verbose(`Disconnected [${clientNick}] & total  [${this.summaryClient}]`);
+		this.logger.verbose(`Disconnected [${clientNick}] & total [${this.summaryClient}]`);
 
 		const infoMsg: InfoPayload = {
 			event: 'info',
@@ -186,75 +203,6 @@ export class SocketGateway implements OnGatewayInit {
 			action: 'left',
 		};
 		this.broadcastMessage(client, infoMsg);
-	}
-
-	@SubscribeMessage('message')
-	public async handleMessage(client: WebSocket, payload: any): Promise<void> {
-		const authMember = this.clientsAuthMap.get(client);
-
-		// Parse payload - could be string or object with 'data' and 'replyTo' fields
-		let messageText: string = '';
-		let replyTo: { text: string; memberNick: string } | undefined;
-
-		// First, try to parse payload as JSON if it's a string
-		let parsedPayload: any = payload;
-		if (typeof payload === 'string') {
-			try {
-				parsedPayload = JSON.parse(payload);
-			} catch (e) {
-				// If parsing fails, treat as plain text message
-				messageText = payload;
-				parsedPayload = null;
-			}
-		}
-
-		// If we successfully parsed JSON or got an object
-		if (parsedPayload && typeof parsedPayload === 'object') {
-			// Check if payload has 'data' field (new format) or is direct message
-			if (parsedPayload.data !== undefined) {
-				messageText = parsedPayload.data;
-				// Extract replyTo if present
-				if (parsedPayload.replyTo) {
-					replyTo = {
-						text: parsedPayload.replyTo.text,
-						memberNick: parsedPayload.replyTo.memberNick,
-					};
-				}
-			} else if (parsedPayload.text !== undefined) {
-				messageText = parsedPayload.text;
-				// Also check for replyTo in direct format
-				if (parsedPayload.replyTo) {
-					replyTo = {
-						text: parsedPayload.replyTo.text,
-						memberNick: parsedPayload.replyTo.memberNick,
-					};
-				}
-			} else {
-				messageText = String(parsedPayload);
-			}
-		} else if (!messageText) {
-			// Fallback for plain string messages
-			messageText = String(payload);
-		}
-
-		const newMessage: MessagePayload = {
-			event: 'message',
-			text: messageText,
-			memberData: authMember ?? null,
-			replyTo,
-		};
-
-		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.log(`NEW MESSAGE [${clientNick}] : ${messageText}`);
-		if (replyTo) {
-			this.logger.log(`Replying to: ${replyTo.memberNick} - ${replyTo.text}`);
-		}
-		console.log(`📩 NEW MESSAGE [${clientNick}] : ${messageText}`, replyTo ? `Replying to: ${replyTo.memberNick}` : '');
-
-		this.messagesList.push(newMessage);
-		if (this.messagesList.length >= 5) this.messagesList.splice(0, this.messagesList.length - 5);
-
-		this.emitMessage(newMessage);
 	}
 
 	private broadcastMessage(sender: WebSocket, message: InfoPayload | MessagePayload) {
@@ -273,30 +221,12 @@ export class SocketGateway implements OnGatewayInit {
 		});
 	}
 
-	// Method for sending notifications
 	public sendNotification(userId: string, notification: NotificationPayload) {
-		let notificationsSent = 0;
 		this.server.clients.forEach((client) => {
 			const authMember = this.clientsAuthMap.get(client);
-
-			if (client.readyState === WebSocket.OPEN) {
-				if (authMember && authMember._id.toString() === userId) {
-					client.send(
-						JSON.stringify({
-							event: 'notification',
-							payload: notification,
-						}),
-					);
-					notificationsSent++;
-				}
+			if (client.readyState === WebSocket.OPEN && authMember && authMember._id.toString() === userId) {
+				client.send(JSON.stringify({ event: 'notification', payload: notification }));
 			}
 		});
 	}
 }
-
-/*
- MESSAGE TARGET:
-    1. Client (only client)
-    2. Broadcast (except clients )
-    3. Emit (all  clients)
- */
