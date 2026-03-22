@@ -25,7 +25,7 @@ const MemberSchema = new Schema(
 			type: String,
 			index: { unique: true, sparse: true },
 			required: false,
-			default: '',
+			default: null,
 		},
 
 		memberNick: {

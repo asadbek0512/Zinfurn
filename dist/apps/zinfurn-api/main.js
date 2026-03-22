@@ -980,8 +980,12 @@ let AuthService = class AuthService {
         if (!member) {
             throw new Error('Member not found!');
         }
+        const updateData = { memberGoogleId: sub, memberEmail: email };
+        if (member.memberPhone === '') {
+            updateData.memberPhone = null;
+        }
         const updatedMember = await this.memberModel
-            .findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
+            .findOneAndUpdate({ _id: memberId }, updateData, { new: true })
             .exec();
         if (!updatedMember) {
             throw new Error('Failed to update member!');
@@ -2976,7 +2980,7 @@ const MemberSchema = new mongoose_1.Schema({
         type: String,
         index: { unique: true, sparse: true },
         required: false,
-        default: '',
+        default: null,
     },
     memberNick: {
         type: String,

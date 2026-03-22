@@ -7,7 +7,7 @@ import * as express from 'express';
 import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
 
-async function bootstrap() { /// Definition
+async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
@@ -27,4 +27,4 @@ async function bootstrap() { /// Definition
   app.useWebSocketAdapter(new WsAdapter(app))
   await app.listen(process.env.PORT_API ?? 3000);
 }
-bootstrap();//Execution
+bootstrap();

@@ -132,9 +132,14 @@ export class AuthService {
 			throw new Error('Member not found!');
 		}
 
-		// Google ID va email ni bog'laymiz
+		// Google ID va email ni bog'laymiz (memberPhone null bo'lsa update qilamiz)
+		const updateData: any = { memberGoogleId: sub, memberEmail: email };
+		if (member.memberPhone === '') {
+			updateData.memberPhone = null;
+		}
+
 		const updatedMember = await this.memberModel
-			.findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
+			.findOneAndUpdate({ _id: memberId }, updateData, { new: true })
 			.exec();
 
 		if (!updatedMember) {
