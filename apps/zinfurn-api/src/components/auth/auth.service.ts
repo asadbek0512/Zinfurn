@@ -120,20 +120,56 @@ export class AuthService {
 	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string }> {
 		const { email, sub } = googleUser;
 
-		// Bu Google ID boshqa akkauntda bog'liq emasmi tekshiramiz
-		const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-		if (existing) {
+		// 1. Bu Google ID allaqachon bog'langanmi tekshiramiz
+		const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
+
+		if (existingGoogle) {
+			// Agar bu Google ID shu userga bog'langan bo'lsa, hech narsa qilmaslik
+			if (existingGoogle._id.toString() === memberId) {
+				const token = await this.createToken(existingGoogle);
+				return { token };
+			}
+			// Agar boshqa userga bog'langan bo'lsa, xato
 			throw new Error('This Google account is already linked to another account!');
 		}
 
-		// Memberni topamiz
+		// 2. Hozirgi userni topamiz
 		const member = await this.memberModel.findOne({ _id: memberId }).exec();
 		if (!member) {
 			throw new Error('Member not found!');
 		}
 
-		// Google ID va email ni bog'laymiz (memberPhone null bo'lsa update qilamiz)
-		const updateData: any = { memberGoogleId: sub, memberEmail: email };
+		// 3. Agar hozirgi userda email bo'lsa va u boshqa userga tegishli bo'lsa, tekshiramiz
+		if (member.memberEmail && member.memberEmail !== email) {
+			const existingEmail = await this.memberModel.findOne({
+				memberEmail: email,
+				_id: { $ne: memberId }
+			}).exec();
+
+			if (existingEmail) {
+				// Email boshqa userda, lekin Google ID yo'q - birlashtiramiz
+				if (!existingEmail.memberGoogleId) {
+					// Google ID ni shu userga o'tkazamiz
+					await this.memberModel.updateOne(
+						{ _id: existingEmail._id },
+						{ $set: { memberGoogleId: sub } }
+					);
+					const token = await this.createToken(existingEmail);
+					return { token };
+				}
+				// Email boshqa userda va Google ID ham bor - xato
+				throw new Error('This email is already associated with another account!');
+			}
+		}
+
+		// 4. Google ID ni bog'laymiz (email bo'lsa ham, bo'lmasa ham)
+		const updateData: any = { memberGoogleId: sub };
+		
+		// Email ni faqat shu holda yangilaymiz: agar userda email bo'lmasa yoki google email bilan bir xil bo'lsa
+		if (!member.memberEmail || member.memberEmail === email) {
+			updateData.memberEmail = email;
+		}
+		
 		if (member.memberPhone === '') {
 			updateData.memberPhone = null;
 		}

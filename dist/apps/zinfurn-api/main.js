@@ -972,15 +972,36 @@ let AuthService = class AuthService {
     }
     async linkGoogle(memberId, googleUser) {
         const { email, sub } = googleUser;
-        const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-        if (existing) {
+        const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
+        if (existingGoogle) {
+            if (existingGoogle._id.toString() === memberId) {
+                const token = await this.createToken(existingGoogle);
+                return { token };
+            }
             throw new Error('This Google account is already linked to another account!');
         }
         const member = await this.memberModel.findOne({ _id: memberId }).exec();
         if (!member) {
             throw new Error('Member not found!');
         }
-        const updateData = { memberGoogleId: sub, memberEmail: email };
+        if (member.memberEmail && member.memberEmail !== email) {
+            const existingEmail = await this.memberModel.findOne({
+                memberEmail: email,
+                _id: { $ne: memberId }
+            }).exec();
+            if (existingEmail) {
+                if (!existingEmail.memberGoogleId) {
+                    await this.memberModel.updateOne({ _id: existingEmail._id }, { $set: { memberGoogleId: sub } });
+                    const token = await this.createToken(existingEmail);
+                    return { token };
+                }
+                throw new Error('This email is already associated with another account!');
+            }
+        }
+        const updateData = { memberGoogleId: sub };
+        if (!member.memberEmail || member.memberEmail === email) {
+            updateData.memberEmail = email;
+        }
         if (member.memberPhone === '') {
             updateData.memberPhone = null;
         }
