@@ -10,11 +10,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
 			callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
 			scope: ['email', 'profile'],
+			passReqToCallback: true,
 		});
 	}
 
-	async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+	async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
 		const { name, emails, photos, id } = profile;
+		const state = req.query.state;
 		const user = {
 			sub: id, // Google ID
 			email: emails[0].value,
@@ -22,6 +24,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			lastName: name.familyName,
 			picture: photos[0].value,
 			accessToken,
+			state, // Pass state (memberId) for account linking
 		};
 		done(null, user);
 	}

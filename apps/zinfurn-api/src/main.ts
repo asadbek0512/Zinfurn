@@ -4,16 +4,25 @@ import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './libs/interceptor/Logging.interceptor';
 import { graphqlUploadExpress } from 'graphql-upload';
 import * as express from 'express';
+import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() { /// Definition
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe()); //ValidationPipe instensini argument sifatida Path qilamiz
+  app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.enableCors({ origin: true, credentials: true });
 
   app.use(graphqlUploadExpress({ maxFileSize: 15000000, maxFiles: 10 }))
   app.use('/uploads', express.static('./uploads'));
+
+  // Session for OAuth state management
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'zinfurn-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false, httpOnly: true, maxAge: 60000 }
+  }));
 
   app.useWebSocketAdapter(new WsAdapter(app))
   await app.listen(process.env.PORT_API ?? 3000);
