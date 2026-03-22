@@ -120,19 +120,15 @@ export class AuthService {
 	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string }> {
 		const { email, sub } = googleUser;
 
-		console.log('🔗 linkGoogle called with memberId:', memberId, 'googleUser:', googleUser);
-
 		// Bu Google ID boshqa akkauntda bog'liq emasmi tekshiramiz
 		const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
 		if (existing) {
-			console.log('⚠️ Google ID already linked to another account');
 			throw new Error('This Google account is already linked to another account!');
 		}
 
 		// Memberni topamiz
 		const member = await this.memberModel.findOne({ _id: memberId }).exec();
 		if (!member) {
-			console.log('❌ Member not found with id:', memberId);
 			throw new Error('Member not found!');
 		}
 
@@ -141,7 +137,9 @@ export class AuthService {
 			.findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
 			.exec();
 
-		console.log('✅ Google linked successfully for member:', updatedMember.memberNick);
+		if (!updatedMember) {
+			throw new Error('Failed to update member!');
+		}
 
 		const token = await this.createToken(updatedMember);
 		return { token };
