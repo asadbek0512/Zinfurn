@@ -24,7 +24,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 	): Promise<any> {
 		const { name, emails, photos, id } = profile;
 
-		const memberId = req.query?.state || req.session?.linkMemberId;
+		// Get memberId from session (set before OAuth redirect)
+		const memberId = req.session?.linkMemberId;
 
 		const user = {
 			sub: id,

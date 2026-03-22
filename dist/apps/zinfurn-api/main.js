@@ -3158,7 +3158,7 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
     }
     async validate(req, accessToken, refreshToken, profile, done) {
         const { name, emails, photos, id } = profile;
-        const memberId = req.query?.state || req.session?.linkMemberId;
+        const memberId = req.session?.linkMemberId;
         const user = {
             sub: id,
             email: emails[0].value,
@@ -3239,13 +3239,18 @@ let AuthController = class AuthController {
         const result = await this.authService.linkTelegram(memberId, telegramData);
         return res.json({ token: result.token });
     }
-    async linkGoogle() { }
+    async linkGoogle(req, res) {
+        const memberId = req.query.state;
+        req.session = req.session || {};
+        req.session.linkMemberId = memberId;
+    }
     async linkGoogleCallback(req, res) {
         try {
-            const memberId = req.query.state;
+            const memberId = req.session?.linkMemberId;
             if (!memberId) {
                 return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
             }
+            delete req.session.linkMemberId;
             const result = await this.authService.linkGoogle(memberId, req.user);
             res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
         }
@@ -3290,8 +3295,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('link/google'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "linkGoogle", null);
 __decorate([
