@@ -3153,11 +3153,12 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
             callbackURL: process.env.GOOGLE_CALLBACK_URL,
             scope: ['email', 'profile'],
             passReqToCallback: true,
+            state: true,
         });
     }
     async validate(req, accessToken, refreshToken, profile, done) {
         const { name, emails, photos, id } = profile;
-        const memberId = req.session?.linkMemberId;
+        const memberId = req.query?.state || req.session?.linkMemberId;
         const user = {
             sub: id,
             email: emails[0].value,

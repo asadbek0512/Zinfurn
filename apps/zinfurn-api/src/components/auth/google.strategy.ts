@@ -11,22 +11,31 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
 			scope: ['email', 'profile'],
 			passReqToCallback: true,
+			state: true,
 		});
 	}
 
-	async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+	async validate(
+		req: any,
+		accessToken: string,
+		refreshToken: string,
+		profile: any,
+		done: VerifyCallback,
+	): Promise<any> {
 		const { name, emails, photos, id } = profile;
-		// Get memberId from session (for account linking)
-		const memberId = req.session?.linkMemberId;
+
+		const memberId = req.query?.state || req.session?.linkMemberId;
+
 		const user = {
-			sub: id, // Google ID
+			sub: id,
 			email: emails[0].value,
 			firstName: name.givenName,
 			lastName: name.familyName,
 			picture: photos[0].value,
 			accessToken,
-			memberId, // Pass memberId for account linking
+			memberId,
 		};
+
 		done(null, user);
 	}
 }
