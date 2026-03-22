@@ -16,7 +16,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
 	async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
 		const { name, emails, photos, id } = profile;
-		const state = req.query.state;
+		// Get memberId from session (for account linking)
+		const memberId = req.session?.linkMemberId;
 		const user = {
 			sub: id, // Google ID
 			email: emails[0].value,
@@ -24,7 +25,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			lastName: name.familyName,
 			picture: photos[0].value,
 			accessToken,
-			state, // Pass state (memberId) for account linking
+			memberId, // Pass memberId for account linking
 		};
 		done(null, user);
 	}

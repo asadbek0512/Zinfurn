@@ -44,19 +44,19 @@ export class AuthService {
 
 		// 1. Google ID bilan qidir
 		let member = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-
 		if (member) {
 			const token = await this.createToken(member);
 			return { token };
 		}
 
-		// 2. Email bilan qidir
+		// 2. Email bilan qidir — Telegram bilan kirgan user bo'lishi mumkin
 		member = await this.memberModel.findOne({ memberEmail: email }).exec();
-
 		if (member) {
-			member = await this.memberModel
-				.findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
-				.exec();
+			if (!member.memberGoogleId) {
+				member = await this.memberModel
+					.findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
+					.exec();
+			}
 			const token = await this.createToken(member!);
 			return { token };
 		}
@@ -80,11 +80,8 @@ export class AuthService {
 	public async telegramLogin(telegramUser: any): Promise<{ token: string }> {
 		const { id, first_name, last_name, username, photo_url } = telegramUser;
 
-		// DB da shu telegram id bilan user bormi tekshiramiz
 		let member = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
-
 		if (!member) {
-			// Yangi Telegram user yaratamiz
 			member = await this.memberModel.create({
 				memberNick: username || `tg_${id}_${Date.now()}`,
 				memberFullName: `${first_name} ${last_name || ''}`.trim(),
@@ -100,11 +97,9 @@ export class AuthService {
 		return { token };
 	}
 
-	// Mavjud akkauntga Telegram bog'lash
 	public async linkTelegram(memberId: string, telegramUser: any): Promise<{ token: string }> {
-		const { id, first_name, last_name, username, photo_url } = telegramUser;
+		const { id } = telegramUser;
 
-		// Bu Telegram ID boshqa akkauntda bog'liq emasmi tekshiramiz
 		const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
 		if (existing) throw new Error('This Telegram account is already linked to another account!');
 
@@ -116,71 +111,32 @@ export class AuthService {
 		return { token };
 	}
 
-	// Mavjud akkauntga Google bog'lash
 	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string }> {
 		const { email, sub } = googleUser;
 
-		// 1. Bu Google ID allaqachon bog'langanmi tekshiramiz
+		// 1. Bu Google ID allaqachon bog'langanmi
 		const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-
 		if (existingGoogle) {
-			// Agar bu Google ID shu userga bog'langan bo'lsa, hech narsa qilmaslik
 			if (existingGoogle._id.toString() === memberId) {
 				const token = await this.createToken(existingGoogle);
 				return { token };
 			}
-			// Agar boshqa userga bog'langan bo'lsa, xato
 			throw new Error('This Google account is already linked to another account!');
 		}
 
 		// 2. Hozirgi userni topamiz
 		const member = await this.memberModel.findOne({ _id: memberId }).exec();
-		if (!member) {
-			throw new Error('Member not found!');
-		}
+		if (!member) throw new Error('Member not found!');
 
-		// 3. Agar hozirgi userda email bo'lsa va u boshqa userga tegishli bo'lsa, tekshiramiz
-		if (member.memberEmail && member.memberEmail !== email) {
-			const existingEmail = await this.memberModel.findOne({
-				memberEmail: email,
-				_id: { $ne: memberId }
-			}).exec();
-
-			if (existingEmail) {
-				// Email boshqa userda, lekin Google ID yo'q - birlashtiramiz
-				if (!existingEmail.memberGoogleId) {
-					// Google ID ni shu userga o'tkazamiz
-					await this.memberModel.updateOne(
-						{ _id: existingEmail._id },
-						{ $set: { memberGoogleId: sub } }
-					);
-					const token = await this.createToken(existingEmail);
-					return { token };
-				}
-				// Email boshqa userda va Google ID ham bor - xato
-				throw new Error('This email is already associated with another account!');
-			}
-		}
-
-		// 4. Google ID ni bog'laymiz (email bo'lsa ham, bo'lmasa ham)
+		// 3. Google ID va emailni bog'laymiz
 		const updateData: any = { memberGoogleId: sub };
-		
-		// Email ni faqat shu holda yangilaymiz: agar userda email bo'lmasa yoki google email bilan bir xil bo'lsa
-		if (!member.memberEmail || member.memberEmail === email) {
+		if (!member.memberEmail) {
 			updateData.memberEmail = email;
 		}
-		
-		if (member.memberPhone === '') {
-			updateData.memberPhone = null;
-		}
 
-		const updatedMember = await this.memberModel
-			.findOneAndUpdate({ _id: memberId }, updateData, { new: true })
-			.exec();
+		const updatedMember = await this.memberModel.findOneAndUpdate({ _id: memberId }, updateData, { new: true }).exec();
 
-		if (!updatedMember) {
-			throw new Error('Failed to update member!');
-		}
+		if (!updatedMember) throw new Error('Failed to update member!');
 
 		const token = await this.createToken(updatedMember);
 		return { token };
