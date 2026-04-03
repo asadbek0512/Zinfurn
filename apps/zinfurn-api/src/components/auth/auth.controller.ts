@@ -18,20 +18,29 @@ export class AuthController {
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
 		try {
+			console.log('=== GOOGLE CALLBACK DEBUG ===');
+			console.log('req.query:', req.query);
+			console.log('req.user:', req.user);
+			
 			const user = req.user;
 			const memberId = req.query?.state || user?.memberId;
+			console.log('memberId:', memberId);
+			
 			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 			if (memberId) {
 				// Account linking
+				console.log('🔗 Account linking for memberId:', memberId);
 				const result = await this.authService.linkGoogle(memberId, user);
 				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
 			} else {
 				// Normal login
+				console.log('🔑 Normal Google login');
 				const result = await this.authService.googleLogin(user);
 				return res.redirect(`${frontendUrl}/?token=${result.token}`);
 			}
 		} catch (err: any) {
+			console.error('Google callback error:', err);
 			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
 		}
