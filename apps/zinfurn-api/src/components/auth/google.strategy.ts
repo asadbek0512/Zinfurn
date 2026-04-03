@@ -23,9 +23,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 		done: VerifyCallback,
 	): Promise<any> {
 		const { name, emails, photos, id } = profile;
-
-		// Get memberId from session (set before OAuth redirect)
-		const memberId = req.session?.linkMemberId;
+		const state = req.query?.state || '';
 
 		const user = {
 			sub: id,
@@ -34,7 +32,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			lastName: name.familyName,
 			picture: photos[0].value,
 			accessToken,
-			memberId,
+			memberId: state,
 		};
 
 		done(null, user);

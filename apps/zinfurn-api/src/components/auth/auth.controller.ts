@@ -46,31 +46,17 @@ export class AuthController {
 
 	@Get('link/google')
 	@UseGuards(AuthGuard('google'))
-	async linkGoogle(@Req() req: any, @Res() res: any) {
-		const memberId = req.query.state;
-		
-		// Store memberId in session for callback
-		req.session = req.session || {};
-		req.session.linkMemberId = memberId;
-		
-		// Google OAuth ga redirect bo'ladi
-	}
+	async linkGoogle() {}
 
 	@Get('link/google/callback')
 	@UseGuards(AuthGuard('google'))
 	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
 		try {
-			// Get memberId from session (NOT from query.state)
-			const memberId = req.session?.linkMemberId;
-			
+			const memberId = req.user?.memberId;
 			if (!memberId) {
 				return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
 			}
-			
-			// Clear session after use
-			delete req.session.linkMemberId;
-			
-			const result = await this.authService.linkGoogle(memberId as string, req.user);
+			const result = await this.authService.linkGoogle(memberId, req.user);
 			res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
 		} catch (err: any) {
 			res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);
