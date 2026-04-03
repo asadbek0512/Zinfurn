@@ -71,6 +71,7 @@ export class AuthService {
 			memberStatus: MemberStatus.ACTIVE,
 			memberType: MemberType.USER,
 			memberGoogleId: sub,
+			memberPhone: null,
 		});
 
 		const token = await this.createToken(member);
@@ -90,6 +91,7 @@ export class AuthService {
 				memberStatus: MemberStatus.ACTIVE,
 				memberType: MemberType.USER,
 				memberTelegramId: String(id),
+				memberPhone: null,
 			});
 		}
 
