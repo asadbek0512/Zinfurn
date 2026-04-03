@@ -17,10 +17,22 @@ export class AuthController {
 	@Get('google/callback')
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
-		const user = req.user;
-		const result = await this.authService.googleLogin(user);
-		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-		res.redirect(`${frontendUrl}/?token=${result.token}`);
+		try {
+			const user = req.user;
+			const memberId = user?.memberId;
+			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+			if (memberId) {
+				const result = await this.authService.linkGoogle(memberId, user);
+				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+			} else {
+				const result = await this.authService.googleLogin(user);
+				return res.redirect(`${frontendUrl}/?token=${result.token}`);
+			}
+		} catch (err: any) {
+			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
+		}
 	}
 
 	@Post('telegram')
@@ -42,24 +54,5 @@ export class AuthController {
 		}
 		const result = await this.authService.linkTelegram(memberId, telegramData);
 		return res.json({ token: result.token });
-	}
-
-	@Get('link/google')
-	@UseGuards(AuthGuard('google'))
-	async linkGoogle() {}
-
-	@Get('link/google/callback')
-	@UseGuards(AuthGuard('google'))
-	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
-		try {
-			const memberId = req.user?.memberId;
-			if (!memberId) {
-				return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
-			}
-			const result = await this.authService.linkGoogle(memberId, req.user);
-			res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
-		} catch (err: any) {
-			res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);
-		}
 	}
 }
