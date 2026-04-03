@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import * as passport from 'passport';
 import { AuthService } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
 
@@ -10,12 +11,10 @@ export class AuthController {
 		private readonly telegramStrategy: TelegramStrategy,
 	) {}
 
-	// Google login
 	@Get('google')
 	@UseGuards(AuthGuard('google'))
 	async googleAuth() {}
 
-	// Google callback
 	@Get('google/callback')
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
@@ -25,7 +24,6 @@ export class AuthController {
 		res.redirect(`${frontendUrl}/?token=${result.token}`);
 	}
 
-	// Telegram login
 	@Post('telegram')
 	async telegramAuth(@Body() telegramData: any, @Res() res: any) {
 		const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
@@ -36,7 +34,6 @@ export class AuthController {
 		return res.json({ token: result.token });
 	}
 
-	// Mavjud akkauntga Telegram bog'lash
 	@Post('link/telegram')
 	async linkTelegram(@Body() body: any, @Res() res: any) {
 		const { memberId, ...telegramData } = body;
@@ -48,23 +45,31 @@ export class AuthController {
 		return res.json({ token: result.token });
 	}
 
-	// Mavjud akkauntga Google bog'lash
 	@Get('link/google')
-	@UseGuards(AuthGuard('google'))
 	async linkGoogle(@Req() req: any, @Res() res: any) {
-		const { memberId } = req.query;
-		const result = await this.authService.linkGoogle(memberId, req.user);
-		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-		res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+		// Store memberId in session BEFORE OAuth redirect
+		req.session = req.session || {};
+		req.session.linkMemberId = req.query.state;
+
+		// Manually trigger Google OAuth
+		passport.authenticate('google')(req, res);
 	}
 
-	// Google link callback
 	@Get('link/google/callback')
 	@UseGuards(AuthGuard('google'))
 	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
-		const memberId = req.query.state;
-		const result = await this.authService.linkGoogle(memberId, req.user);
-		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-		res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+		try {
+			const memberId = req.session?.linkMemberId || req.user?.memberId;
+			if (!memberId) {
+				return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
+			}
+			// Clear session after use
+			delete req.session.linkMemberId;
+
+			const result = await this.authService.linkGoogle(memberId as string, req.user);
+			res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
+		} catch (err: any) {
+			res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);
+		}
 	}
 }
