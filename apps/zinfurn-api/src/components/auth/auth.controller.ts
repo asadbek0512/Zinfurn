@@ -17,10 +17,24 @@ export class AuthController {
 	@Get('google/callback')
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
-		const user = req.user;
-		const result = await this.authService.googleLogin(user);
-		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-		res.redirect(`${frontendUrl}/?token=${result.token}`);
+		try {
+			const user = req.user;
+			const memberId = req.query?.state || user?.memberId;
+			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+			if (memberId) {
+				// Account linking
+				const result = await this.authService.linkGoogle(memberId, user);
+				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+			} else {
+				// Normal login
+				const result = await this.authService.googleLogin(user);
+				return res.redirect(`${frontendUrl}/?token=${result.token}`);
+			}
+		} catch (err: any) {
+			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
+		}
 	}
 
 	@Post('telegram')
