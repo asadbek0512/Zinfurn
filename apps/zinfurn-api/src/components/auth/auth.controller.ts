@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import * as passport from 'passport';
 import { AuthService } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
 
@@ -46,27 +45,18 @@ export class AuthController {
 	}
 
 	@Get('link/google')
-	async linkGoogle(@Req() req: any, @Res() res: any) {
-		// Store memberId in session BEFORE OAuth redirect
-		req.session = req.session || {};
-		req.session.linkMemberId = req.query.state;
-
-		// Manually trigger Google OAuth
-		passport.authenticate('google')(req, res);
-	}
+	@UseGuards(AuthGuard('google'))
+	async linkGoogle() {}
 
 	@Get('link/google/callback')
 	@UseGuards(AuthGuard('google'))
 	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
 		try {
-			const memberId = req.session?.linkMemberId || req.user?.memberId;
+			const memberId = req.user?.memberId;
 			if (!memberId) {
 				return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
 			}
-			// Clear session after use
-			delete req.session.linkMemberId;
-
-			const result = await this.authService.linkGoogle(memberId as string, req.user);
+			const result = await this.authService.linkGoogle(memberId, req.user);
 			res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
 		} catch (err: any) {
 			res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);

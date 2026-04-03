@@ -11,13 +11,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
 			scope: ['email', 'profile'],
 			passReqToCallback: true,
+			state: true,
 		});
 	}
 
 	async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
 		const { name, emails, photos, id } = profile;
-		// Get memberId from session (for account linking)
-		const memberId = req.session?.linkMemberId;
+		// Get memberId from state query parameter (for account linking)
+		const memberId = req.query?.state;
 		const user = {
 			sub: id, // Google ID
 			email: emails[0].value,
