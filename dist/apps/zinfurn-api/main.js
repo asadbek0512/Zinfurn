@@ -923,9 +923,11 @@ let AuthService = class AuthService {
         }
         member = await this.memberModel.findOne({ memberEmail: email }).exec();
         if (member) {
-            member = await this.memberModel
-                .findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
-                .exec();
+            if (!member.memberGoogleId) {
+                member = await this.memberModel
+                    .findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
+                    .exec();
+            }
             const token = await this.createToken(member);
             return { token };
         }
@@ -960,7 +962,7 @@ let AuthService = class AuthService {
         return { token };
     }
     async linkTelegram(memberId, telegramUser) {
-        const { id, first_name, last_name, username, photo_url } = telegramUser;
+        const { id } = telegramUser;
         const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
         if (existing)
             throw new Error('This Telegram account is already linked to another account!');
@@ -972,13 +974,25 @@ let AuthService = class AuthService {
     }
     async linkGoogle(memberId, googleUser) {
         const { email, sub } = googleUser;
-        const existing = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
-        if (existing)
+        const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
+        if (existingGoogle) {
+            if (existingGoogle._id.toString() === memberId) {
+                const token = await this.createToken(existingGoogle);
+                return { token };
+            }
             throw new Error('This Google account is already linked to another account!');
-        const member = await this.memberModel
-            .findOneAndUpdate({ _id: memberId }, { memberGoogleId: sub, memberEmail: email }, { new: true })
-            .exec();
-        const token = await this.createToken(member);
+        }
+        const member = await this.memberModel.findOne({ _id: memberId }).exec();
+        if (!member)
+            throw new Error('Member not found!');
+        const updateData = { memberGoogleId: sub };
+        if (!member.memberEmail) {
+            updateData.memberEmail = email;
+        }
+        const updatedMember = await this.memberModel.findOneAndUpdate({ _id: memberId }, updateData, { new: true }).exec();
+        if (!updatedMember)
+            throw new Error('Failed to update member!');
+        const token = await this.createToken(updatedMember);
         return { token };
     }
 };
@@ -2968,7 +2982,6 @@ const MemberSchema = new mongoose_1.Schema({
         type: String,
         index: { unique: true, sparse: true },
         required: false,
-        default: null,
     },
     memberNick: {
         type: String,
@@ -3138,10 +3151,12 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.GOOGLE_CALLBACK_URL,
             scope: ['email', 'profile'],
+            passReqToCallback: true,
         });
     }
-    async validate(accessToken, refreshToken, profile, done) {
+    async validate(req, accessToken, refreshToken, profile, done) {
         const { name, emails, photos, id } = profile;
+        const memberId = req.query?.state;
         const user = {
             sub: id,
             email: emails[0].value,
@@ -3149,6 +3164,7 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
             lastName: name.familyName,
             picture: photos[0].value,
             accessToken,
+            memberId,
         };
         done(null, user);
     }
@@ -3199,10 +3215,30 @@ let AuthController = class AuthController {
     }
     async googleAuth() { }
     async googleAuthCallback(req, res) {
-        const user = req.user;
-        const result = await this.authService.googleLogin(user);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        res.redirect(`${frontendUrl}/?token=${result.token}`);
+        try {
+            console.log('=== GOOGLE CALLBACK DEBUG ===');
+            console.log('req.query:', req.query);
+            console.log('req.user:', req.user);
+            const user = req.user;
+            const memberId = req.query?.state || user?.memberId;
+            console.log('memberId:', memberId);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            if (memberId) {
+                console.log('🔗 Account linking for memberId:', memberId);
+                const result = await this.authService.linkGoogle(memberId, user);
+                return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+            }
+            else {
+                console.log('🔑 Normal Google login');
+                const result = await this.authService.googleLogin(user);
+                return res.redirect(`${frontendUrl}/?token=${result.token}`);
+            }
+        }
+        catch (err) {
+            console.error('Google callback error:', err);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
+        }
     }
     async telegramAuth(telegramData, res) {
         const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
@@ -3221,17 +3257,19 @@ let AuthController = class AuthController {
         const result = await this.authService.linkTelegram(memberId, telegramData);
         return res.json({ token: result.token });
     }
-    async linkGoogle(req, res) {
-        const { memberId } = req.query;
-        const result = await this.authService.linkGoogle(memberId, req.user);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
-    }
+    async linkGoogle() { }
     async linkGoogleCallback(req, res) {
-        const memberId = req.query.state;
-        const result = await this.authService.linkGoogle(memberId, req.user);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+        try {
+            const memberId = req.user?.memberId;
+            if (!memberId) {
+                return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
+            }
+            const result = await this.authService.linkGoogle(memberId, req.user);
+            res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
+        }
+        catch (err) {
+            res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);
+        }
     }
 };
 exports.AuthController = AuthController;
@@ -3270,10 +3308,8 @@ __decorate([
 __decorate([
     (0, common_1.Get)('link/google'),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
-    __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "linkGoogle", null);
 __decorate([
