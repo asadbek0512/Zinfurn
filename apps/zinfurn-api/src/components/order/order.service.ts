@@ -19,11 +19,29 @@ export class OrderService {
 		input.memberId = memberId;
 		const orderId = `ZIN-${Date.now()}`;
 		try {
-			return await this.orderModel.create({ ...input, orderId });
+			const order = await this.orderModel.create({ ...input, orderId });
+			this.scheduleAutoProgression(order._id as ObjectId);
+			return order;
 		} catch (err) {
 			console.log('OrderService.createOrder error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
+	}
+
+	// Demo: auto-progress order status for portfolio showcase
+	private scheduleAutoProgression(orderId: ObjectId): void {
+		const advance = (status: OrderStatus, delayMs: number) => {
+			setTimeout(async () => {
+				try {
+					await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status });
+					console.log(`Order ${orderId} → ${status}`);
+				} catch {}
+			}, delayMs);
+		};
+
+		advance(OrderStatus.PROCESSING, 15_000);   // 15s
+		advance(OrderStatus.SHIPPED,    35_000);   // 35s
+		advance(OrderStatus.DELIVERED,  60_000);   // 60s
 	}
 
 	public async getMyOrders(memberId: ObjectId, input: OrdersInquiry): Promise<Orders> {
