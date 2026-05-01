@@ -23,7 +23,17 @@ export class AuthController {
 			console.log('req.user:', req.user);
 			
 			const user = req.user;
-			const memberId = req.query?.state || user?.memberId;
+			
+			// Cookie dan memberId olish (manual parsing)
+			const cookies = Object.fromEntries(
+				(req.headers.cookie || '').split(';').map(c => {
+					const [k, v] = c.trim().split('=');
+					return [k, decodeURIComponent(v)];
+				}).filter(([k]) => k)
+			);
+			console.log('Parsed cookies:', cookies);
+			
+			const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
 			console.log('memberId:', memberId);
 			
 			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -32,6 +42,8 @@ export class AuthController {
 				// Account linking
 				console.log('🔗 Account linking for memberId:', memberId);
 				const result = await this.authService.linkGoogle(memberId, user);
+				// Cookie ni tozalash
+				res.cookie('linkMemberId', '', { maxAge: 0 });
 				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
 			} else {
 				// Normal login
@@ -68,8 +80,20 @@ export class AuthController {
 	}
 
 	@Get('link/google')
-	@UseGuards(AuthGuard('google'))
-	async linkGoogle() {}
+	async linkGoogle(@Req() req: any, @Res() res: any) {
+		// Store memberId in cookie BEFORE OAuth redirect
+		const memberId = req.query.state;
+		res.cookie('linkMemberId', memberId, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'lax',
+			maxAge: 5 * 60 * 1000, // 5 minutes
+		});
+
+		// Trigger Google OAuth
+		const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.GOOGLE_CALLBACK_URL}&response_type=code&scope=email%20profile&state=${memberId}`;
+		res.redirect(googleAuthUrl);
+	}
 
 	@Get('link/google/callback')
 	@UseGuards(AuthGuard('google'))
