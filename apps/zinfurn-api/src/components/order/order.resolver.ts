@@ -58,6 +58,16 @@ export class OrderResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => Order)
+	public async demoDeliverOrder(
+		@Args('orderId') orderId: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Order> {
+		console.log('Mutation: demoDeliverOrder');
+		return this.orderService.demoDeliverOrder(memberId, ShapeIntoMongoObjectId(orderId));
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Order)
 	public async requestReturn(
 		@Args('input') input: OrderUpdate,
 		@AuthMember('_id') memberId: ObjectId,

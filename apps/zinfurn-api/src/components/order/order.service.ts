@@ -98,6 +98,20 @@ export class OrderService {
 		) as unknown as Order;
 	}
 
+	public async demoDeliverOrder(memberId: ObjectId, orderId: ObjectId): Promise<Order> {
+		const order = await this.orderModel.findOne({ _id: orderId, memberId });
+		if (!order) throw new BadRequestException(Message.NO_DATA_FOUND);
+		const ACTIVE = ['PENDING', 'PROCESSING', 'SHIPPED'];
+		if (!ACTIVE.includes(order.orderStatus)) {
+			throw new BadRequestException('Order is not in an active delivery state');
+		}
+		return this.orderModel.findByIdAndUpdate(
+			orderId,
+			{ orderStatus: OrderStatus.DELIVERED },
+			{ new: true },
+		) as unknown as Order;
+	}
+
 	public async requestReturn(memberId: ObjectId, input: OrderUpdate): Promise<Order> {
 		const order = await this.orderModel.findOne({ _id: input._id, memberId });
 		if (!order) throw new BadRequestException(Message.NO_DATA_FOUND);
