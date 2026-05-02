@@ -83,6 +83,21 @@ const PropertySchema = new Schema(
 			default: 0,
 		},
 
+		propertyReviews: {
+			type: Number,
+			default: 0,
+		},
+
+		propertyRating: {
+			type: Number,
+			default: 0,
+		},
+
+		propertySoldCount: {
+			type: Number,
+			default: 0,
+		},
+
 		propertyRank: {
 			type: Number,
 			default: 0,

@@ -13,6 +13,7 @@ import { lookupMember } from '../../libs/config';
 export class OrderService {
 	constructor(
 		@InjectModel('Order') private readonly orderModel: Model<Order>,
+		@InjectModel('Property') private readonly propertyModel: Model<any>,
 	) {}
 
 	public async createOrder(memberId: ObjectId, input: CreateOrderInput): Promise<Order> {
@@ -91,11 +92,20 @@ export class OrderService {
 		if (order.orderStatus !== OrderStatus.DELIVERED) {
 			throw new BadRequestException('Order must be DELIVERED before confirmation');
 		}
-		return this.orderModel.findByIdAndUpdate(
+		const confirmed = await this.orderModel.findByIdAndUpdate(
 			orderId,
 			{ orderStatus: OrderStatus.CONFIRMED, confirmedAt: new Date() },
 			{ new: true },
 		) as unknown as Order;
+
+		// increment sold count for each item
+		for (const item of order.orderItems) {
+			await this.propertyModel.findByIdAndUpdate(
+				item.propertyId,
+				{ $inc: { propertySoldCount: item.quantity } },
+			);
+		}
+		return confirmed;
 	}
 
 	public async demoDeliverOrder(memberId: ObjectId, orderId: ObjectId): Promise<Order> {

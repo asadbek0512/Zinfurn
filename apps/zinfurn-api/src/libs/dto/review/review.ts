@@ -4,6 +4,15 @@ import { ReviewStatus } from '../../enums/review.enum';
 import { Member, TotalCounter } from '../member/member';
 
 @ObjectType()
+export class RatingCount {
+	@Field(() => Int)
+	star: number;
+
+	@Field(() => Int)
+	count: number;
+}
+
+@ObjectType()
 export class Review {
 	@Field(() => String)
 	_id: ObjectId;
@@ -47,6 +56,9 @@ export class ReviewSummary {
 
 	@Field(() => Int)
 	totalReviews: number;
+
+	@Field(() => [RatingCount])
+	ratingDistribution: RatingCount[];
 }
 
 @ObjectType()

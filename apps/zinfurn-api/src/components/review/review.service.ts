@@ -15,6 +15,7 @@ export class ReviewService {
 	constructor(
 		@InjectModel('Review') private readonly reviewModel: Model<Review>,
 		@InjectModel('Order') private readonly orderModel: Model<any>,
+		@InjectModel('Property') private readonly propertyModel: Model<any>,
 	) {}
 
 	public async createReview(memberId: ObjectId, input: CreateReviewInput): Promise<Review> {
@@ -34,7 +35,20 @@ export class ReviewService {
 
 		input.memberId = memberId;
 		try {
-			return await this.reviewModel.create(input);
+			const review = await this.reviewModel.create(input);
+
+			// recalculate average rating and update counters
+			const avgResult = await this.reviewModel.aggregate([
+				{ $match: { propertyId: input.propertyId, reviewStatus: ReviewStatus.ACTIVE } },
+				{ $group: { _id: null, avg: { $avg: '$reviewRating' } } },
+			]).exec();
+			const newRating = avgResult[0] ? Math.round(avgResult[0].avg * 10) / 10 : 0;
+
+			await this.propertyModel.findByIdAndUpdate(input.propertyId, {
+				$inc: { propertyReviews: 1 },
+				propertyRating: newRating,
+			});
+			return review;
 		} catch (err) {
 			console.log('ReviewService.createReview error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
@@ -79,13 +93,29 @@ export class ReviewService {
 						_id: null,
 						averageRating: { $avg: '$reviewRating' },
 						totalReviews: { $sum: 1 },
+						r1: { $sum: { $cond: [{ $eq: ['$reviewRating', 1] }, 1, 0] } },
+						r2: { $sum: { $cond: [{ $eq: ['$reviewRating', 2] }, 1, 0] } },
+						r3: { $sum: { $cond: [{ $eq: ['$reviewRating', 3] }, 1, 0] } },
+						r4: { $sum: { $cond: [{ $eq: ['$reviewRating', 4] }, 1, 0] } },
+						r5: { $sum: { $cond: [{ $eq: ['$reviewRating', 5] }, 1, 0] } },
 					},
 				},
 			])
 			.exec();
 
-		if (!result[0]) return { averageRating: 0, totalReviews: 0 };
-		return { averageRating: Math.round(result[0].averageRating * 10) / 10, totalReviews: result[0].totalReviews };
+		if (!result[0]) return { averageRating: 0, totalReviews: 0, ratingDistribution: [] };
+		const r = result[0];
+		return {
+			averageRating: Math.round(r.averageRating * 10) / 10,
+			totalReviews: r.totalReviews,
+			ratingDistribution: [
+				{ star: 5, count: r.r5 },
+				{ star: 4, count: r.r4 },
+				{ star: 3, count: r.r3 },
+				{ star: 2, count: r.r2 },
+				{ star: 1, count: r.r1 },
+			],
+		};
 	}
 
 	public async updateReview(memberId: ObjectId, input: ReviewUpdate): Promise<Review> {

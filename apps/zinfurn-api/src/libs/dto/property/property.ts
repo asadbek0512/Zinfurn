@@ -1,4 +1,4 @@
-import { Field, Int, ObjectType } from "@nestjs/graphql";
+import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
 import { PropertyCategory, PropertyColor, PropertyCondition, PropertyMaterial, PropertyStatus, PropertyType } from "../../enums/property.enum";
 import { Member, TotalCounter } from "../member/member";
@@ -77,6 +77,15 @@ export class Property {
 
     @Field(() => Int, { nullable: true })
     propertyComments?: number;
+
+    @Field(() => Int, { nullable: true })
+    propertyReviews?: number;
+
+    @Field(() => Float, { nullable: true })
+    propertyRating?: number;
+
+    @Field(() => Int, { nullable: true })
+    propertySoldCount?: number;
 
     @Field(() => Int, { nullable: true })
     propertyRank?: number;
