@@ -28,7 +28,7 @@ const graphql_1 = __webpack_require__(7);
 const apollo_1 = __webpack_require__(8);
 const app_resolver_1 = __webpack_require__(9);
 const components_module_1 = __webpack_require__(10);
-const database_module_1 = __webpack_require__(111);
+const database_module_1 = __webpack_require__(127);
 const socket_module_1 = __webpack_require__(63);
 let AppModule = class AppModule {
 };
@@ -209,6 +209,8 @@ const view_module_1 = __webpack_require__(57);
 const repair_property_module_1 = __webpack_require__(92);
 const notification_module_1 = __webpack_require__(61);
 const notice_module_1 = __webpack_require__(102);
+const order_module_1 = __webpack_require__(111);
+const review_module_1 = __webpack_require__(119);
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -226,6 +228,8 @@ exports.ComponentsModule = ComponentsModule = __decorate([
             repair_property_module_1.RepairPropertyModule,
             notification_module_1.NotificationModule,
             notice_module_1.NoticeModule,
+            order_module_1.OrderModule,
+            review_module_1.ReviewModule,
         ],
     })
 ], ComponentsModule);
@@ -3220,12 +3224,18 @@ let AuthController = class AuthController {
             console.log('req.query:', req.query);
             console.log('req.user:', req.user);
             const user = req.user;
-            const memberId = req.query?.state || user?.memberId;
+            const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(c => {
+                const [k, v] = c.trim().split('=');
+                return [k, decodeURIComponent(v)];
+            }).filter(([k]) => k));
+            console.log('Parsed cookies:', cookies);
+            const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
             console.log('memberId:', memberId);
             const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
             if (memberId) {
                 console.log('🔗 Account linking for memberId:', memberId);
                 const result = await this.authService.linkGoogle(memberId, user);
+                res.cookie('linkMemberId', '', { maxAge: 0 });
                 return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
             }
             else {
@@ -3257,7 +3267,17 @@ let AuthController = class AuthController {
         const result = await this.authService.linkTelegram(memberId, telegramData);
         return res.json({ token: result.token });
     }
-    async linkGoogle() { }
+    async linkGoogle(req, res) {
+        const memberId = req.query.state;
+        res.cookie('linkMemberId', memberId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 5 * 60 * 1000,
+        });
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.GOOGLE_CALLBACK_URL}&response_type=code&scope=email%20profile&state=${memberId}`;
+        res.redirect(googleAuthUrl);
+    }
     async linkGoogleCallback(req, res) {
         try {
             const memberId = req.user?.memberId;
@@ -3307,9 +3327,10 @@ __decorate([
 ], AuthController.prototype, "linkTelegram", null);
 __decorate([
     (0, common_1.Get)('link/google'),
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "linkGoogle", null);
 __decorate([
@@ -3788,6 +3809,18 @@ const PropertySchema = new mongoose_1.Schema({
         default: 0,
     },
     propertyComments: {
+        type: Number,
+        default: 0,
+    },
+    propertyReviews: {
+        type: Number,
+        default: 0,
+    },
+    propertyRating: {
+        type: Number,
+        default: 0,
+    },
+    propertySoldCount: {
         type: Number,
         default: 0,
     },
@@ -4535,6 +4568,9 @@ let Property = class Property {
     propertyViews;
     propertyLikes;
     propertyComments;
+    propertyReviews;
+    propertyRating;
+    propertySoldCount;
     propertyRank;
     memberId;
     soldAt;
@@ -4642,6 +4678,18 @@ __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
     __metadata("design:type", Number)
 ], Property.prototype, "propertyComments", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyReviews", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Float, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertyRating", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], Property.prototype, "propertySoldCount", void 0);
 __decorate([
     (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
     __metadata("design:type", Number)
@@ -8722,6 +8770,1477 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrderModule = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(14);
+const auth_module_1 = __webpack_require__(49);
+const member_module_1 = __webpack_require__(11);
+const Order_model_1 = __webpack_require__(112);
+const Property_model_1 = __webpack_require__(66);
+const order_resolver_1 = __webpack_require__(114);
+const order_service_1 = __webpack_require__(118);
+let OrderModule = class OrderModule {
+};
+exports.OrderModule = OrderModule;
+exports.OrderModule = OrderModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
+                { name: 'Order', schema: Order_model_1.default },
+                { name: 'Property', schema: Property_model_1.default },
+            ]),
+            auth_module_1.AuthModule,
+            member_module_1.MemberModule,
+        ],
+        providers: [order_resolver_1.OrderResolver, order_service_1.OrderService],
+        exports: [order_service_1.OrderService],
+    })
+], OrderModule);
+
+
+/***/ }),
+/* 112 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(15);
+const order_enum_1 = __webpack_require__(113);
+const OrderItemSchema = new mongoose_1.Schema({
+    propertyId: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: 'Property' },
+    propertyTitle: { type: String, required: true },
+    propertyImage: { type: String },
+    propertyPrice: { type: Number, required: true },
+    quantity: { type: Number, required: true, default: 1 },
+}, { _id: false });
+const DeliveryInfoSchema = new mongoose_1.Schema({
+    fullName: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    phone: { type: String, required: true },
+    note: { type: String },
+}, { _id: false });
+const OrderSchema = new mongoose_1.Schema({
+    orderId: { type: String, required: true, unique: true },
+    memberId: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: 'Member' },
+    orderItems: { type: [OrderItemSchema], required: true },
+    orderStatus: { type: String, enum: order_enum_1.OrderStatus, default: order_enum_1.OrderStatus.PENDING },
+    orderTotal: { type: Number, required: true },
+    deliveryInfo: { type: DeliveryInfoSchema, required: true },
+    confirmedAt: { type: Date },
+    cancelledAt: { type: Date },
+    returnRequestedAt: { type: Date },
+    returnReason: { type: String },
+    returnedAt: { type: Date },
+}, { timestamps: true, collection: 'orders' });
+exports["default"] = OrderSchema;
+
+
+/***/ }),
+/* 113 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrderStatus = void 0;
+const graphql_1 = __webpack_require__(7);
+var OrderStatus;
+(function (OrderStatus) {
+    OrderStatus["PENDING"] = "PENDING";
+    OrderStatus["PROCESSING"] = "PROCESSING";
+    OrderStatus["SHIPPED"] = "SHIPPED";
+    OrderStatus["DELIVERED"] = "DELIVERED";
+    OrderStatus["CONFIRMED"] = "CONFIRMED";
+    OrderStatus["CANCELLED"] = "CANCELLED";
+    OrderStatus["RETURN_REQUESTED"] = "RETURN_REQUESTED";
+    OrderStatus["RETURNED"] = "RETURNED";
+})(OrderStatus || (exports.OrderStatus = OrderStatus = {}));
+(0, graphql_1.registerEnumType)(OrderStatus, { name: 'OrderStatus' });
+
+
+/***/ }),
+/* 114 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrderResolver = void 0;
+const graphql_1 = __webpack_require__(7);
+const common_1 = __webpack_require__(3);
+const auth_guard_1 = __webpack_require__(40);
+const roles_guard_1 = __webpack_require__(43);
+const roles_decorator_1 = __webpack_require__(42);
+const authMember_decorator_1 = __webpack_require__(41);
+const mongoose_1 = __webpack_require__(15);
+const config_1 = __webpack_require__(21);
+const member_enum_1 = __webpack_require__(16);
+const order_1 = __webpack_require__(115);
+const order_input_1 = __webpack_require__(116);
+const order_update_1 = __webpack_require__(117);
+const order_service_1 = __webpack_require__(118);
+let OrderResolver = class OrderResolver {
+    orderService;
+    constructor(orderService) {
+        this.orderService = orderService;
+    }
+    async createOrder(input, memberId) {
+        console.log('Mutation: createOrder');
+        return this.orderService.createOrder(memberId, input);
+    }
+    async getMyOrders(input, memberId) {
+        console.log('Query: getMyOrders');
+        return this.orderService.getMyOrders(memberId, input);
+    }
+    async getOrderById(orderId, memberId) {
+        console.log('Query: getOrderById');
+        return this.orderService.getOrderById(memberId, (0, config_1.ShapeIntoMongoObjectId)(orderId));
+    }
+    async confirmDelivery(orderId, memberId) {
+        console.log('Mutation: confirmDelivery');
+        return this.orderService.confirmDelivery(memberId, (0, config_1.ShapeIntoMongoObjectId)(orderId));
+    }
+    async demoDeliverOrder(orderId, memberId) {
+        console.log('Mutation: demoDeliverOrder');
+        return this.orderService.demoDeliverOrder(memberId, (0, config_1.ShapeIntoMongoObjectId)(orderId));
+    }
+    async requestReturn(input, memberId) {
+        console.log('Mutation: requestReturn');
+        input._id = (0, config_1.ShapeIntoMongoObjectId)(input._id);
+        return this.orderService.requestReturn(memberId, input);
+    }
+    async updateOrderStatusByAdmin(input) {
+        console.log('Mutation: updateOrderStatusByAdmin');
+        input._id = (0, config_1.ShapeIntoMongoObjectId)(input._id);
+        return this.orderService.updateOrderStatusByAdmin(input);
+    }
+    async getAllOrdersByAdmin(input) {
+        console.log('Query: getAllOrdersByAdmin');
+        return this.orderService.getAllOrdersByAdmin(input);
+    }
+};
+exports.OrderResolver = OrderResolver;
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_b = typeof order_input_1.CreateOrderInput !== "undefined" && order_input_1.CreateOrderInput) === "function" ? _b : Object, typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], OrderResolver.prototype, "createOrder", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)(() => order_1.Orders),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof order_input_1.OrdersInquiry !== "undefined" && order_input_1.OrdersInquiry) === "function" ? _e : Object, typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object]),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+], OrderResolver.prototype, "getMyOrders", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('orderId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_h = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _h : Object]),
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
+], OrderResolver.prototype, "getOrderById", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('orderId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_k = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _k : Object]),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
+], OrderResolver.prototype, "confirmDelivery", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('orderId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_m = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _m : Object]),
+    __metadata("design:returntype", typeof (_o = typeof Promise !== "undefined" && Promise) === "function" ? _o : Object)
+], OrderResolver.prototype, "demoDeliverOrder", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_p = typeof order_update_1.OrderUpdate !== "undefined" && order_update_1.OrderUpdate) === "function" ? _p : Object, typeof (_q = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _q : Object]),
+    __metadata("design:returntype", typeof (_r = typeof Promise !== "undefined" && Promise) === "function" ? _r : Object)
+], OrderResolver.prototype, "requestReturn", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)(() => order_1.Order),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_s = typeof order_update_1.OrderUpdate !== "undefined" && order_update_1.OrderUpdate) === "function" ? _s : Object]),
+    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+], OrderResolver.prototype, "updateOrderStatusByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)(() => order_1.Orders),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_u = typeof order_input_1.OrdersInquiry !== "undefined" && order_input_1.OrdersInquiry) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+], OrderResolver.prototype, "getAllOrdersByAdmin", null);
+exports.OrderResolver = OrderResolver = __decorate([
+    (0, graphql_1.Resolver)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof order_service_1.OrderService !== "undefined" && order_service_1.OrderService) === "function" ? _a : Object])
+], OrderResolver);
+
+
+/***/ }),
+/* 115 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Orders = exports.Order = exports.DeliveryInfo = exports.OrderItem = void 0;
+const graphql_1 = __webpack_require__(7);
+const mongoose_1 = __webpack_require__(15);
+const order_enum_1 = __webpack_require__(113);
+const member_1 = __webpack_require__(37);
+let OrderItem = class OrderItem {
+    propertyId;
+    propertyTitle;
+    propertyImage;
+    propertyPrice;
+    quantity;
+};
+exports.OrderItem = OrderItem;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], OrderItem.prototype, "propertyId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], OrderItem.prototype, "propertyTitle", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "propertyImage", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Float),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "propertyPrice", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "quantity", void 0);
+exports.OrderItem = OrderItem = __decorate([
+    (0, graphql_1.ObjectType)()
+], OrderItem);
+let DeliveryInfo = class DeliveryInfo {
+    fullName;
+    address;
+    city;
+    phone;
+    note;
+};
+exports.DeliveryInfo = DeliveryInfo;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfo.prototype, "fullName", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfo.prototype, "address", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfo.prototype, "city", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfo.prototype, "phone", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], DeliveryInfo.prototype, "note", void 0);
+exports.DeliveryInfo = DeliveryInfo = __decorate([
+    (0, graphql_1.ObjectType)()
+], DeliveryInfo);
+let Order = class Order {
+    _id;
+    orderId;
+    memberId;
+    orderItems;
+    orderStatus;
+    orderTotal;
+    deliveryInfo;
+    confirmedAt;
+    cancelledAt;
+    returnRequestedAt;
+    returnReason;
+    returnedAt;
+    createdAt;
+    updatedAt;
+    memberData;
+};
+exports.Order = Order;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
+], Order.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], Order.prototype, "orderId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object)
+], Order.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [OrderItem]),
+    __metadata("design:type", Array)
+], Order.prototype, "orderItems", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => order_enum_1.OrderStatus),
+    __metadata("design:type", typeof (_d = typeof order_enum_1.OrderStatus !== "undefined" && order_enum_1.OrderStatus) === "function" ? _d : Object)
+], Order.prototype, "orderStatus", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Float),
+    __metadata("design:type", Number)
+], Order.prototype, "orderTotal", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => DeliveryInfo),
+    __metadata("design:type", DeliveryInfo)
+], Order.prototype, "deliveryInfo", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+], Order.prototype, "confirmedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], Order.prototype, "cancelledAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], Order.prototype, "returnRequestedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "returnReason", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+], Order.prototype, "returnedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_j = typeof Date !== "undefined" && Date) === "function" ? _j : Object)
+], Order.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
+], Order.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
+    __metadata("design:type", typeof (_l = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _l : Object)
+], Order.prototype, "memberData", void 0);
+exports.Order = Order = __decorate([
+    (0, graphql_1.ObjectType)()
+], Order);
+let Orders = class Orders {
+    list;
+    metaCounter;
+};
+exports.Orders = Orders;
+__decorate([
+    (0, graphql_1.Field)(() => [Order]),
+    __metadata("design:type", Array)
+], Orders.prototype, "list", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [member_1.TotalCounter], { nullable: true }),
+    __metadata("design:type", Array)
+], Orders.prototype, "metaCounter", void 0);
+exports.Orders = Orders = __decorate([
+    (0, graphql_1.ObjectType)()
+], Orders);
+
+
+/***/ }),
+/* 116 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrdersInquiry = exports.CreateOrderInput = exports.DeliveryInfoInput = exports.OrderItemInput = void 0;
+const graphql_1 = __webpack_require__(7);
+const class_validator_1 = __webpack_require__(36);
+const mongoose_1 = __webpack_require__(15);
+const order_enum_1 = __webpack_require__(113);
+const common_enum_1 = __webpack_require__(17);
+let OrderItemInput = class OrderItemInput {
+    propertyId;
+    propertyTitle;
+    propertyImage;
+    propertyPrice;
+    quantity;
+};
+exports.OrderItemInput = OrderItemInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], OrderItemInput.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], OrderItemInput.prototype, "propertyTitle", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], OrderItemInput.prototype, "propertyImage", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => graphql_1.Float),
+    __metadata("design:type", Number)
+], OrderItemInput.prototype, "propertyPrice", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrderItemInput.prototype, "quantity", void 0);
+exports.OrderItemInput = OrderItemInput = __decorate([
+    (0, graphql_1.InputType)()
+], OrderItemInput);
+let DeliveryInfoInput = class DeliveryInfoInput {
+    fullName;
+    address;
+    city;
+    phone;
+    note;
+};
+exports.DeliveryInfoInput = DeliveryInfoInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfoInput.prototype, "fullName", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfoInput.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfoInput.prototype, "city", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], DeliveryInfoInput.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], DeliveryInfoInput.prototype, "note", void 0);
+exports.DeliveryInfoInput = DeliveryInfoInput = __decorate([
+    (0, graphql_1.InputType)()
+], DeliveryInfoInput);
+let CreateOrderInput = class CreateOrderInput {
+    orderItems;
+    orderTotal;
+    deliveryInfo;
+    memberId;
+};
+exports.CreateOrderInput = CreateOrderInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => [OrderItemInput]),
+    __metadata("design:type", Array)
+], CreateOrderInput.prototype, "orderItems", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => graphql_1.Float),
+    __metadata("design:type", Number)
+], CreateOrderInput.prototype, "orderTotal", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => DeliveryInfoInput),
+    __metadata("design:type", DeliveryInfoInput)
+], CreateOrderInput.prototype, "deliveryInfo", void 0);
+exports.CreateOrderInput = CreateOrderInput = __decorate([
+    (0, graphql_1.InputType)()
+], CreateOrderInput);
+let OISearch = class OISearch {
+    orderStatus;
+};
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => order_enum_1.OrderStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof order_enum_1.OrderStatus !== "undefined" && order_enum_1.OrderStatus) === "function" ? _b : Object)
+], OISearch.prototype, "orderStatus", void 0);
+OISearch = __decorate([
+    (0, graphql_1.InputType)()
+], OISearch);
+let OrdersInquiry = class OrdersInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.OrdersInquiry = OrdersInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrdersInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrdersInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['createdAt', 'updatedAt']),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], OrdersInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _c : Object)
+], OrdersInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => OISearch, { nullable: true }),
+    __metadata("design:type", OISearch)
+], OrdersInquiry.prototype, "search", void 0);
+exports.OrdersInquiry = OrdersInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], OrdersInquiry);
+
+
+/***/ }),
+/* 117 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrderUpdate = void 0;
+const graphql_1 = __webpack_require__(7);
+const class_validator_1 = __webpack_require__(36);
+const mongoose_1 = __webpack_require__(15);
+const order_enum_1 = __webpack_require__(113);
+let OrderUpdate = class OrderUpdate {
+    _id;
+    orderStatus;
+    returnReason;
+};
+exports.OrderUpdate = OrderUpdate;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], OrderUpdate.prototype, "_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => order_enum_1.OrderStatus, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof order_enum_1.OrderStatus !== "undefined" && order_enum_1.OrderStatus) === "function" ? _b : Object)
+], OrderUpdate.prototype, "orderStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], OrderUpdate.prototype, "returnReason", void 0);
+exports.OrderUpdate = OrderUpdate = __decorate([
+    (0, graphql_1.InputType)()
+], OrderUpdate);
+
+
+/***/ }),
+/* 118 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OrderService = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(14);
+const mongoose_2 = __webpack_require__(15);
+const order_enum_1 = __webpack_require__(113);
+const common_enum_1 = __webpack_require__(17);
+const config_1 = __webpack_require__(21);
+let OrderService = class OrderService {
+    orderModel;
+    propertyModel;
+    constructor(orderModel, propertyModel) {
+        this.orderModel = orderModel;
+        this.propertyModel = propertyModel;
+    }
+    async createOrder(memberId, input) {
+        input.memberId = memberId;
+        const orderId = `ZIN-${Date.now()}`;
+        try {
+            const order = await this.orderModel.create({ ...input, orderId });
+            this.scheduleAutoProgression(order._id);
+            return order;
+        }
+        catch (err) {
+            console.log('OrderService.createOrder error:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+        }
+    }
+    scheduleAutoProgression(orderId) {
+        const advance = (status, delayMs) => {
+            setTimeout(async () => {
+                try {
+                    await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status });
+                    console.log(`Order ${orderId} → ${status}`);
+                }
+                catch { }
+            }, delayMs);
+        };
+        advance(order_enum_1.OrderStatus.PROCESSING, 15_000);
+        advance(order_enum_1.OrderStatus.SHIPPED, 35_000);
+        advance(order_enum_1.OrderStatus.DELIVERED, 60_000);
+    }
+    async getMyOrders(memberId, input) {
+        const { page, limit, sort, direction, search } = input;
+        const match = { memberId };
+        if (search?.orderStatus)
+            match.orderStatus = search.orderStatus;
+        const sortBy = { [sort ?? 'createdAt']: direction ?? common_enum_1.Direction.DESC };
+        const result = await this.orderModel
+            .aggregate([
+            { $match: match },
+            { $sort: sortBy },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        config_1.lookupMember,
+                        { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        return result[0];
+    }
+    async getOrderById(memberId, orderId) {
+        const result = await this.orderModel
+            .aggregate([
+            { $match: { _id: orderId, memberId } },
+            config_1.lookupMember,
+            { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+        ])
+            .exec();
+        if (!result[0])
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async confirmDelivery(memberId, orderId) {
+        const order = await this.orderModel.findOne({ _id: orderId, memberId });
+        if (!order)
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        if (order.orderStatus !== order_enum_1.OrderStatus.DELIVERED) {
+            throw new common_1.BadRequestException('Order must be DELIVERED before confirmation');
+        }
+        const confirmed = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: order_enum_1.OrderStatus.CONFIRMED, confirmedAt: new Date() }, { new: true });
+        for (const item of order.orderItems) {
+            await this.propertyModel.findByIdAndUpdate(item.propertyId, { $inc: { propertySoldCount: item.quantity } });
+        }
+        return confirmed;
+    }
+    async demoDeliverOrder(memberId, orderId) {
+        const order = await this.orderModel.findOne({ _id: orderId, memberId });
+        if (!order)
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        const ACTIVE = ['PENDING', 'PROCESSING', 'SHIPPED'];
+        if (!ACTIVE.includes(order.orderStatus)) {
+            throw new common_1.BadRequestException('Order is not in an active delivery state');
+        }
+        return this.orderModel.findByIdAndUpdate(orderId, { orderStatus: order_enum_1.OrderStatus.DELIVERED }, { new: true });
+    }
+    async requestReturn(memberId, input) {
+        const order = await this.orderModel.findOne({ _id: input._id, memberId });
+        if (!order)
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        if (order.orderStatus !== order_enum_1.OrderStatus.CONFIRMED) {
+            throw new common_1.BadRequestException('Order must be CONFIRMED before return request');
+        }
+        return this.orderModel.findByIdAndUpdate(input._id, {
+            orderStatus: order_enum_1.OrderStatus.RETURN_REQUESTED,
+            returnRequestedAt: new Date(),
+            returnReason: input.returnReason,
+        }, { new: true });
+    }
+    async updateOrderStatusByAdmin(input) {
+        const updateData = { orderStatus: input.orderStatus };
+        if (input.orderStatus === order_enum_1.OrderStatus.RETURNED)
+            updateData.returnedAt = new Date();
+        return this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true });
+    }
+    async getAllOrdersByAdmin(input) {
+        const { page, limit, sort, direction, search } = input;
+        const match = {};
+        if (search?.orderStatus)
+            match.orderStatus = search.orderStatus;
+        const sortBy = { [sort ?? 'createdAt']: direction ?? common_enum_1.Direction.DESC };
+        const result = await this.orderModel
+            .aggregate([
+            { $match: match },
+            { $sort: sortBy },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        config_1.lookupMember,
+                        { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        return result[0];
+    }
+};
+exports.OrderService = OrderService;
+exports.OrderService = OrderService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Order')),
+    __param(1, (0, mongoose_1.InjectModel)('Property')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object])
+], OrderService);
+
+
+/***/ }),
+/* 119 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewModule = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(14);
+const auth_module_1 = __webpack_require__(49);
+const Review_model_1 = __webpack_require__(120);
+const Order_model_1 = __webpack_require__(112);
+const Property_model_1 = __webpack_require__(66);
+const review_resolver_1 = __webpack_require__(122);
+const review_service_1 = __webpack_require__(126);
+let ReviewModule = class ReviewModule {
+};
+exports.ReviewModule = ReviewModule;
+exports.ReviewModule = ReviewModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
+                { name: 'Review', schema: Review_model_1.default },
+                { name: 'Order', schema: Order_model_1.default },
+                { name: 'Property', schema: Property_model_1.default },
+            ]),
+            auth_module_1.AuthModule,
+        ],
+        providers: [review_resolver_1.ReviewResolver, review_service_1.ReviewService],
+        exports: [review_service_1.ReviewService],
+    })
+], ReviewModule);
+
+
+/***/ }),
+/* 120 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(15);
+const review_enum_1 = __webpack_require__(121);
+const ReviewSchema = new mongoose_1.Schema({
+    memberId: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: 'Member' },
+    propertyId: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: 'Property' },
+    orderId: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: 'Order' },
+    reviewRating: { type: Number, required: true, min: 1, max: 5 },
+    reviewContent: { type: String, required: true },
+    reviewImages: { type: [String], default: [] },
+    reviewStatus: { type: String, enum: review_enum_1.ReviewStatus, default: review_enum_1.ReviewStatus.ACTIVE },
+}, { timestamps: true, collection: 'reviews' });
+ReviewSchema.index({ memberId: 1, propertyId: 1, orderId: 1 }, { unique: true });
+exports["default"] = ReviewSchema;
+
+
+/***/ }),
+/* 121 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewStatus = void 0;
+const graphql_1 = __webpack_require__(7);
+var ReviewStatus;
+(function (ReviewStatus) {
+    ReviewStatus["ACTIVE"] = "ACTIVE";
+    ReviewStatus["DELETE"] = "DELETE";
+})(ReviewStatus || (exports.ReviewStatus = ReviewStatus = {}));
+(0, graphql_1.registerEnumType)(ReviewStatus, { name: 'ReviewStatus' });
+
+
+/***/ }),
+/* 122 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewResolver = void 0;
+const graphql_1 = __webpack_require__(7);
+const common_1 = __webpack_require__(3);
+const auth_guard_1 = __webpack_require__(40);
+const without_guard_1 = __webpack_require__(45);
+const roles_guard_1 = __webpack_require__(43);
+const roles_decorator_1 = __webpack_require__(42);
+const authMember_decorator_1 = __webpack_require__(41);
+const mongoose_1 = __webpack_require__(15);
+const config_1 = __webpack_require__(21);
+const member_enum_1 = __webpack_require__(16);
+const review_1 = __webpack_require__(123);
+const review_input_1 = __webpack_require__(124);
+const review_update_1 = __webpack_require__(125);
+const review_service_1 = __webpack_require__(126);
+let ReviewResolver = class ReviewResolver {
+    reviewService;
+    constructor(reviewService) {
+        this.reviewService = reviewService;
+    }
+    async createReview(input, memberId) {
+        console.log('Mutation: createReview');
+        input.propertyId = (0, config_1.ShapeIntoMongoObjectId)(input.propertyId);
+        input.orderId = (0, config_1.ShapeIntoMongoObjectId)(input.orderId);
+        return this.reviewService.createReview(memberId, input);
+    }
+    async getPropertyReviews(input) {
+        console.log('Query: getPropertyReviews');
+        input.search.propertyId = (0, config_1.ShapeIntoMongoObjectId)(input.search.propertyId);
+        return this.reviewService.getPropertyReviews(input);
+    }
+    async getPropertyReviewSummary(propertyId) {
+        console.log('Query: getPropertyReviewSummary');
+        return this.reviewService.getPropertyReviewSummary((0, config_1.ShapeIntoMongoObjectId)(propertyId));
+    }
+    async updateReview(input, memberId) {
+        console.log('Mutation: updateReview');
+        input._id = (0, config_1.ShapeIntoMongoObjectId)(input._id);
+        return this.reviewService.updateReview(memberId, input);
+    }
+    async removeReviewByAdmin(reviewId) {
+        console.log('Mutation: removeReviewByAdmin');
+        return this.reviewService.removeReviewByAdmin((0, config_1.ShapeIntoMongoObjectId)(reviewId));
+    }
+};
+exports.ReviewResolver = ReviewResolver;
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => review_1.Review),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_b = typeof review_input_1.CreateReviewInput !== "undefined" && review_input_1.CreateReviewInput) === "function" ? _b : Object, typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], ReviewResolver.prototype, "createReview", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => review_1.Reviews),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof review_input_1.ReviewsInquiry !== "undefined" && review_input_1.ReviewsInquiry) === "function" ? _e : Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], ReviewResolver.prototype, "getPropertyReviews", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => review_1.ReviewSummary),
+    __param(0, (0, graphql_1.Args)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+], ReviewResolver.prototype, "getPropertyReviewSummary", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => review_1.Review),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_h = typeof review_update_1.ReviewUpdate !== "undefined" && review_update_1.ReviewUpdate) === "function" ? _h : Object, typeof (_j = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _j : Object]),
+    __metadata("design:returntype", typeof (_k = typeof Promise !== "undefined" && Promise) === "function" ? _k : Object)
+], ReviewResolver.prototype, "updateReview", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)(() => review_1.Review),
+    __param(0, (0, graphql_1.Args)('reviewId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
+], ReviewResolver.prototype, "removeReviewByAdmin", null);
+exports.ReviewResolver = ReviewResolver = __decorate([
+    (0, graphql_1.Resolver)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof review_service_1.ReviewService !== "undefined" && review_service_1.ReviewService) === "function" ? _a : Object])
+], ReviewResolver);
+
+
+/***/ }),
+/* 123 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f, _g, _h;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Reviews = exports.ReviewSummary = exports.Review = exports.RatingCount = void 0;
+const graphql_1 = __webpack_require__(7);
+const mongoose_1 = __webpack_require__(15);
+const review_enum_1 = __webpack_require__(121);
+const member_1 = __webpack_require__(37);
+let RatingCount = class RatingCount {
+    star;
+    count;
+};
+exports.RatingCount = RatingCount;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RatingCount.prototype, "star", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], RatingCount.prototype, "count", void 0);
+exports.RatingCount = RatingCount = __decorate([
+    (0, graphql_1.ObjectType)()
+], RatingCount);
+let Review = class Review {
+    _id;
+    memberId;
+    propertyId;
+    orderId;
+    reviewRating;
+    reviewContent;
+    reviewImages;
+    reviewStatus;
+    createdAt;
+    updatedAt;
+    memberData;
+};
+exports.Review = Review;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], Review.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
+], Review.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object)
+], Review.prototype, "propertyId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_d = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _d : Object)
+], Review.prototype, "orderId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], Review.prototype, "reviewRating", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], Review.prototype, "reviewContent", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [String]),
+    __metadata("design:type", Array)
+], Review.prototype, "reviewImages", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => review_enum_1.ReviewStatus),
+    __metadata("design:type", typeof (_e = typeof review_enum_1.ReviewStatus !== "undefined" && review_enum_1.ReviewStatus) === "function" ? _e : Object)
+], Review.prototype, "reviewStatus", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], Review.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], Review.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _h : Object)
+], Review.prototype, "memberData", void 0);
+exports.Review = Review = __decorate([
+    (0, graphql_1.ObjectType)()
+], Review);
+let ReviewSummary = class ReviewSummary {
+    averageRating;
+    totalReviews;
+    ratingDistribution;
+};
+exports.ReviewSummary = ReviewSummary;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Float),
+    __metadata("design:type", Number)
+], ReviewSummary.prototype, "averageRating", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], ReviewSummary.prototype, "totalReviews", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [RatingCount]),
+    __metadata("design:type", Array)
+], ReviewSummary.prototype, "ratingDistribution", void 0);
+exports.ReviewSummary = ReviewSummary = __decorate([
+    (0, graphql_1.ObjectType)()
+], ReviewSummary);
+let Reviews = class Reviews {
+    list;
+    metaCounter;
+};
+exports.Reviews = Reviews;
+__decorate([
+    (0, graphql_1.Field)(() => [Review]),
+    __metadata("design:type", Array)
+], Reviews.prototype, "list", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [member_1.TotalCounter], { nullable: true }),
+    __metadata("design:type", Array)
+], Reviews.prototype, "metaCounter", void 0);
+exports.Reviews = Reviews = __decorate([
+    (0, graphql_1.ObjectType)()
+], Reviews);
+
+
+/***/ }),
+/* 124 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewsInquiry = exports.CreateReviewInput = void 0;
+const graphql_1 = __webpack_require__(7);
+const class_validator_1 = __webpack_require__(36);
+const mongoose_1 = __webpack_require__(15);
+const common_enum_1 = __webpack_require__(17);
+let CreateReviewInput = class CreateReviewInput {
+    propertyId;
+    orderId;
+    reviewRating;
+    reviewContent;
+    reviewImages;
+    memberId;
+};
+exports.CreateReviewInput = CreateReviewInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], CreateReviewInput.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
+], CreateReviewInput.prototype, "orderId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(5),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], CreateReviewInput.prototype, "reviewRating", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Length)(1, 1000),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], CreateReviewInput.prototype, "reviewContent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], CreateReviewInput.prototype, "reviewImages", void 0);
+exports.CreateReviewInput = CreateReviewInput = __decorate([
+    (0, graphql_1.InputType)()
+], CreateReviewInput);
+let RISearch = class RISearch {
+    propertyId;
+};
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object)
+], RISearch.prototype, "propertyId", void 0);
+RISearch = __decorate([
+    (0, graphql_1.InputType)()
+], RISearch);
+let ReviewsInquiry = class ReviewsInquiry {
+    page;
+    limit;
+    sort;
+    direction;
+    search;
+};
+exports.ReviewsInquiry = ReviewsInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], ReviewsInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], ReviewsInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['createdAt', 'updatedAt', 'reviewRating']),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], ReviewsInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _d : Object)
+], ReviewsInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => RISearch),
+    __metadata("design:type", RISearch)
+], ReviewsInquiry.prototype, "search", void 0);
+exports.ReviewsInquiry = ReviewsInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], ReviewsInquiry);
+
+
+/***/ }),
+/* 125 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewUpdate = void 0;
+const graphql_1 = __webpack_require__(7);
+const class_validator_1 = __webpack_require__(36);
+const mongoose_1 = __webpack_require__(15);
+let ReviewUpdate = class ReviewUpdate {
+    _id;
+    reviewRating;
+    reviewContent;
+    reviewImages;
+};
+exports.ReviewUpdate = ReviewUpdate;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], ReviewUpdate.prototype, "_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(5),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], ReviewUpdate.prototype, "reviewRating", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Length)(1, 1000),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], ReviewUpdate.prototype, "reviewContent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], ReviewUpdate.prototype, "reviewImages", void 0);
+exports.ReviewUpdate = ReviewUpdate = __decorate([
+    (0, graphql_1.InputType)()
+], ReviewUpdate);
+
+
+/***/ }),
+/* 126 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ReviewService = void 0;
+const common_1 = __webpack_require__(3);
+const mongoose_1 = __webpack_require__(14);
+const mongoose_2 = __webpack_require__(15);
+const review_enum_1 = __webpack_require__(121);
+const order_enum_1 = __webpack_require__(113);
+const common_enum_1 = __webpack_require__(17);
+const config_1 = __webpack_require__(21);
+let ReviewService = class ReviewService {
+    reviewModel;
+    orderModel;
+    propertyModel;
+    constructor(reviewModel, orderModel, propertyModel) {
+        this.reviewModel = reviewModel;
+        this.orderModel = orderModel;
+        this.propertyModel = propertyModel;
+    }
+    async createReview(memberId, input) {
+        const order = await this.orderModel.findOne({
+            _id: input.orderId,
+            memberId,
+            orderStatus: order_enum_1.OrderStatus.CONFIRMED,
+        });
+        if (!order)
+            throw new common_1.BadRequestException('Order must be confirmed before writing a review');
+        const existing = await this.reviewModel.findOne({
+            memberId,
+            propertyId: input.propertyId,
+            orderId: input.orderId,
+        });
+        if (existing)
+            throw new common_1.BadRequestException('You already reviewed this order item');
+        input.memberId = memberId;
+        try {
+            const review = await this.reviewModel.create(input);
+            const avgResult = await this.reviewModel.aggregate([
+                { $match: { propertyId: input.propertyId, reviewStatus: review_enum_1.ReviewStatus.ACTIVE } },
+                { $group: { _id: null, avg: { $avg: '$reviewRating' } } },
+            ]).exec();
+            const newRating = avgResult[0] ? Math.round(avgResult[0].avg * 10) / 10 : 0;
+            await this.propertyModel.findByIdAndUpdate(input.propertyId, {
+                $inc: { propertyReviews: 1 },
+                propertyRating: newRating,
+            });
+            return review;
+        }
+        catch (err) {
+            console.log('ReviewService.createReview error:', err.message);
+            throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+        }
+    }
+    async getPropertyReviews(input) {
+        const { page, limit, sort, direction, search } = input;
+        const match = {
+            propertyId: search.propertyId,
+            reviewStatus: review_enum_1.ReviewStatus.ACTIVE,
+        };
+        const sortBy = { [sort ?? 'createdAt']: direction ?? common_enum_1.Direction.DESC };
+        const result = await this.reviewModel
+            .aggregate([
+            { $match: match },
+            { $sort: sortBy },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        config_1.lookupMember,
+                        { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        return result[0];
+    }
+    async getPropertyReviewSummary(propertyId) {
+        const result = await this.reviewModel
+            .aggregate([
+            { $match: { propertyId, reviewStatus: review_enum_1.ReviewStatus.ACTIVE } },
+            {
+                $group: {
+                    _id: null,
+                    averageRating: { $avg: '$reviewRating' },
+                    totalReviews: { $sum: 1 },
+                    r1: { $sum: { $cond: [{ $eq: ['$reviewRating', 1] }, 1, 0] } },
+                    r2: { $sum: { $cond: [{ $eq: ['$reviewRating', 2] }, 1, 0] } },
+                    r3: { $sum: { $cond: [{ $eq: ['$reviewRating', 3] }, 1, 0] } },
+                    r4: { $sum: { $cond: [{ $eq: ['$reviewRating', 4] }, 1, 0] } },
+                    r5: { $sum: { $cond: [{ $eq: ['$reviewRating', 5] }, 1, 0] } },
+                },
+            },
+        ])
+            .exec();
+        if (!result[0])
+            return { averageRating: 0, totalReviews: 0, ratingDistribution: [] };
+        const r = result[0];
+        return {
+            averageRating: Math.round(r.averageRating * 10) / 10,
+            totalReviews: r.totalReviews,
+            ratingDistribution: [
+                { star: 5, count: r.r5 },
+                { star: 4, count: r.r4 },
+                { star: 3, count: r.r3 },
+                { star: 2, count: r.r2 },
+                { star: 1, count: r.r1 },
+            ],
+        };
+    }
+    async updateReview(memberId, input) {
+        const review = await this.reviewModel.findOne({ _id: input._id, memberId });
+        if (!review)
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        return this.reviewModel.findByIdAndUpdate(input._id, input, { new: true });
+    }
+    async removeReviewByAdmin(reviewId) {
+        return this.reviewModel.findByIdAndUpdate(reviewId, { reviewStatus: review_enum_1.ReviewStatus.DELETE }, { new: true });
+    }
+};
+exports.ReviewService = ReviewService;
+exports.ReviewService = ReviewService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Review')),
+    __param(1, (0, mongoose_1.InjectModel)('Order')),
+    __param(2, (0, mongoose_1.InjectModel)('Property')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object, typeof (_c = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _c : Object])
+], ReviewService);
+
+
+/***/ }),
+/* 127 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -8764,7 +10283,7 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 /***/ }),
-/* 112 */
+/* 128 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -8778,7 +10297,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LoggingInterceptor = void 0;
 const common_1 = __webpack_require__(3);
 const graphql_1 = __webpack_require__(7);
-const operators_1 = __webpack_require__(113);
+const operators_1 = __webpack_require__(129);
 let LoggingInterceptor = class LoggingInterceptor {
     logger = new common_1.Logger();
     intercept(context, next) {
@@ -8808,25 +10327,25 @@ exports.LoggingInterceptor = LoggingInterceptor = __decorate([
 
 
 /***/ }),
-/* 113 */
+/* 129 */
 /***/ ((module) => {
 
 module.exports = require("rxjs/operators");
 
 /***/ }),
-/* 114 */
+/* 130 */
 /***/ ((module) => {
 
 module.exports = require("express");
 
 /***/ }),
-/* 115 */
+/* 131 */
 /***/ ((module) => {
 
 module.exports = require("express-session");
 
 /***/ }),
-/* 116 */
+/* 132 */
 /***/ ((module) => {
 
 module.exports = require("@nestjs/platform-ws");
@@ -8868,11 +10387,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(1);
 const app_module_1 = __webpack_require__(2);
 const common_1 = __webpack_require__(3);
-const Logging_interceptor_1 = __webpack_require__(112);
+const Logging_interceptor_1 = __webpack_require__(128);
 const graphql_upload_1 = __webpack_require__(46);
-const express = __webpack_require__(114);
-const session = __webpack_require__(115);
-const platform_ws_1 = __webpack_require__(116);
+const express = __webpack_require__(130);
+const session = __webpack_require__(131);
+const platform_ws_1 = __webpack_require__(132);
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.useGlobalPipes(new common_1.ValidationPipe());
