@@ -2,6 +2,15 @@ import { BadRequestException, CanActivate, ExecutionContext, Injectable, Unautho
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
 
+function parseCookieToken(cookieHeader: string | undefined): string | null {
+	if (!cookieHeader) return null;
+	for (const part of cookieHeader.split(';')) {
+		const [key, ...rest] = part.trim().split('=');
+		if (key?.trim() === 'accessToken') return decodeURIComponent(rest.join('='));
+	}
+	return null;
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(private authService: AuthService) { }
@@ -12,10 +21,12 @@ export class AuthGuard implements CanActivate {
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;
 
+			const cookieToken = parseCookieToken(request.headers.cookie);
 			const bearerToken = request.headers.authorization;
-			if (!bearerToken) throw new BadRequestException(Message.TOKEN_NOT_EXIST);
-			const token = bearerToken.split(' ')[1],
-				authMember = await this.authService.verifyToken(token);
+			const rawToken = cookieToken || (bearerToken ? bearerToken.split(' ')[1] : null);
+
+			if (!rawToken) throw new BadRequestException(Message.TOKEN_NOT_EXIST);
+			const authMember = await this.authService.verifyToken(rawToken);
 			if (!authMember) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
 			console.log('memberNick[auth] =>', authMember.memberNick);

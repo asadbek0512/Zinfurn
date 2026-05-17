@@ -18,6 +18,7 @@ import { SocketModule } from './socket/socket.module';
       playground: true, // konfiguratsiyalari
       uploads: false,
       autoSchemaFile: true,
+      context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
       formatError: (error: T) => { //confeguratsiya #graphql da sodirbo'lgan errorni olin neradi
         const graphQLFormattedError = {
           code: error?.extensions.code,

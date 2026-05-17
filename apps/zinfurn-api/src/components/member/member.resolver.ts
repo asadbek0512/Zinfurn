@@ -1,4 +1,4 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { MemberService } from './member.service';
 import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry, TechnicianInquiry } from '../../libs/dto/member/member.input';
 import { Member, Members } from '../../libs/dto/member/member';
@@ -21,15 +21,35 @@ export class MemberResolver {
     constructor(private readonly memberService: MemberService) { }//dpendensiy injekshen
 
     @Mutation(() => Member)
-    public async signup(@Args('input') input: MemberInput): Promise<Member> {
+    public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
         console.log('Mutation: signup');
-        return await this.memberService.signup(input);
+        const member = await this.memberService.signup(input);
+        this.setAuthCookie(ctx.res, member.accessToken as string);
+        return member;
     }
 
     @Mutation(() => Member)
-    public async login(@Args('input') input: LoginInput): Promise<Member> {
+    public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
         console.log('Mutation: login');
-        return await this.memberService.login(input);
+        const member = await this.memberService.login(input);
+        this.setAuthCookie(ctx.res, member.accessToken as string);
+        return member;
+    }
+
+    @UseGuards(AuthGuard)
+    @Query(() => Member)
+    public async getMyProfile(@AuthMember('_id') memberId: ObjectId): Promise<Member> {
+        console.log('Query: getMyProfile');
+        return await this.memberService.getMyProfile(memberId);
+    }
+
+    private setAuthCookie(res: any, token: string): void {
+        res.cookie('accessToken', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            maxAge: 60 * 60 * 1000, // 1 soat
+        });
     }
 
     @UseGuards(AuthGuard)

@@ -10,6 +10,21 @@ export class AuthController {
 		private readonly telegramStrategy: TelegramStrategy,
 	) {}
 
+	private setAuthCookie(res: any, token: string): void {
+		res.cookie('accessToken', token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'lax',
+			maxAge: 60 * 60 * 1000,
+		});
+	}
+
+	@Post('logout')
+	async logout(@Res() res: any) {
+		res.cookie('accessToken', '', { httpOnly: true, maxAge: 0 });
+		return res.json({ success: true });
+	}
+
 	@Get('google')
 	@UseGuards(AuthGuard('google'))
 	async googleAuth() {}
@@ -42,13 +57,14 @@ export class AuthController {
 				// Account linking
 				console.log('🔗 Account linking for memberId:', memberId);
 				const result = await this.authService.linkGoogle(memberId, user);
-				// Cookie ni tozalash
 				res.cookie('linkMemberId', '', { maxAge: 0 });
+				this.setAuthCookie(res, result.token);
 				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
 			} else {
 				// Normal login
 				console.log('🔑 Normal Google login');
 				const result = await this.authService.googleLogin(user);
+				this.setAuthCookie(res, result.token);
 				return res.redirect(`${frontendUrl}/?token=${result.token}`);
 			}
 		} catch (err: any) {
@@ -65,6 +81,7 @@ export class AuthController {
 			return res.status(401).json({ message: 'Invalid Telegram auth data' });
 		}
 		const result = await this.authService.telegramLogin(telegramData);
+		this.setAuthCookie(res, result.token);
 		return res.json({ token: result.token });
 	}
 
@@ -76,6 +93,7 @@ export class AuthController {
 			return res.status(401).json({ message: 'Invalid Telegram auth data' });
 		}
 		const result = await this.authService.linkTelegram(memberId, telegramData);
+		this.setAuthCookie(res, result.token);
 		return res.json({ token: result.token });
 	}
 

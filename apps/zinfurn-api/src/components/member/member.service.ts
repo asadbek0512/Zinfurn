@@ -66,6 +66,12 @@ export class MemberService {
         return response;
     }
 
+    public async getMyProfile(memberId: ObjectId): Promise<Member> {
+        const member = await this.memberModel.findById(memberId).exec();
+        if (!member) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        return member;
+    }
+
     public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
         const result: Member | null = await this.memberModel   /// ??? | null qoyib ketildi
             .findOneAndUpdate(

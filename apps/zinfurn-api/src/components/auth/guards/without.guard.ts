@@ -1,6 +1,15 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 
+function parseCookieToken(cookieHeader: string | undefined): string | null {
+	if (!cookieHeader) return null;
+	for (const part of cookieHeader.split(';')) {
+		const [key, ...rest] = part.trim().split('=');
+		if (key?.trim() === 'accessToken') return decodeURIComponent(rest.join('='));
+	}
+	return null;
+}
+
 @Injectable()
 export class WithoutGuard implements CanActivate {
 	constructor(private authService: AuthService) {}
@@ -9,13 +18,14 @@ export class WithoutGuard implements CanActivate {
 		console.info('--- @guard() Authentication [WithoutGuard] ---');
 
 		if (context.contextType === 'graphql') {
-			const request = context.getArgByIndex(2).req,
-				bearerToken = request.headers.authorization;
+			const request = context.getArgByIndex(2).req;
+			const cookieToken = parseCookieToken(request.headers.cookie);
+			const bearerToken = request.headers.authorization;
+			const rawToken = cookieToken || (bearerToken ? bearerToken.split(' ')[1] : null);
 
-			if (bearerToken) {
+			if (rawToken) {
 				try {
-					const token = bearerToken.split(' ')[1],
-						authMember = await this.authService.verifyToken(token);
+					const authMember = await this.authService.verifyToken(rawToken);
 					request.body.authMember = authMember;
 				} catch (err) {
 					request.body.authMember = null;
@@ -25,9 +35,6 @@ export class WithoutGuard implements CanActivate {
 			console.log('memberNick[without] =>', request.body.authMember?.memberNick ?? 'none');
 			return true;
 		}
-		return false; // ?????????????
-
-
-		// description => http, rpc, gprs and etc are ignored
+		return false;
 	}
 }

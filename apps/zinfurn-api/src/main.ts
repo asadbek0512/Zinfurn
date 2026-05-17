@@ -11,7 +11,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
-  app.enableCors({ origin: true, credentials: true });
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3006').split(',').map(o => o.trim());
+  app.enableCors({
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  });
 
   app.use(graphqlUploadExpress({ maxFileSize: 15000000, maxFiles: 10 }))
   app.use('/uploads', express.static('./uploads'));
