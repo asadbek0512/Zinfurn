@@ -25,11 +25,26 @@ export class AuthService {
 	}
 
 	public async createToken(member: Member): Promise<string> {
-		const payload: T = {};
-		Object.keys(member['_doc'] ? member['_doc'] : member).map((ele) => {
-			payload[`${ele}`] = member[`${ele}`];
-		});
-		delete payload.memberPassword;
+		const doc = member['_doc'] ? member['_doc'] : member;
+		const payload: T = {
+			_id: doc._id,
+			memberType: doc.memberType,
+			memberStatus: doc.memberStatus,
+			memberAuthType: doc.memberAuthType,
+			memberNick: doc.memberNick,
+			memberFullName: doc.memberFullName,
+			memberImage: doc.memberImage,
+			memberRank: doc.memberRank,
+			memberPoints: doc.memberPoints,
+			memberProperties: doc.memberProperties,
+			memberArticles: doc.memberArticles,
+			memberFollowers: doc.memberFollowers,
+			memberFollowings: doc.memberFollowings,
+			memberLikes: doc.memberLikes,
+			memberViews: doc.memberViews,
+			memberWarnings: doc.memberWarnings,
+			memberBlocks: doc.memberBlocks,
+		};
 		return await this.jwtService.signAsync(payload);
 	}
 
