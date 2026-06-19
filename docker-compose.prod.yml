@@ -1,0 +1,30 @@
+services:
+  asadbek-zinfurn-api:
+    container_name: asadbek-zinfurn-api
+    restart: always
+    image: node:20-alpine
+    ports:
+      - "127.0.0.1:5001:3007"
+    volumes:
+      - ./:/usr/src/zinfurn
+    working_dir: /usr/src/zinfurn
+    command: sh -c "npm install && npm run build && npm run start:prod"
+    networks:
+      - asadbek-zinfurn-network
+
+  asadbek-zinfurn-batch:
+    container_name: asadbek-zinfurn-batch
+    restart: unless-stopped
+    image: node:20-alpine
+    ports:
+      - "127.0.0.1:5002:3008"
+    volumes:
+      - ./:/usr/src/zinfurn
+    working_dir: /usr/src/zinfurn
+    command: sh -c "npm install && npm run build && npm run start:prod:batch"
+    networks:
+      - asadbek-zinfurn-network
+
+networks:
+  asadbek-zinfurn-network:
+    driver: bridge
