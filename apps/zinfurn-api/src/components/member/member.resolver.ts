@@ -13,7 +13,7 @@ import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
-import { createWriteStream } from 'fs';
+import { createWriteStream, mkdirSync } from 'fs';
 import { Message } from '../../libs/enums/common_enum';
 
 @Resolver()
@@ -155,6 +155,7 @@ export class MemberResolver {
         if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
         const imageName = getSerialForImage(filename);
+        mkdirSync(`uploads/${target}`, { recursive: true });
         const url = `uploads/${target}/${imageName}`;
         const stream = createReadStream();
 
@@ -187,6 +188,7 @@ export class MemberResolver {
                 if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
                 const imageName = getSerialForImage(filename);
+                mkdirSync(`uploads/${target}`, { recursive: true });
                 const url = `uploads/${target}/${imageName}`;
                 const stream = createReadStream();
 
@@ -201,7 +203,7 @@ export class MemberResolver {
                 uploadedImages[index] = url;
 
             } catch (err) {
-                console.log('Error, file missing!');
+                console.log('Error, file missing!', err);
             }
         });
 

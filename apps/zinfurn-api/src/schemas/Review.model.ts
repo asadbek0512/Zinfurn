@@ -9,6 +9,8 @@ const ReviewSchema = new Schema(
 		reviewRating: { type: Number, required: true, min: 1, max: 5 },
 		reviewContent: { type: String, required: true },
 		reviewImages: { type: [String], default: [] },
+		reviewLikes: { type: [Schema.Types.ObjectId], default: [], ref: 'Member' },
+		reviewDislikes: { type: [Schema.Types.ObjectId], default: [], ref: 'Member' },
 		reviewStatus: { type: String, enum: ReviewStatus, default: ReviewStatus.ACTIVE },
 	},
 	{ timestamps: true, collection: 'reviews' },

@@ -1,6 +1,6 @@
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
-import { ReviewStatus } from '../../enums/review.enum';
+import { ReviewReaction, ReviewStatus } from '../../enums/review.enum';
 import { Member, TotalCounter } from '../member/member';
 
 @ObjectType()
@@ -47,6 +47,30 @@ export class Review {
 	/** from aggregation **/
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
+
+	@Field(() => Int, { nullable: true })
+	likesCount?: number;
+
+	@Field(() => Int, { nullable: true })
+	dislikesCount?: number;
+
+	@Field(() => ReviewReaction, { nullable: true })
+	myReaction?: ReviewReaction;
+}
+
+@ObjectType()
+export class ReviewReactionResult {
+	@Field(() => String)
+	_id: ObjectId;
+
+	@Field(() => Int)
+	likesCount: number;
+
+	@Field(() => Int)
+	dislikesCount: number;
+
+	@Field(() => ReviewReaction, { nullable: true })
+	myReaction?: ReviewReaction;
 }
 
 @ObjectType()

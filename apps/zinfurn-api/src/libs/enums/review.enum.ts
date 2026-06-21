@@ -5,3 +5,9 @@ export enum ReviewStatus {
 	DELETE = 'DELETE',
 }
 registerEnumType(ReviewStatus, { name: 'ReviewStatus' });
+
+export enum ReviewReaction {
+	LIKE = 'LIKE',
+	DISLIKE = 'DISLIKE',
+}
+registerEnumType(ReviewReaction, { name: 'ReviewReaction' });

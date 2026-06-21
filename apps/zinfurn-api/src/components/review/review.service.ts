@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
-import { Review, Reviews, ReviewSummary } from '../../libs/dto/review/review';
+import { Review, ReviewReactionResult, Reviews, ReviewSummary } from '../../libs/dto/review/review';
 import { CreateReviewInput, ReviewsInquiry } from '../../libs/dto/review/review.input';
 import { ReviewUpdate } from '../../libs/dto/review/review.update';
-import { ReviewStatus } from '../../libs/enums/review.enum';
+import { ReviewReaction, ReviewStatus } from '../../libs/enums/review.enum';
 import { OrderStatus } from '../../libs/enums/order.enum';
 import { Message, Direction } from '../../libs/enums/common_enum';
 import { T } from '../../libs/types/common';
@@ -55,7 +55,7 @@ export class ReviewService {
 		}
 	}
 
-	public async getPropertyReviews(input: ReviewsInquiry): Promise<Reviews> {
+	public async getPropertyReviews(input: ReviewsInquiry, memberId?: ObjectId): Promise<Reviews> {
 		const { page, limit, sort, direction, search } = input;
 		const match: T = {
 			propertyId: search.propertyId,
@@ -74,6 +74,25 @@ export class ReviewService {
 							{ $limit: limit },
 							lookupMember,
 							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+							{
+								$addFields: {
+									likesCount: { $size: { $ifNull: ['$reviewLikes', []] } },
+									dislikesCount: { $size: { $ifNull: ['$reviewDislikes', []] } },
+									myReaction: {
+										$cond: [
+											{ $in: [memberId ?? null, { $ifNull: ['$reviewLikes', []] }] },
+											ReviewReaction.LIKE,
+											{
+												$cond: [
+													{ $in: [memberId ?? null, { $ifNull: ['$reviewDislikes', []] }] },
+													ReviewReaction.DISLIKE,
+													null,
+												],
+											},
+										],
+									},
+								},
+							},
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -82,6 +101,51 @@ export class ReviewService {
 			.exec();
 
 		return result[0] as Reviews;
+	}
+
+	public async toggleReviewReaction(
+		memberId: ObjectId,
+		reviewId: ObjectId,
+		reaction: ReviewReaction,
+	): Promise<ReviewReactionResult> {
+		const review = await this.reviewModel.findOne({ _id: reviewId, reviewStatus: ReviewStatus.ACTIVE });
+		if (!review) throw new BadRequestException(Message.NO_DATA_FOUND);
+
+		const me = String(memberId);
+		let likes = (review.get('reviewLikes') ?? []).map((id: ObjectId) => String(id));
+		let dislikes = (review.get('reviewDislikes') ?? []).map((id: ObjectId) => String(id));
+
+		if (reaction === ReviewReaction.LIKE) {
+			if (likes.includes(me)) {
+				likes = likes.filter((id) => id !== me);
+			} else {
+				likes.push(me);
+				dislikes = dislikes.filter((id) => id !== me);
+			}
+		} else {
+			if (dislikes.includes(me)) {
+				dislikes = dislikes.filter((id) => id !== me);
+			} else {
+				dislikes.push(me);
+				likes = likes.filter((id) => id !== me);
+			}
+		}
+
+		await this.reviewModel.findByIdAndUpdate(reviewId, {
+			reviewLikes: likes,
+			reviewDislikes: dislikes,
+		});
+
+		return {
+			_id: reviewId,
+			likesCount: likes.length,
+			dislikesCount: dislikes.length,
+			myReaction: likes.includes(me)
+				? ReviewReaction.LIKE
+				: dislikes.includes(me)
+					? ReviewReaction.DISLIKE
+					: undefined,
+		};
 	}
 
 	public async getPropertyReviewSummary(propertyId: ObjectId): Promise<ReviewSummary> {

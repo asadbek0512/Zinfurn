@@ -8,9 +8,10 @@ import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { ObjectId } from 'mongoose';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 import { MemberType } from '../../libs/enums/member.enum';
-import { Review, Reviews, ReviewSummary } from '../../libs/dto/review/review';
+import { Review, ReviewReactionResult, Reviews, ReviewSummary } from '../../libs/dto/review/review';
 import { CreateReviewInput, ReviewsInquiry } from '../../libs/dto/review/review.input';
 import { ReviewUpdate } from '../../libs/dto/review/review.update';
+import { ReviewReaction } from '../../libs/enums/review.enum';
 import { ReviewService } from './review.service';
 
 @Resolver()
@@ -33,10 +34,22 @@ export class ReviewResolver {
 	@Query(() => Reviews)
 	public async getPropertyReviews(
 		@Args('input') input: ReviewsInquiry,
+		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Reviews> {
 		console.log('Query: getPropertyReviews');
 		input.search.propertyId = ShapeIntoMongoObjectId(input.search.propertyId);
-		return this.reviewService.getPropertyReviews(input);
+		return this.reviewService.getPropertyReviews(input, memberId);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => ReviewReactionResult)
+	public async toggleReviewReaction(
+		@Args('reviewId') reviewId: string,
+		@Args('reaction', { type: () => ReviewReaction }) reaction: ReviewReaction,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<ReviewReactionResult> {
+		console.log('Mutation: toggleReviewReaction');
+		return this.reviewService.toggleReviewReaction(memberId, ShapeIntoMongoObjectId(reviewId), reaction);
 	}
 
 	@UseGuards(WithoutGuard)
