@@ -14,6 +14,7 @@ import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes } from '../..
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { createWriteStream, mkdirSync } from 'fs';
+import sharp from 'sharp';
 import { Message } from '../../libs/enums/common_enum';
 
 @Resolver()
@@ -154,13 +155,19 @@ export class MemberResolver {
         const validMime = validMimeTypes.includes(mimetype);
         if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-        const imageName = getSerialForImage(filename);
+        const imageName = getSerialForImage(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
         mkdirSync(`uploads/${target}`, { recursive: true });
         const url = `uploads/${target}/${imageName}`;
         const stream = createReadStream();
 
+        const transformer = sharp()
+            .rotate()
+            .resize({ width: 1400, withoutEnlargement: true })
+            .jpeg({ quality: 80, progressive: true, mozjpeg: true });
+
         const result = await new Promise((resolve, reject) => {
             stream
+                .pipe(transformer)
                 .pipe(createWriteStream(url))
                 .on('finish', async () => resolve(true))
                 .on('error', () => reject(false));
@@ -187,13 +194,19 @@ export class MemberResolver {
                 const validMime = validMimeTypes.includes(mimetype);
                 if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-                const imageName = getSerialForImage(filename);
+                const imageName = getSerialForImage(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
                 mkdirSync(`uploads/${target}`, { recursive: true });
                 const url = `uploads/${target}/${imageName}`;
                 const stream = createReadStream();
 
+                const transformer = sharp()
+                    .rotate()
+                    .resize({ width: 1400, withoutEnlargement: true })
+                    .jpeg({ quality: 80, progressive: true, mozjpeg: true });
+
                 const result = await new Promise((resolve, reject) => {
                     stream
+                        .pipe(transformer)
                         .pipe(createWriteStream(url))
                         .on('finish', () => resolve(true))
                         .on('error', () => reject(false));
