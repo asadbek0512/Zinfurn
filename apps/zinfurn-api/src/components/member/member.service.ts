@@ -36,7 +36,7 @@ export class MemberService {
             result.accessToken = await this.authService.createToken(result);
             return result;
         } catch (err) {
-            console.log('Error, Service.model:', err.message);
+            console.error('Error, Service.model:', err.message);
             throw new BadRequestException(Message.USED_MEMBER_NICK_OR_PHONE);
         }
     }
@@ -126,7 +126,6 @@ export class MemberService {
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC }
 
         if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-        console.log('match: ', match);
 
         const result = await this.memberModel
             .aggregate([
@@ -155,7 +154,6 @@ export class MemberService {
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC }
 
         if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-        console.log('match: ', match);
 
         const result = await this.memberModel
             .aggregate([
@@ -200,11 +198,9 @@ export class MemberService {
         const match: T = {};
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC }
 
-        console.log("input", input)
         if (memberStatus) match.memberStatus = memberStatus;
         if (memberType) match.memberType = memberType;
         if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-        console.log('match: ', match);
 
         const result = await this.memberModel
             .aggregate([

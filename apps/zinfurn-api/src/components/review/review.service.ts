@@ -50,7 +50,7 @@ export class ReviewService {
 			});
 			return review;
 		} catch (err) {
-			console.log('ReviewService.createReview error:', err.message);
+			console.error('ReviewService.createReview error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}

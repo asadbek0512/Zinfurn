@@ -10,6 +10,18 @@ export class AuthController {
 		private readonly telegramStrategy: TelegramStrategy,
 	) {}
 
+	// FRONTEND_URL vergul bilan ajratilgan ro'yxat (CORS uchun) — redirect uchun bitta to'g'ri URL tanlaymiz
+	private getFrontendUrl(): string {
+		const urls = (process.env.FRONTEND_URL || 'http://localhost:3000')
+			.split(',')
+			.map((u) => u.trim())
+			.filter(Boolean);
+		if (process.env.NODE_ENV === 'production') {
+			return urls.find((u) => u.startsWith('https://')) || urls[0];
+		}
+		return urls.find((u) => u.includes('localhost')) || urls[0];
+	}
+
 	private setAuthCookie(res: any, token: string): void {
 		res.cookie('accessToken', token, {
 			httpOnly: true,
@@ -33,9 +45,6 @@ export class AuthController {
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
 		try {
-			console.log('=== GOOGLE CALLBACK DEBUG ===');
-			console.log('req.query:', req.query);
-			console.log('req.user:', req.user);
 			
 			const user = req.user;
 			
@@ -46,30 +55,26 @@ export class AuthController {
 					return [k, decodeURIComponent(v)];
 				}).filter(([k]) => k)
 			);
-			console.log('Parsed cookies:', cookies);
 			
 			const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
-			console.log('memberId:', memberId);
-			
-			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+			const frontendUrl = this.getFrontendUrl();
 
 			if (memberId) {
 				// Account linking
-				console.log('🔗 Account linking for memberId:', memberId);
 				const result = await this.authService.linkGoogle(memberId, user);
 				res.cookie('linkMemberId', '', { maxAge: 0 });
 				this.setAuthCookie(res, result.token);
 				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
 			} else {
 				// Normal login
-				console.log('🔑 Normal Google login');
 				const result = await this.authService.googleLogin(user);
 				this.setAuthCookie(res, result.token);
 				return res.redirect(`${frontendUrl}/?token=${result.token}`);
 			}
 		} catch (err: any) {
 			console.error('Google callback error:', err);
-			const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+			const frontendUrl = this.getFrontendUrl();
 			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
 		}
 	}
@@ -117,14 +122,15 @@ export class AuthController {
 	@UseGuards(AuthGuard('google'))
 	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
 		try {
+			const frontendUrl = this.getFrontendUrl();
 			const memberId = req.user?.memberId;
 			if (!memberId) {
-				return res.redirect(`${process.env.FRONTEND_URL}/mypage?error=No memberId found`);
+				return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
 			}
 			const result = await this.authService.linkGoogle(memberId, req.user);
-			res.redirect(`${process.env.FRONTEND_URL}/mypage?token=${result.token}`);
+			res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
 		} catch (err: any) {
-			res.redirect(`${process.env.FRONTEND_URL}/mypage?error=${encodeURIComponent(err.message)}`);
+			res.redirect(`${this.getFrontendUrl()}/mypage?error=${encodeURIComponent(err.message)}`);
 		}
 	}
 }

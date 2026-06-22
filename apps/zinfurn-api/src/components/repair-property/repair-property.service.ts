@@ -27,7 +27,6 @@ export class RepairPropertyService {
 
     public async createRepairProperty(input: RepairPropertyInput): Promise<RepairProperty> {
         try {
-            console.log('executed');
             const result = await this.repairPropertyModel.create(input);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
@@ -36,7 +35,7 @@ export class RepairPropertyService {
             })
             return result;
         } catch (err) {
-            console.log("Error, Service.model:", err.message);
+            console.error("Error, Service.model:", err.message);
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }
@@ -56,13 +55,10 @@ export class RepairPropertyService {
     
         if (memberId) {
             const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIR_PROPERTY };
-            console.log("View input:", viewInput); // Debug uchun
             
             const newView = await this.viewService.recordView(viewInput);
-            console.log("New view created:", newView); // Debug uchun
             
             if (newView) {
-                console.log("Updating stats..."); // Debug uchun
                 await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairPropertyViews', modifier: 1 });
                 targetProperty.repairPropertyViews++;
             }
@@ -73,7 +69,6 @@ export class RepairPropertyService {
         }
     
         targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
-        console.log("=====> ", targetProperty);
     
         return targetProperty;
     }
@@ -83,7 +78,6 @@ export class RepairPropertyService {
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
-        console.log('match:', match);
 
         const result = await this.repairPropertyModel
             .aggregate([

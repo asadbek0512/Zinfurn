@@ -30,7 +30,6 @@ export class PropertyResolver {
         @Args('input') input: PropertyInput,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Property> {
-        console.log('Mutation: createProperty');
         input.memberId = memberId
         return await this.propertyService.createProperty(input);
     }
@@ -41,7 +40,6 @@ export class PropertyResolver {
         @Args('propertyId') input: string,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Property> {
-        console.log('Query: getProperty');
         const propertyId = ShapeIntoMongoObjectId(input);
         return await this.propertyService.getProperty(memberId, propertyId);
     }
@@ -53,7 +51,6 @@ export class PropertyResolver {
         @Args('input') input: PropertyUpdate,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Property> {
-        console.log('Mutation: updateProperty');
         input._id = ShapeIntoMongoObjectId(input._id);
         return await this.propertyService.updateProperty(memberId, input);
     }
@@ -64,7 +61,6 @@ export class PropertyResolver {
         @Args('input') input: PropertiesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Properties> {
-        console.log('Mutation: getProperties');
         return await this.propertyService.getProperties(memberId, input);
     }
 
@@ -74,7 +70,6 @@ export class PropertyResolver {
         @Args('input') input: OrdinaryInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Properties> {
-        console.log('Query: getFavorites');
         return await this.propertyService.getFavorites(memberId, input);
     }
 
@@ -84,7 +79,6 @@ export class PropertyResolver {
         @Args('input') input: OrdinaryInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Properties> {
-        console.log('Query: getVisited');
         return await this.propertyService.getVisited(memberId, input);
     }
 
@@ -95,7 +89,6 @@ export class PropertyResolver {
         @Args('input') input: AgentPropertiesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Properties> {
-        console.log('Mutation: getAgentProperties');
         return await this.propertyService.getAgentProperties(memberId, input);
     }
 
@@ -105,7 +98,6 @@ export class PropertyResolver {
         @Args('propertyId') input: string,
         @AuthMember('_id') memberId: ObjectId
     ): Promise<Property> {
-        console.log('Mutation: likeTargetProperty');
         const likeRefId = ShapeIntoMongoObjectId(input)
         return await this.propertyService.likeTargetProperty(memberId, likeRefId);
     }
@@ -119,7 +111,6 @@ export class PropertyResolver {
         @Args('input') input: AllPropertiesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Properties> {
-        console.log('Query: getAllPropertiesByAdmin');
         return await this.propertyService.getAllPropertiesByAdmin(input);
     }
 
@@ -127,7 +118,6 @@ export class PropertyResolver {
     @UseGuards(RolesGuard)
     @Mutation((returns) => Property)
     public async updatePropertyByAdmin(@Args('input') input: PropertyUpdate): Promise<Property> {
-        console.log('Mutation: updatePropertyByAdmin');
         input._id = ShapeIntoMongoObjectId(input._id);
         return await this.propertyService.updatePropertyByAdmin(input);
     }
@@ -136,7 +126,6 @@ export class PropertyResolver {
     @UseGuards(RolesGuard)
     @Mutation((returns) => Property)
     public async removePropertyByAdmin(@Args('propertyId') input: string): Promise<Property> {
-        console.log('Mutation: removePropertyByAdmin');
         const propertyId = ShapeIntoMongoObjectId(input);
         return await this.propertyService.removePropertyByAdmin(propertyId);
     }

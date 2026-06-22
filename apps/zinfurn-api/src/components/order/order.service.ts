@@ -24,7 +24,7 @@ export class OrderService {
 			this.scheduleAutoProgression(order._id as ObjectId);
 			return order;
 		} catch (err) {
-			console.log('OrderService.createOrder error:', err.message);
+			console.error('OrderService.createOrder error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -35,7 +35,6 @@ export class OrderService {
 			setTimeout(async () => {
 				try {
 					await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status });
-					console.log(`Order ${orderId} → ${status}`);
 				} catch {}
 			}, delayMs);
 		};

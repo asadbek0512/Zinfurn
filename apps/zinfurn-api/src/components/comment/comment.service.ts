@@ -90,7 +90,7 @@ export class CommentService {
 				);
 			}
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.error('Error, Service.model:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 

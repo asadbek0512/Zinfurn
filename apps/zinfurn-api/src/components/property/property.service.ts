@@ -33,7 +33,6 @@ export class PropertyService {
 
     public async createProperty(input: PropertyInput): Promise<Property> {
         try {
-            console.log('executed');
             const propertyData = {
                 ...input,
                 propertyInStock: true,     // Majburiy true qilamiz
@@ -47,7 +46,7 @@ export class PropertyService {
             })
             return result;
         } catch (err) {
-            console.log("Error, Service.model:", err.message);
+            console.error("Error, Service.model:", err.message);
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }
@@ -111,7 +110,6 @@ export class PropertyService {
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
-        console.log('match:', match);
 
         const result = await this.propertyModel
             .aggregate([

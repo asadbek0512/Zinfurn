@@ -36,7 +36,7 @@ export class BoardArticleService {
 
             return result
         } catch (err) {
-            console.log("Error, Service.model:", err.message);
+            console.error("Error, Service.model:", err.message);
             throw new BadRequestException(Message.CREATE_FAILED)
         }
     }
@@ -99,7 +99,6 @@ export class BoardArticleService {
             match.memberId = ShapeIntoMongoObjectId(input.search.memberId);
         }
 
-        console.log('match:', match);
 
         const result = await this.boardArticleModel
             .aggregate([

@@ -23,7 +23,6 @@ export class MemberResolver {
 
     @Mutation(() => Member)
     public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
-        console.log('Mutation: signup');
         const member = await this.memberService.signup(input);
         this.setAuthCookie(ctx.res, member.accessToken as string);
         return member;
@@ -31,7 +30,6 @@ export class MemberResolver {
 
     @Mutation(() => Member)
     public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
-        console.log('Mutation: login');
         const member = await this.memberService.login(input);
         this.setAuthCookie(ctx.res, member.accessToken as string);
         return member;
@@ -40,7 +38,6 @@ export class MemberResolver {
     @UseGuards(AuthGuard)
     @Query(() => Member)
     public async getMyProfile(@AuthMember('_id') memberId: ObjectId): Promise<Member> {
-        console.log('Query: getMyProfile');
         return await this.memberService.getMyProfile(memberId);
     }
 
@@ -56,8 +53,6 @@ export class MemberResolver {
     @UseGuards(AuthGuard)
     @Query(() => String)
     public async checkAuth(@AuthMember('memberNick') memberNick: string): Promise<string> {
-        console.log('Query: checkAuth');
-        console.log("memberNick:", memberNick)
         return `Hi ${memberNick}`;
     }
 
@@ -65,7 +60,6 @@ export class MemberResolver {
     @UseGuards(RolesGuard)
     @Query(() => String)
     public async checkAuthRoles(@AuthMember() authMember: Member): Promise<string> {
-        console.log('Query: checkAuth');
         return `Hi ${authMember.memberNick}, you are ${authMember.memberType} (memberId: ${authMember._id})`;
     }
 
@@ -75,7 +69,6 @@ export class MemberResolver {
         @Args('input') input: MemberUpdate,
         @AuthMember('_id') memberId: ObjectId
     ): Promise<Member> {
-        console.log('Mutation: updateMember');
         delete input._id;
         return await this.memberService.updateMember(memberId, input);
     }
@@ -86,7 +79,6 @@ export class MemberResolver {
         @Args('memberId') input: string,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<Member> {
-        console.log('Query: getMember');
         const targetId = ShapeIntoMongoObjectId(input)
         return await this.memberService.getMember(memberId, targetId);
     }
@@ -97,7 +89,6 @@ export class MemberResolver {
         @Args('input') input: AgentsInquiry,
         @AuthMember('_id') memberId: ObjectId //
     ): Promise<Members> {
-        console.log('Query: getMember');
         return await this.memberService.getAgents(memberId, input);
     }
 
@@ -107,7 +98,6 @@ export class MemberResolver {
         @Args('input') input: TechnicianInquiry,
         @AuthMember('_id') memberId: ObjectId //
     ): Promise<Members> {
-        console.log('Query: getMember');
         return await this.memberService.getTechnicians(memberId, input);
     }
 
@@ -117,7 +107,6 @@ export class MemberResolver {
         @Args('memberId') input: string,
         @AuthMember('_id') memberId: ObjectId
     ): Promise<Member> {
-        console.log('Mutation: likeTargetMember');
         const likeRefId = ShapeIntoMongoObjectId(input)
         return await this.memberService.likeTargetMember(memberId, likeRefId);
     }
@@ -128,7 +117,6 @@ export class MemberResolver {
     @UseGuards(RolesGuard)
     @Query(() => Members)
     public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
-        console.log('Mutation: getAllMembersByAdmin');
         return await this.memberService.getAllMembersByAdmin(input);
     }
 
@@ -136,7 +124,6 @@ export class MemberResolver {
     @UseGuards(RolesGuard)
     @Mutation(() => Member)
     public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
-        console.log('Mutation: updateMemberByAdmin');
         return await this.memberService.updateMemberByAdmin(input);
     }
 
@@ -149,7 +136,6 @@ export class MemberResolver {
         { createReadStream, filename, mimetype }: FileUpload,
         @Args('target') target: String,
     ): Promise<string> {
-        console.log('Mutation: imageUploader');
 
         if (!filename) throw new Error(Message.UPLOAD_FAILED);
         const validMime = validMimeTypes.includes(mimetype);
@@ -184,7 +170,6 @@ export class MemberResolver {
         files: Promise<FileUpload>[],
         @Args('target') target: String,
     ): Promise<string[]> {
-        console.log('Mutation: imagesUploader');
 
         const uploadedImages: string[] = [];
         const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
@@ -216,7 +201,7 @@ export class MemberResolver {
                 uploadedImages[index] = url;
 
             } catch (err) {
-                console.log('Error, file missing!', err);
+                console.error('Error, file missing!', err);
             }
         });
 

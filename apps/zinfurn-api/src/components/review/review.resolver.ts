@@ -24,7 +24,6 @@ export class ReviewResolver {
 		@Args('input') input: CreateReviewInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Review> {
-		console.log('Mutation: createReview');
 		input.propertyId = ShapeIntoMongoObjectId(input.propertyId);
 		input.orderId = ShapeIntoMongoObjectId(input.orderId);
 		return this.reviewService.createReview(memberId, input);
@@ -36,7 +35,6 @@ export class ReviewResolver {
 		@Args('input') input: ReviewsInquiry,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Reviews> {
-		console.log('Query: getPropertyReviews');
 		input.search.propertyId = ShapeIntoMongoObjectId(input.search.propertyId);
 		return this.reviewService.getPropertyReviews(input, memberId);
 	}
@@ -48,7 +46,6 @@ export class ReviewResolver {
 		@Args('reaction', { type: () => ReviewReaction }) reaction: ReviewReaction,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<ReviewReactionResult> {
-		console.log('Mutation: toggleReviewReaction');
 		return this.reviewService.toggleReviewReaction(memberId, ShapeIntoMongoObjectId(reviewId), reaction);
 	}
 
@@ -57,7 +54,6 @@ export class ReviewResolver {
 	public async getPropertyReviewSummary(
 		@Args('propertyId') propertyId: string,
 	): Promise<ReviewSummary> {
-		console.log('Query: getPropertyReviewSummary');
 		return this.reviewService.getPropertyReviewSummary(ShapeIntoMongoObjectId(propertyId));
 	}
 
@@ -67,7 +63,6 @@ export class ReviewResolver {
 		@Args('input') input: ReviewUpdate,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Review> {
-		console.log('Mutation: updateReview');
 		input._id = ShapeIntoMongoObjectId(input._id);
 		return this.reviewService.updateReview(memberId, input);
 	}
@@ -78,7 +73,6 @@ export class ReviewResolver {
 	@UseGuards(RolesGuard)
 	@Mutation(() => Review)
 	public async removeReviewByAdmin(@Args('reviewId') reviewId: string): Promise<Review> {
-		console.log('Mutation: removeReviewByAdmin');
 		return this.reviewService.removeReviewByAdmin(ShapeIntoMongoObjectId(reviewId));
 	}
 }

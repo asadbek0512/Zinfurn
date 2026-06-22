@@ -17,7 +17,6 @@ export class MessageResolver {
 		@Args('input') input: SendMessageInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Message> {
-		console.log('Mutation: sendMessage');
 		return this.messageService.sendMessage(memberId, input);
 	}
 
@@ -27,7 +26,6 @@ export class MessageResolver {
 		@Args('input') input: ReplyMessageInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Message> {
-		console.log('Mutation: replyMessage');
 		return this.messageService.replyMessage(memberId, input);
 	}
 
@@ -37,14 +35,12 @@ export class MessageResolver {
 		@Args('input') input: SendRepairRequestInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Message> {
-		console.log('Mutation: sendRepairRequest');
 		return this.messageService.sendRepairRequest(memberId, input);
 	}
 
 	@UseGuards(AuthGuard)
 	@Query(() => [Conversation])
 	public async getMyConversations(@AuthMember('_id') memberId: ObjectId): Promise<Conversation[]> {
-		console.log('Query: getMyConversations');
 		return this.messageService.getMyConversations(memberId);
 	}
 
@@ -54,7 +50,6 @@ export class MessageResolver {
 		@Args('conversationId') conversationId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Message[]> {
-		console.log('Query: getConversation');
 		return this.messageService.getConversation(memberId, conversationId);
 	}
 }

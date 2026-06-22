@@ -23,7 +23,6 @@ export class BoardArticleResolver {
         @Args('input') input: BoardArticleInput,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticle> {
-        console.log('Mutation: createBoardArticle');
         return await this.boardArticleService.createBoardArticle(memberId, input)
     }
 
@@ -33,7 +32,6 @@ export class BoardArticleResolver {
         @Args('articleId') input: string,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticle> {
-        console.log('Query: getProperty');
         const articleId = ShapeIntoMongoObjectId(input);
         return await this.boardArticleService.getBoardArticle(memberId, articleId)
     }
@@ -44,7 +42,6 @@ export class BoardArticleResolver {
         @Args('input') input: BoardArticleUpdate,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticle> {
-        console.log('Mutation: updateBoardArticle');
         input._id = ShapeIntoMongoObjectId(input._id);
         return await this.boardArticleService.updateBoardArticle(memberId, input)
     }
@@ -55,7 +52,6 @@ export class BoardArticleResolver {
         @Args('input') input: BoardArticlesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticles> {
-        console.log('Query: getBoardArticles');
         return await this.boardArticleService.getBoardArticles(memberId, input)
     }
 
@@ -65,7 +61,6 @@ export class BoardArticleResolver {
         @Args('articleId') input: string,
         @AuthMember('_id') memberId: ObjectId
     ): Promise<BoardArticle> {
-        console.log('Mutation: likeTargetBoardArticle');
         const likeRefId = ShapeIntoMongoObjectId(input)
         return await this.boardArticleService.likeTargetBoardArticle(memberId, likeRefId);
     }
@@ -79,7 +74,6 @@ export class BoardArticleResolver {
         @Args('input') input: AllBoardArticlesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticles> {
-        console.log('Query: getAllBoardArticlesByAdmin');
         return await this.boardArticleService.getAllBoardArticlesByAdmin(input)
     }
 
@@ -90,7 +84,6 @@ export class BoardArticleResolver {
         @Args('input') input: BoardArticleUpdate,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticle> {
-        console.log('Mutation: updateBoardArticleByAdmin');
         input._id = ShapeIntoMongoObjectId(input._id);
         return await this.boardArticleService.updateBoardArticleByAdmin(input)
     }
@@ -102,7 +95,6 @@ export class BoardArticleResolver {
         @Args('articleId') input: string,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<BoardArticle> {
-        console.log('Mutation: removeBoardArticleByAdmin');
         const articleId = ShapeIntoMongoObjectId(input);
         return await this.boardArticleService.removeBoardArticleByAdmin(articleId)
     }

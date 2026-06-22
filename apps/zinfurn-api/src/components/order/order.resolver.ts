@@ -22,7 +22,6 @@ export class OrderResolver {
 		@Args('input') input: CreateOrderInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
-		console.log('Mutation: createOrder');
 		return this.orderService.createOrder(memberId, input);
 	}
 
@@ -32,7 +31,6 @@ export class OrderResolver {
 		@Args('input') input: OrdersInquiry,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Orders> {
-		console.log('Query: getMyOrders');
 		return this.orderService.getMyOrders(memberId, input);
 	}
 
@@ -42,7 +40,6 @@ export class OrderResolver {
 		@Args('orderId') orderId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
-		console.log('Query: getOrderById');
 		return this.orderService.getOrderById(memberId, ShapeIntoMongoObjectId(orderId));
 	}
 
@@ -52,7 +49,6 @@ export class OrderResolver {
 		@Args('orderId') orderId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
-		console.log('Mutation: confirmDelivery');
 		return this.orderService.confirmDelivery(memberId, ShapeIntoMongoObjectId(orderId));
 	}
 
@@ -62,7 +58,6 @@ export class OrderResolver {
 		@Args('orderId') orderId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
-		console.log('Mutation: demoDeliverOrder');
 		return this.orderService.demoDeliverOrder(memberId, ShapeIntoMongoObjectId(orderId));
 	}
 
@@ -72,7 +67,6 @@ export class OrderResolver {
 		@Args('input') input: OrderUpdate,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
-		console.log('Mutation: requestReturn');
 		input._id = ShapeIntoMongoObjectId(input._id);
 		return this.orderService.requestReturn(memberId, input);
 	}
@@ -83,7 +77,6 @@ export class OrderResolver {
 	@UseGuards(RolesGuard)
 	@Mutation(() => Order)
 	public async updateOrderStatusByAdmin(@Args('input') input: OrderUpdate): Promise<Order> {
-		console.log('Mutation: updateOrderStatusByAdmin');
 		input._id = ShapeIntoMongoObjectId(input._id);
 		return this.orderService.updateOrderStatusByAdmin(input);
 	}
@@ -92,7 +85,6 @@ export class OrderResolver {
 	@UseGuards(RolesGuard)
 	@Query(() => Orders)
 	public async getAllOrdersByAdmin(@Args('input') input: OrdersInquiry): Promise<Orders> {
-		console.log('Query: getAllOrdersByAdmin');
 		return this.orderService.getAllOrdersByAdmin(input);
 	}
 }

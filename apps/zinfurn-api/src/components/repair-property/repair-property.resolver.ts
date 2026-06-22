@@ -24,9 +24,7 @@ export class RepairPropertyResolver {
         @Args('input') input: RepairPropertyInput,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperty> {
-        console.log('Mutation: createRepairProperty');
         input.memberId = memberId
-        console.log('memberId from context:', memberId);
         return await this.repairPropertyService.createRepairProperty(input);
     }
     
@@ -36,8 +34,6 @@ export class RepairPropertyResolver {
         @Args('repairId') input: string,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperty> {
-        console.log('Query: getRepairProperty');
-        console.log("=====> ",memberId)
 
         const repairId = ShapeIntoMongoObjectId(input);
         return await this.repairPropertyService.getRepairProperty(memberId, repairId);
@@ -49,7 +45,6 @@ export class RepairPropertyResolver {
         @Args('input') input: RepairPropertiesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperties> {
-        console.log('Mutation: getRepairProperties');
         return await this.repairPropertyService.getRepairProperties(memberId, input);
     }
 
@@ -60,7 +55,6 @@ export class RepairPropertyResolver {
         @Args('input') input: TechnicianPropertiesInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperties> {
-        console.log('Mutation: getTechnicianProperties');
         return await this.repairPropertyService.getTechnicianProperties(memberId, input);
     }
 
@@ -70,7 +64,6 @@ export class RepairPropertyResolver {
         @Args('input') input: RepairOrdinaryInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperties> {
-        console.log('Query: getRepairFavorites');
         return await this.repairPropertyService.getRepairFavorites(memberId, input);
     }
 
@@ -80,7 +73,6 @@ export class RepairPropertyResolver {
         @Args('input') input: RepairOrdinaryInquiry,
         @AuthMember('_id') memberId: ObjectId,
     ): Promise<RepairProperties> {
-        console.log('Query: getRepairVisited');
         return await this.repairPropertyService.getRepairVisited(memberId, input);
     }
 
@@ -90,7 +82,6 @@ export class RepairPropertyResolver {
         @Args('repairId') input: string,
         @AuthMember('_id') memberId: ObjectId
     ): Promise<RepairProperty> {
-        console.log('Mutation: likeTargetRepairProperty');
         const likeRefId = ShapeIntoMongoObjectId(input)
         return await this.repairPropertyService.likeTargetRepairProperty(memberId, likeRefId);
     }
@@ -104,7 +95,6 @@ export class RepairPropertyResolver {
        @Args('input') input: AllRepairPropertiesInquiry,
        @AuthMember('_id') memberId: ObjectId,
    ): Promise<RepairProperties> {
-       console.log('Query: getAllPropertiesByAdmin');
        return await this.repairPropertyService.getAllRepairPropertiesByAdmin(input);
    }
 
@@ -113,7 +103,6 @@ export class RepairPropertyResolver {
    @UseGuards(RolesGuard)
    @Mutation((returns) => RepairProperty)
    public async updateRepairPropertyByAdmin(@Args('input') input: RepairPropertyUpdate): Promise<RepairProperty> {
-       console.log('Mutation: updateRepairPropertyByAdmin');
        input._id = ShapeIntoMongoObjectId(input._id);
        return await this.repairPropertyService.updateRepairPropertyByAdmin(input);
    }
@@ -122,7 +111,6 @@ export class RepairPropertyResolver {
    @UseGuards(RolesGuard)
    @Mutation((returns) => RepairProperty)
    public async removeRepairPropertyByAdmin(@Args('repairId') input: string): Promise<RepairProperty> {
-       console.log('Mutation: removePropertyByAdmin');
        const repairId = ShapeIntoMongoObjectId(input);
        return await this.repairPropertyService.removeRepairPropertyByAdmin(repairId);
    }
