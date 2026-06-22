@@ -4,7 +4,7 @@ import { ObjectId } from 'mongoose';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { Conversation, Message } from '../../libs/dto/message/message';
-import { ReplyMessageInput, SendMessageInput } from '../../libs/dto/message/message.input';
+import { ReplyMessageInput, SendMessageInput, SendRepairRequestInput } from '../../libs/dto/message/message.input';
 import { MessageService } from './message.service';
 
 @Resolver()
@@ -29,6 +29,16 @@ export class MessageResolver {
 	): Promise<Message> {
 		console.log('Mutation: replyMessage');
 		return this.messageService.replyMessage(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Message)
+	public async sendRepairRequest(
+		@Args('input') input: SendRepairRequestInput,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Message> {
+		console.log('Mutation: sendRepairRequest');
+		return this.messageService.sendRepairRequest(memberId, input);
 	}
 
 	@UseGuards(AuthGuard)

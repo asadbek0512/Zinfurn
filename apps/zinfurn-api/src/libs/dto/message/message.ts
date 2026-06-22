@@ -11,8 +11,11 @@ export class Message {
 	@Field(() => String)
 	conversationId: string;
 
-	@Field(() => String)
-	propertyId: ObjectId;
+	@Field(() => String, { nullable: true })
+	propertyId?: ObjectId;
+
+	@Field(() => String, { nullable: true })
+	kind?: string;
 
 	@Field(() => String)
 	senderId: ObjectId;
@@ -42,8 +45,11 @@ export class Conversation {
 	@Field(() => String)
 	conversationId: string;
 
-	@Field(() => String)
-	propertyId: ObjectId;
+	@Field(() => String, { nullable: true })
+	propertyId?: ObjectId;
+
+	@Field(() => String, { nullable: true })
+	kind?: string;
 
 	@Field(() => String, { nullable: true })
 	propertyTitle?: string;

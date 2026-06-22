@@ -32,3 +32,23 @@ export class ReplyMessageInput {
 	@Field(() => String)
 	message: string;
 }
+
+@InputType()
+export class SendRepairRequestInput {
+	@IsNotEmpty()
+	@Field(() => String)
+	technicianId: string;
+
+	@IsNotEmpty()
+	@Length(1, 2000)
+	@Field(() => String)
+	message: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	address?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	phone?: string;
+}

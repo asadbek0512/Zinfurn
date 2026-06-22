@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId, Types } from 'mongoose';
 import { Conversation, Message } from '../../libs/dto/message/message';
-import { ReplyMessageInput, SendMessageInput } from '../../libs/dto/message/message.input';
+import { ReplyMessageInput, SendMessageInput, SendRepairRequestInput } from '../../libs/dto/message/message.input';
 import { MessageStatus } from '../../libs/enums/message.enum';
 import { NotificationType, NotificationGroup } from '../../libs/enums/notification.enum';
 import { Message as Msg } from '../../libs/enums/common_enum';
@@ -60,23 +60,47 @@ export class MessageService {
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		const property = await this.propertyModel.findById(last.propertyId);
-		await this.notifyNew(senderId, receiverId, String(last.propertyId), property?.propertyTitle, input.message);
+		const property = last.propertyId ? await this.propertyModel.findById(last.propertyId) : null;
+		await this.notifyNew(senderId, receiverId, last.propertyId ? String(last.propertyId) : undefined, property?.propertyTitle, input.message);
 		return message as unknown as Message;
 	}
 
-	private async notifyNew(senderId: ObjectId, receiverId: any, propertyId: string, propertyTitle: string, text: string) {
+	public async sendRepairRequest(senderId: ObjectId, input: SendRepairRequestInput): Promise<Message> {
+		const tech = await this.memberModel.findById(input.technicianId);
+		if (!tech) throw new BadRequestException(Msg.NO_DATA_FOUND);
+		if (String(tech._id) === String(senderId)) throw new BadRequestException('You cannot request your own service');
+
+		const conversationId = [String(senderId), String(tech._id)].sort().join('_') + '_repair';
+		const parts: string[] = [input.message.trim()];
+		if (input.address) parts.push(`📍 ${input.address}`);
+		if (input.phone) parts.push(`📞 ${input.phone}`);
+		const fullMessage = parts.join('\n');
+
+		const message = await this.messageModel.create({
+			conversationId,
+			kind: 'REPAIR',
+			senderId,
+			receiverId: tech._id,
+			message: fullMessage,
+			messageStatus: MessageStatus.WAIT,
+		});
+
+		await this.notifyNew(senderId, tech._id, undefined, undefined, input.message, true);
+		return message as unknown as Message;
+	}
+
+	private async notifyNew(senderId: ObjectId, receiverId: any, propertyId: string | undefined, propertyTitle: string | undefined, text: string, isRepair = false) {
 		const sender = await this.memberModel.findById(senderId);
 		const nick = sender ? sender.memberNick : 'Someone';
 		const short = text.length > 60 ? text.slice(0, 60) + '...' : text;
 		await this.notificationService.createNotification({
 			notificationType: NotificationType.MESSAGE,
-			notificationGroup: NotificationGroup.PROPERTY,
-			notificationTitle: 'New Message',
+			notificationGroup: isRepair ? NotificationGroup.REPAIR_PROPERTY : NotificationGroup.PROPERTY,
+			notificationTitle: isRepair ? 'New Repair Request' : 'New Message',
 			notificationDesc: `${nick}: ${short}`,
 			authorId: String(senderId),
 			receiverId: String(receiverId),
-			propertyId: propertyId,
+			...(propertyId ? { propertyId } : {}),
 		} as any);
 	}
 
@@ -89,6 +113,7 @@ export class MessageService {
 				$group: {
 					_id: '$conversationId',
 					propertyId: { $first: '$propertyId' },
+					kind: { $first: '$kind' },
 					lastMessage: { $first: '$message' },
 					lastMessageAt: { $first: '$createdAt' },
 					lastSender: { $first: '$senderId' },
@@ -109,6 +134,7 @@ export class MessageService {
 					_id: 0,
 					conversationId: '$_id',
 					propertyId: 1,
+					kind: 1,
 					propertyTitle: '$property.propertyTitle',
 					propertyImage: { $arrayElemAt: ['$property.propertyImages', 0] },
 					lastMessage: 1,
