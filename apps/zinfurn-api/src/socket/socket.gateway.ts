@@ -32,6 +32,7 @@ interface NotificationPayload {
 	type: string;
 	status: string;
 	createdAt: Date;
+	conversationId?: string;
 }
 
 @WebSocketGateway({ transport: ['websocket'], secure: false })
@@ -146,6 +147,7 @@ export class SocketGateway implements OnGatewayInit {
 							type: notification.notificationType,
 							status: notification.notificationStatus,
 							createdAt: notification.createdAt,
+							conversationId: (notification as any).conversationId,
 						})),
 					}),
 				);

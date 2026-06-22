@@ -51,6 +51,10 @@ const NotificationSchema = new Schema(
 			type: Schema.Types.ObjectId,
 			ref: 'BoardArticle',
 		},
+
+		conversationId: {
+			type: String,
+		},
 	},
 	{ timestamps: true, collection: 'notifications' },
 );

@@ -29,6 +29,7 @@ export class NotificationService {
 			type: notification.notificationType,
 			status: notification.notificationStatus,
 			createdAt: notification.createdAt,
+			conversationId: (notification as any).conversationId,
 		});
 
 		return notification;

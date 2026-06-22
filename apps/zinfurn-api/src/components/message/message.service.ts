@@ -38,7 +38,7 @@ export class MessageService {
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		await this.notifyNew(senderId, receiverId, input.propertyId, property.propertyTitle, input.message);
+		await this.notifyNew(senderId, receiverId, input.propertyId, property.propertyTitle, input.message, false, conversationId);
 		return message as unknown as Message;
 	}
 
@@ -61,7 +61,7 @@ export class MessageService {
 		});
 
 		const property = last.propertyId ? await this.propertyModel.findById(last.propertyId) : null;
-		await this.notifyNew(senderId, receiverId, last.propertyId ? String(last.propertyId) : undefined, property?.propertyTitle, input.message);
+		await this.notifyNew(senderId, receiverId, last.propertyId ? String(last.propertyId) : undefined, property?.propertyTitle, input.message, last.get('kind') === 'REPAIR', input.conversationId);
 		return message as unknown as Message;
 	}
 
@@ -85,11 +85,11 @@ export class MessageService {
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		await this.notifyNew(senderId, tech._id, undefined, undefined, input.message, true);
+		await this.notifyNew(senderId, tech._id, undefined, undefined, input.message, true, conversationId);
 		return message as unknown as Message;
 	}
 
-	private async notifyNew(senderId: ObjectId, receiverId: any, propertyId: string | undefined, propertyTitle: string | undefined, text: string, isRepair = false) {
+	private async notifyNew(senderId: ObjectId, receiverId: any, propertyId: string | undefined, propertyTitle: string | undefined, text: string, isRepair = false, conversationId?: string) {
 		const sender = await this.memberModel.findById(senderId);
 		const nick = sender ? sender.memberNick : 'Someone';
 		const short = text.length > 60 ? text.slice(0, 60) + '...' : text;
@@ -101,6 +101,7 @@ export class MessageService {
 			authorId: String(senderId),
 			receiverId: String(receiverId),
 			...(propertyId ? { propertyId } : {}),
+			...(conversationId ? { conversationId } : {}),
 		} as any);
 	}
 
