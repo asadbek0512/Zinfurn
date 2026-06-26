@@ -14,7 +14,7 @@ import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
-import { lookupAuthMemberLiked } from '../../libs/config';
+import { buildSearchRegex, lookupAuthMemberLiked } from '../../libs/config';
 
 @Injectable()
 export class MemberService {
@@ -125,7 +125,7 @@ export class MemberService {
         const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC }
 
-        if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+        if (text) match.memberNick = buildSearchRegex(text);
 
         const result = await this.memberModel
             .aggregate([
@@ -153,7 +153,7 @@ export class MemberService {
         const match: T = { memberType: MemberType.TECHNICIAN, memberStatus: MemberStatus.ACTIVE };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC }
 
-        if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+        if (text) match.memberNick = buildSearchRegex(text);
 
         const result = await this.memberModel
             .aggregate([
@@ -200,7 +200,7 @@ export class MemberService {
 
         if (memberStatus) match.memberStatus = memberStatus;
         if (memberType) match.memberType = memberType;
-        if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+        if (text) match.memberNick = buildSearchRegex(text);
 
         const result = await this.memberModel
             .aggregate([

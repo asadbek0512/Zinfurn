@@ -45,6 +45,7 @@
     "express-session": "^1.19.0",
     "graphql": "^16.8.1",
     "graphql-upload": "^13.0.0",
+    "helmet": "^8.2.0",
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
     "node-telegram-bot-api": "^0.67.0",

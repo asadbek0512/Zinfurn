@@ -3,12 +3,25 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './libs/interceptor/Logging.interceptor';
 import { graphqlUploadExpress } from 'graphql-upload';
+import helmet from 'helmet';
 import * as express from 'express';
 import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Xavfsizlik headerlari (HSTS, X-Frame-Options, nosniff, ...).
+  // - contentSecurityPolicy: false — bu GraphQL/JSON API, CSP frontend tomonida; Apollo sandbox'ni buzmaslik uchun
+  // - crossOriginResourcePolicy: 'cross-origin' — frontend /uploads rasmlarini boshqa origin'dan yuklay olishi uchun
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
   const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3006').split(',').map(o => o.trim());

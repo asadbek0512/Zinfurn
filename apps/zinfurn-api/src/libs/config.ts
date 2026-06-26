@@ -38,6 +38,16 @@ export const ShapeIntoMongoObjectId = (target: any) => {
     return typeof target === 'string' ? new ObjectId(target) : target
 }
 
+/**
+ * Foydalanuvchi qidiruv matnidan xavfsiz, case-insensitive "contains" filtri quradi.
+ * Barcha RegExp maxsus belgilarini escape qiladi — matn faqat oddiy harf sifatida
+ * qidiriladi. Bu regex injection va ReDoS (catastrophic backtracking) xavfini yo'qotadi.
+ */
+export const buildSearchRegex = (text: string): { $regex: string; $options: string } => {
+    const escaped = String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return { $regex: escaped, $options: 'i' };
+};
+
 export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = "$_id") => {
     return {
         $lookup: {
