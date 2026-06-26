@@ -4,4 +4,5 @@ node_modules
 
 uploads
 
-.DS_Storedist/
+.DS_Store
+dist/
