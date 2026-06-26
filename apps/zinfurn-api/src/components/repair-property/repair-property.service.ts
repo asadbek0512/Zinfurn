@@ -11,7 +11,7 @@ import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { RepairPropertyStatus } from '../../libs/enums/repairProperty.enum';
-import { ShapeIntoMongoObjectId, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
+import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { RepairPropertyUpdate } from '../../libs/dto/repairProperty/repairProperty.update';
 import * as moment from 'moment'
@@ -113,7 +113,7 @@ export class RepairPropertyService {
         if (typeList && typeList.length) match.propertyType = { $in: typeList };
 
         if (text) {
-            match.propertyTitle = { $regex: new RegExp(text, 'i') };
+            match.propertyTitle = buildSearchRegex(text);
         }
     }
 

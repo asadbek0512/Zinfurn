@@ -7,6 +7,7 @@ import { AllNoticesInquiry } from '../../libs/dto/notice/notice.inquiry';
 import { NoticeStatus } from '../../libs/enums/notice.enum';
 import { T } from '../../libs/types/common';
 import { Message } from '../../libs/enums/common_enum';
+import { buildSearchRegex } from '../../libs/config';
 
 @Injectable()
 export class NoticeService {
@@ -34,8 +35,8 @@ export class NoticeService {
 
 		if (search) {
 			match.$or = [
-				{ noticeTitle: { $regex: search, $options: 'i' } },
-				{ noticeContent: { $regex: search, $options: 'i' } },
+				{ noticeTitle: buildSearchRegex(search) },
+				{ noticeContent: buildSearchRegex(search) },
 			];
 		}
 

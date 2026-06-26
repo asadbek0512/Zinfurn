@@ -17,7 +17,7 @@ import { ViewGroup } from '../../libs/enums/view.enum';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { PropertyUpdate } from '../../libs/dto/property/property.update';
 import * as moment from 'moment'
-import { ShapeIntoMongoObjectId, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
+import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
@@ -158,7 +158,7 @@ export class PropertyService {
         }
 
         if (text) {
-            match.propertyTitle = { $regex: new RegExp(text, 'i') };
+            match.propertyTitle = buildSearchRegex(text);
         }
 
         if (options && options.length) {
