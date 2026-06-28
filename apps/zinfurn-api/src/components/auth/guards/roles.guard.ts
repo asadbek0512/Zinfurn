@@ -1,4 +1,4 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
@@ -14,7 +14,7 @@ export class RolesGuard implements CanActivate {
 		const roles = this.reflector.get<string[]>('roles', context.getHandler());
 		if (!roles) return true;
 
-		console.info(`--- @guard() Authentication [RolesGuard]: ${roles} ---`);
+		Logger.log(`--- @guard() Authentication [RolesGuard]: ${roles} ---`);
 
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;

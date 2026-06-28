@@ -1,4 +1,4 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
 
@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
 	constructor(private authService: AuthService) { }
 
 	async canActivate(context: ExecutionContext | any): Promise<boolean> {
-		console.info('--- @guard() Authentication [AuthGuard] ---');
+		Logger.log('--- @guard() Authentication [AuthGuard] ---');
 
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Notice, Notices } from '../../libs/dto/notice/notice';
@@ -21,7 +21,7 @@ export class NoticeService {
 			});
 			return result;
 		} catch (err) {
-			console.error('Error, Service.createNotice:', err.message);
+			Logger.error('Error, Service.createNotice:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -80,7 +80,7 @@ export class NoticeService {
 
 			return result[0];
 		} catch (err) {
-			console.error('Error, Service.getAllNotices:', err.message);
+			Logger.error('Error, Service.getAllNotices:', err.message);
 			throw new BadRequestException(Message.NO_DATA_FOUND);
 		}
 	}
@@ -97,7 +97,7 @@ export class NoticeService {
 			if (!result) throw new BadRequestException(Message.NO_DATA_FOUND);
 			return result;
 		} catch (err) {
-			console.error('Error, Service.getNotice:', err.message);
+			Logger.error('Error, Service.getNotice:', err.message);
 			throw new BadRequestException(Message.NO_DATA_FOUND);
 		}
 	}
@@ -119,7 +119,7 @@ export class NoticeService {
 			if (!result) throw new BadRequestException(Message.UPDATE_FAILED);
 			return result;
 		} catch (err) {
-			console.error('Error, Service.updateNotice:', err.message);
+			Logger.error('Error, Service.updateNotice:', err.message);
 			throw new BadRequestException(Message.UPDATE_FAILED);
 		}
 	}
@@ -141,7 +141,7 @@ export class NoticeService {
 			if (!result) throw new BadRequestException(Message.REMOVE_FAILED);
 			return result;
 		} catch (err) {
-			console.error('Error, Service.removeNotice:', err.message);
+			Logger.error('Error, Service.removeNotice:', err.message);
 			throw new BadRequestException(Message.REMOVE_FAILED);
 		}
 	}

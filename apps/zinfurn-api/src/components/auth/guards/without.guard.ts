@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 
 function parseCookieToken(cookieHeader: string | undefined): string | null {
@@ -15,7 +15,7 @@ export class WithoutGuard implements CanActivate {
 	constructor(private authService: AuthService) {}
 
 	async canActivate(context: ExecutionContext | any): Promise<boolean> {
-		console.info('--- @guard() Authentication [WithoutGuard] ---');
+		Logger.log('--- @guard() Authentication [WithoutGuard] ---');
 
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Order, Orders } from '../../libs/dto/order/order';
@@ -24,7 +24,7 @@ export class OrderService {
 			this.scheduleAutoProgression(order._id as ObjectId);
 			return order;
 		} catch (err) {
-			console.error('OrderService.createOrder error:', err.message);
+			Logger.error('OrderService.createOrder error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}

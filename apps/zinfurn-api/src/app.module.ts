@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from "@nestjs/config";
@@ -25,7 +25,7 @@ import { SocketModule } from './socket/socket.module';
           message:
             error?.extensions?.exception?.response?.message || error?.extensions?.response?.message || error?.message,
         };
-        console.error("GRAPHQL GLOBAL ERR:", graphQLFormattedError);
+        Logger.error("GRAPHQL GLOBAL ERR:", graphQLFormattedError);
         return graphQLFormattedError;
       },
     }),

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Review, ReviewReactionResult, Reviews, ReviewSummary } from '../../libs/dto/review/review';
@@ -50,7 +50,7 @@ export class ReviewService {
 			});
 			return review;
 		} catch (err) {
-			console.error('ReviewService.createReview error:', err.message);
+			Logger.error('ReviewService.createReview error:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
