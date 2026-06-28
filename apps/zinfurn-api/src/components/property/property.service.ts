@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import {
@@ -46,7 +46,7 @@ export class PropertyService {
             })
             return result;
         } catch (err) {
-            console.error("Error, Service.model:", err.message);
+            Logger.error("Error, Service.model:", err.message);
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }

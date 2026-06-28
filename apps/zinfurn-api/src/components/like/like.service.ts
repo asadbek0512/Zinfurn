@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Like, MeLiked } from '../../libs/dto/like/like';
 import { Model, ObjectId } from 'mongoose';
@@ -71,7 +71,7 @@ export class LikeService {
 					receiverId: receiverId,
 				});
 			} catch (err) {
-				console.error('Error, Service.model: ', err.message);
+				Logger.error('Error, Service.model: ', err.message);
 				throw new BadRequestException(Message.CREATE_FAILED);
 			}
 		}

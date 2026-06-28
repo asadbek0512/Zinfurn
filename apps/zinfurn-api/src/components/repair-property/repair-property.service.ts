@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { MemberService } from '../member/member.service';
 import { ViewService } from '../view/view.service';
 import { LikeService } from '../like/like.service';
@@ -35,7 +35,7 @@ export class RepairPropertyService {
             })
             return result;
         } catch (err) {
-            console.error("Error, Service.model:", err.message);
+            Logger.error("Error, Service.model:", err.message);
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }

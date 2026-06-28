@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
 import { MemberService } from '../member/member.service';
@@ -90,7 +90,7 @@ export class CommentService {
 				);
 			}
 		} catch (err) {
-			console.error('Error, Service.model:', err.message);
+			Logger.error('Error, Service.model:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 

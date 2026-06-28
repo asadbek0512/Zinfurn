@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, Res, UseGuards, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
@@ -73,7 +73,7 @@ export class AuthController {
 				return res.redirect(`${frontendUrl}/?token=${result.token}`);
 			}
 		} catch (err: any) {
-			console.error('Google callback error:', err);
+			Logger.error('Google callback error:', err);
 			const frontendUrl = this.getFrontendUrl();
 			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
 		}
