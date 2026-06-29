@@ -8,17 +8,26 @@ import { NoticeStatus } from '../../libs/enums/notice.enum';
 import { T } from '../../libs/types/common';
 import { Message } from '../../libs/enums/common_enum';
 import { buildSearchRegex } from '../../libs/config';
+import { TranslationService } from '../translation/translation.service';
 
 @Injectable()
 export class NoticeService {
-	constructor(@InjectModel('Notice') private readonly noticeModel: Model<Notice>) {}
+	constructor(
+		@InjectModel('Notice') private readonly noticeModel: Model<Notice>,
+		private readonly translationService: TranslationService,
+	) {}
 
 	public async createNotice(memberId: ObjectId, input: NoticeInput): Promise<Notice> {
 		try {
-			const result = await this.noticeModel.create({
-				...input,
-				memberId,
-			});
+			const data: T = { ...input, memberId };
+			// Tarjima (NON-BLOCKING: xato bo'lsa ham notice baribir saqlanadi)
+			try {
+				const translations = await this.translationService.translateArticle(input.noticeTitle, input.noticeContent);
+				if (translations) data.noticeTranslations = translations;
+			} catch (e) {
+				Logger.warn('Tarjima o\'tkazib yuborildi (notice create)');
+			}
+			const result = await this.noticeModel.create(data);
 			return result;
 		} catch (err) {
 			Logger.error('Error, Service.createNotice:', err.message);
@@ -104,6 +113,21 @@ export class NoticeService {
 
 	public async updateNotice(memberId: ObjectId, noticeId: ObjectId, input: NoticeUpdate): Promise<Notice> {
 		try {
+			// Nom yoki content o'zgarsa — qayta tarjima (NON-BLOCKING)
+			if (input.noticeTitle !== undefined || input.noticeContent !== undefined) {
+				try {
+					const existing: Notice | null = await this.noticeModel.findOne({ _id: noticeId }).lean().exec();
+					const title = input.noticeTitle ?? existing?.noticeTitle;
+					const content = input.noticeContent ?? existing?.noticeContent;
+					if (title) {
+						const translations = await this.translationService.translateArticle(title, content);
+						if (translations) (input as T).noticeTranslations = translations;
+					}
+				} catch (e) {
+					Logger.warn('Tarjima o\'tkazib yuborildi (notice update)');
+				}
+			}
+
 			const result = await this.noticeModel
 				.findOneAndUpdate(
 					{

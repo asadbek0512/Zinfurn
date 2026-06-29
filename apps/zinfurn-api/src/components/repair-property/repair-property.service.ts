@@ -15,6 +15,7 @@ import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookup
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { RepairPropertyUpdate } from '../../libs/dto/repairProperty/repairProperty.update';
 import * as moment from 'moment'
+import { TranslationService } from '../translation/translation.service';
 
 @Injectable()
 export class RepairPropertyService {
@@ -22,12 +23,21 @@ export class RepairPropertyService {
         @InjectModel('RepairProperty') private readonly repairPropertyModel: Model<RepairProperty>,
         private memberService: MemberService,
         private viewService: ViewService,
-        private likeService: LikeService
+        private likeService: LikeService,
+        private translationService: TranslationService,
     ) { }
 
     public async createRepairProperty(input: RepairPropertyInput): Promise<RepairProperty> {
         try {
-            const result = await this.repairPropertyModel.create(input);
+            const data: T = { ...input };
+            // Tarjima (NON-BLOCKING: xato bo'lsa ham saqlanadi)
+            try {
+                const translations = await this.translationService.translateArticle(input.repairPropertyDescription, '');
+                if (translations) data.repairPropertyTranslations = translations;
+            } catch (e) {
+                Logger.warn('Tarjima o\'tkazib yuborildi (repair create)');
+            }
+            const result = await this.repairPropertyModel.create(data);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
                 targetKey: 'memberProperties',

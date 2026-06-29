@@ -24,7 +24,13 @@ const NoticeSchema = new Schema(
 			type: String,
 			required: true,
 		},
-		
+
+		// Avtomatik tarjimalar: { uz: {title, desc}, en, ru, kr, ar }. Additive.
+		noticeTranslations: {
+			type: Schema.Types.Mixed,
+			default: {},
+		},
+
 		memberId: {
 			type: Schema.Types.ObjectId,
 			required: true,

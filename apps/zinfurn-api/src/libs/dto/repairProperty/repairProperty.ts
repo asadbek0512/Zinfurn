@@ -5,6 +5,33 @@ import { MeLiked } from '../like/like';
 import { RepairPropertyStatus, RepairPropertyType } from '../../enums/repairProperty.enum';
 
 @ObjectType()
+export class RepairI18n {
+    @Field(() => String, { nullable: true })
+    title?: string;
+
+    @Field(() => String, { nullable: true })
+    desc?: string;
+}
+
+@ObjectType()
+export class RepairTranslations {
+    @Field(() => RepairI18n, { nullable: true })
+    uz?: RepairI18n;
+
+    @Field(() => RepairI18n, { nullable: true })
+    en?: RepairI18n;
+
+    @Field(() => RepairI18n, { nullable: true })
+    ru?: RepairI18n;
+
+    @Field(() => RepairI18n, { nullable: true })
+    kr?: RepairI18n;
+
+    @Field(() => RepairI18n, { nullable: true })
+    ar?: RepairI18n;
+}
+
+@ObjectType()
 export class RepairProperty {
     @Field(() => String)
     _id: ObjectId;
@@ -23,6 +50,9 @@ export class RepairProperty {
 
     @Field(() => [String], { nullable: true })
     repairPropertyImages?: string[];
+
+    @Field(() => RepairTranslations, { nullable: true })
+    repairPropertyTranslations?: RepairTranslations;
 
     @Field(() => Int)
     repairPropertyViews: number;

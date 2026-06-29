@@ -14,6 +14,7 @@ import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookup
 import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
+import { TranslationService } from '../translation/translation.service';
 
 @Injectable()
 export class BoardArticleService {
@@ -22,11 +23,20 @@ export class BoardArticleService {
         private readonly memberService: MemberService,
         private readonly viewService: ViewService,
         private readonly likeService: LikeService,
+        private readonly translationService: TranslationService,
     ) { }
 
     public async createBoardArticle(memberId: ObjectId, input: BoardArticleInput): Promise<BoardArticle> {
-        input.memberId = memberId; // <= Nega bu try ichida emas? 
+        input.memberId = memberId; // <= Nega bu try ichida emas?
         try {
+            // Tarjima (NON-BLOCKING: xato bo'lsa ham artikl baribir saqlanadi)
+            try {
+                const translations = await this.translationService.translateArticle(input.articleTitle, input.articleContent);
+                if (translations) (input as T).articleTranslations = translations;
+            } catch (e) {
+                Logger.warn('Tarjima o\'tkazib yuborildi (article create)');
+            }
+
             const result = await this.boardArticleModel.create(input);
             await this.memberService.memberStatsEditor({
                 _id: memberId,
@@ -68,6 +78,22 @@ export class BoardArticleService {
 
     public async updateBoardArticle(memberId: ObjectId, input: BoardArticleUpdate): Promise<BoardArticle> {
         const { _id, articleStatus } = input; // distraction inputni ichidagi alohida qilib olinyapti
+
+        // Nom yoki content o'zgarsa — qayta tarjima (NON-BLOCKING)
+        if (input.articleTitle !== undefined || input.articleContent !== undefined) {
+            try {
+                const existing: BoardArticle | null = await this.boardArticleModel
+                    .findOne({ _id: _id, memberId: memberId, articleStatus: BoardArticleStatus.ACTIVE }).lean().exec();
+                const title = input.articleTitle ?? existing?.articleTitle;
+                const content = input.articleContent ?? existing?.articleContent;
+                if (title) {
+                    const translations = await this.translationService.translateArticle(title, content);
+                    if (translations) (input as T).articleTranslations = translations;
+                }
+            } catch (e) {
+                Logger.warn('Tarjima o\'tkazib yuborildi (article update)');
+            }
+        }
 
         const result = await this.boardArticleModel
             .findOneAndUpdate({ _id: _id, memberId: memberId, articleStatus: BoardArticleStatus.ACTIVE }, input, {

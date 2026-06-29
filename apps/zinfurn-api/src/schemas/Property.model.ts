@@ -112,6 +112,13 @@ const PropertySchema = new Schema(
 			type: String,
 		},
 
+		// Avtomatik tarjimalar: { uz: {title, desc}, en: {...}, ru, kr, ar }
+		// Additive maydon — bo'lmasa frontend asl matnni ko'rsatadi
+		propertyTranslations: {
+			type: Schema.Types.Mixed,
+			default: {},
+		},
+
 		propertyBarter: {
 			type: Boolean,
 			default: false,

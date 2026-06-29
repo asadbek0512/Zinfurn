@@ -30,6 +30,12 @@ const RepairSchema = new Schema(
       required: false,
     },
 
+    // Avtomatik tarjimalar: { uz: {title, desc}, en, ru, kr, ar }. Additive.
+    repairPropertyTranslations: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+
     repairPropertyViews: {
       type: Number,
       default: 0,
