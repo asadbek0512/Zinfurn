@@ -5,6 +5,33 @@ import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
 
 @ObjectType()
+export class ArticleI18n {
+	@Field(() => String, { nullable: true })
+	title?: string;
+
+	@Field(() => String, { nullable: true })
+	desc?: string;
+}
+
+@ObjectType()
+export class ArticleTranslations {
+	@Field(() => ArticleI18n, { nullable: true })
+	uz?: ArticleI18n;
+
+	@Field(() => ArticleI18n, { nullable: true })
+	en?: ArticleI18n;
+
+	@Field(() => ArticleI18n, { nullable: true })
+	ru?: ArticleI18n;
+
+	@Field(() => ArticleI18n, { nullable: true })
+	kr?: ArticleI18n;
+
+	@Field(() => ArticleI18n, { nullable: true })
+	ar?: ArticleI18n;
+}
+
+@ObjectType()
 export class BoardArticle {
 	@Field(() => String)
 	_id: ObjectId;
@@ -23,6 +50,9 @@ export class BoardArticle {
 
 	@Field(() => String, { nullable: true })
 	articleImage?: string;
+
+	@Field(() => ArticleTranslations, { nullable: true })
+	articleTranslations?: ArticleTranslations;
 
 	@Field(() => Int)
 	articleViews: number;

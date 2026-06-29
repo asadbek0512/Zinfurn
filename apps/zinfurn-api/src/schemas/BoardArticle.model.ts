@@ -29,6 +29,12 @@ const BoardArticleSchema = new Schema(
 			type: String,
 		},
 
+		// Avtomatik tarjimalar: { uz: {title, desc}, en, ru, kr, ar }. Additive.
+		articleTranslations: {
+			type: Schema.Types.Mixed,
+			default: {},
+		},
+
 		articleLikes: {
 			type: Number,
 			default: 0,

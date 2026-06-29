@@ -3,6 +3,33 @@ import { ObjectId } from 'mongoose';
 import { NoticeCategory, NoticeStatus } from '../../enums/notice.enum';
 
 @ObjectType()
+export class NoticeI18n {
+	@Field(() => String, { nullable: true })
+	title?: string;
+
+	@Field(() => String, { nullable: true })
+	desc?: string;
+}
+
+@ObjectType()
+export class NoticeTranslations {
+	@Field(() => NoticeI18n, { nullable: true })
+	uz?: NoticeI18n;
+
+	@Field(() => NoticeI18n, { nullable: true })
+	en?: NoticeI18n;
+
+	@Field(() => NoticeI18n, { nullable: true })
+	ru?: NoticeI18n;
+
+	@Field(() => NoticeI18n, { nullable: true })
+	kr?: NoticeI18n;
+
+	@Field(() => NoticeI18n, { nullable: true })
+	ar?: NoticeI18n;
+}
+
+@ObjectType()
 export class Notice {
 	@Field(() => String)
 	_id: ObjectId;
@@ -18,6 +45,9 @@ export class Notice {
 
 	@Field(() => String)
 	noticeContent: string;
+
+	@Field(() => NoticeTranslations, { nullable: true })
+	noticeTranslations?: NoticeTranslations;
 
 	@Field(() => String)
 	memberId: ObjectId;

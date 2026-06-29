@@ -5,6 +5,33 @@ import { Member, TotalCounter } from "../member/member";
 import { MeLiked } from "../like/like";
 
 @ObjectType()
+export class PropertyI18n {
+    @Field(() => String, { nullable: true })
+    title?: string;
+
+    @Field(() => String, { nullable: true })
+    desc?: string;
+}
+
+@ObjectType()
+export class PropertyTranslations {
+    @Field(() => PropertyI18n, { nullable: true })
+    uz?: PropertyI18n;
+
+    @Field(() => PropertyI18n, { nullable: true })
+    en?: PropertyI18n;
+
+    @Field(() => PropertyI18n, { nullable: true })
+    ru?: PropertyI18n;
+
+    @Field(() => PropertyI18n, { nullable: true })
+    kr?: PropertyI18n;
+
+    @Field(() => PropertyI18n, { nullable: true })
+    ar?: PropertyI18n;
+}
+
+@ObjectType()
 export class Property {
     @Field(() => String)
     _id: ObjectId;
@@ -47,6 +74,9 @@ export class Property {
 
     @Field(() => String, { nullable: true })
     propertyDesc?: string;
+
+    @Field(() => PropertyTranslations, { nullable: true })
+    propertyTranslations?: PropertyTranslations;
 
     @Field(() => Boolean, { nullable: true })
     propertyBarter?: boolean;

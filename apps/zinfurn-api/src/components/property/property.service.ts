@@ -21,6 +21,7 @@ import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookup
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
+import { TranslationService } from '../translation/translation.service';
 
 @Injectable()
 export class PropertyService {
@@ -28,15 +29,27 @@ export class PropertyService {
         @InjectModel('Property') private readonly propertyModel: Model<Property>,
         private memberService: MemberService,
         private viewService: ViewService,
-        private likeService: LikeService
+        private likeService: LikeService,
+        private translationService: TranslationService,
     ) { }
 
     public async createProperty(input: PropertyInput): Promise<Property> {
         try {
-            const propertyData = {
+            const propertyData: T = {
                 ...input,
                 propertyInStock: true,     // Majburiy true qilamiz
             };
+
+            // Tarjima (NON-BLOCKING: xato/sekin bo'lsa ham product baribir saqlanadi)
+            try {
+                const translations = await this.translationService.translateProperty(
+                    input.propertyTitle,
+                    input.propertyDesc,
+                );
+                if (translations) propertyData.propertyTranslations = translations;
+            } catch (e) {
+                Logger.warn('Tarjima o\'tkazib yuborildi (create)');
+            }
 
             const result = await this.propertyModel.create(propertyData);
             await this.memberService.memberStatsEditor({
@@ -86,6 +99,21 @@ export class PropertyService {
 
         if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
         else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
+
+        // Nom yoki description o'zgarsa — qayta tarjima (NON-BLOCKING)
+        if (input.propertyTitle !== undefined || input.propertyDesc !== undefined) {
+            try {
+                const existing: Property | null = await this.propertyModel.findOne(search).lean().exec();
+                const title = input.propertyTitle ?? existing?.propertyTitle;
+                const desc = input.propertyDesc ?? existing?.propertyDesc;
+                if (title) {
+                    const translations = await this.translationService.translateProperty(title, desc);
+                    if (translations) (input as T).propertyTranslations = translations;
+                }
+            } catch (e) {
+                Logger.warn('Tarjima o\'tkazib yuborildi (update)');
+            }
+        }
 
         const result = await this.propertyModel
             .findOneAndUpdate(search, input, {
