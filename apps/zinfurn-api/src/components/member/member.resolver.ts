@@ -3,6 +3,7 @@ import { MemberService } from './member.service';
 import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry, TechnicianInquiry } from '../../libs/dto/member/member.input';
 import { Member, Members } from '../../libs/dto/member/member';
 import { UseGuards, Logger } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { ObjectId } from 'mongoose';
@@ -17,10 +18,13 @@ import { createWriteStream, mkdirSync } from 'fs';
 import sharp from 'sharp';
 import { Message } from '../../libs/enums/common_enum';
 
+const ALLOWED_UPLOAD_TARGETS = ['member', 'property', 'article', 'repair', 'review'];
+
 @Resolver()
 export class MemberResolver {
     constructor(private readonly memberService: MemberService) { }//dpendensiy injekshen
 
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Mutation(() => Member)
     public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
         const member = await this.memberService.signup(input);
@@ -28,9 +32,19 @@ export class MemberResolver {
         return member;
     }
 
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Mutation(() => Member)
     public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
         const member = await this.memberService.login(input);
+        this.setAuthCookie(ctx.res, member.accessToken as string);
+        return member;
+    }
+
+    /** Access token muddati tugaganda refresh token evaziga yangi juftlik olish (guard'siz) */
+    @Throttle({ default: { limit: 20, ttl: 60000 } })
+    @Mutation(() => Member)
+    public async refreshToken(@Args('refreshToken') refreshToken: string, @Context() ctx: any): Promise<Member> {
+        const member = await this.memberService.refreshToken(refreshToken);
         this.setAuthCookie(ctx.res, member.accessToken as string);
         return member;
     }
@@ -138,10 +152,13 @@ export class MemberResolver {
     ): Promise<string> {
 
         if (!filename) throw new Error(Message.UPLOAD_FAILED);
+        // Path traversal himoyasi — target faqat ruxsat etilgan papkalardan bo'lsin
+        if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
         const validMime = validMimeTypes.includes(mimetype);
         if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-        const imageName = getSerialForImage(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
+        // Sharp baribir JPEG'ga qayta kodlaydi — kengaytma doim .jpg
+        const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
         mkdirSync(`uploads/${target}`, { recursive: true });
         const url = `uploads/${target}/${imageName}`;
         const stream = createReadStream();
@@ -176,10 +193,11 @@ export class MemberResolver {
             try {
                 const { filename, mimetype, encoding, createReadStream } = await img;
 
+                if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
                 const validMime = validMimeTypes.includes(mimetype);
                 if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-                const imageName = getSerialForImage(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
+                const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
                 mkdirSync(`uploads/${target}`, { recursive: true });
                 const url = `uploads/${target}/${imageName}`;
                 const stream = createReadStream();

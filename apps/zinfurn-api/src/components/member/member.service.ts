@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, ObjectId } from 'mongoose';
 import { Member, Members } from '../../libs/dto/member/member';
@@ -34,6 +34,7 @@ export class MemberService {
         try {
             const result = await this.memberModel.create(input);
             result.accessToken = await this.authService.createToken(result);
+            result.refreshToken = await this.authService.createRefreshToken(result);
             return result;
         } catch (err) {
             Logger.error('Error, Service.model:', err.message);
@@ -61,9 +62,23 @@ export class MemberService {
 
         const isMatch = await this.authService.comparePasswords(input.memberPassword, response.memberPassword || '') /// ??????
         if (!isMatch) throw new InternalServerErrorException(Message.WRONG_PASSWORD);
-        response.accessToken = await this.authService.createToken(response)
+        response.accessToken = await this.authService.createToken(response);
+        response.refreshToken = await this.authService.createRefreshToken(response);
 
         return response;
+    }
+
+    /** Refresh token evaziga yangi access+refresh juftligi */
+    public async refreshToken(refreshToken: string): Promise<Member> {
+        try {
+            const { member, token, refresh } = await this.authService.refreshTokens(refreshToken);
+            member.accessToken = token;
+            member.refreshToken = refresh;
+            return member;
+        } catch (err) {
+            Logger.warn(`Refresh token rejected: ${err.message}`);
+            throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+        }
     }
 
     public async getMyProfile(memberId: ObjectId): Promise<Member> {
@@ -86,6 +101,7 @@ export class MemberService {
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
         result.accessToken = await this.authService.createToken(result);
+        result.refreshToken = await this.authService.createRefreshToken(result);
         return result;
     }
 

@@ -72,6 +72,10 @@ const app_resolver_1 = __webpack_require__(/*! ./app.resolver */ "./apps/zinfurn
 const components_module_1 = __webpack_require__(/*! ./components/components.module */ "./apps/zinfurn-api/src/components/components.module.ts");
 const database_module_1 = __webpack_require__(/*! ./database/database.module */ "./apps/zinfurn-api/src/database/database.module.ts");
 const socket_module_1 = __webpack_require__(/*! ./socket/socket.module */ "./apps/zinfurn-api/src/socket/socket.module.ts");
+const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/throttler");
+const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
+const gql_throttler_guard_1 = __webpack_require__(/*! ./components/auth/guards/gql-throttler.guard */ "./apps/zinfurn-api/src/components/auth/guards/gql-throttler.guard.ts");
+const depthLimit = __webpack_require__(/*! graphql-depth-limit */ "graphql-depth-limit");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -79,11 +83,14 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule.forRoot(),
+            throttler_1.ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 300 }]),
             graphql_1.GraphQLModule.forRoot({
                 driver: apollo_1.ApolloDriver,
-                playground: true,
+                playground: process.env.NODE_ENV !== 'production',
+                introspection: process.env.NODE_ENV !== 'production',
                 uploads: false,
                 autoSchemaFile: true,
+                validationRules: [depthLimit(8)],
                 context: ({ req, res }) => ({ req, res }),
                 formatError: (error) => {
                     const graphQLFormattedError = {
@@ -98,7 +105,7 @@ exports.AppModule = AppModule = __decorate([
             database_module_1.DatabaseModule, socket_module_1.SocketModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService, app_resolver_1.AppResolver],
+        providers: [app_service_1.AppService, app_resolver_1.AppResolver, { provide: core_1.APP_GUARD, useClass: gql_throttler_guard_1.GqlThrottlerGuard }],
     })
 ], AppModule);
 
@@ -195,6 +202,7 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthController = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/throttler");
 const passport_1 = __webpack_require__(/*! @nestjs/passport */ "@nestjs/passport");
 const auth_service_1 = __webpack_require__(/*! ./auth.service */ "./apps/zinfurn-api/src/components/auth/auth.service.ts");
 const telegram_strategy_1 = __webpack_require__(/*! ./telegram.strategy */ "./apps/zinfurn-api/src/components/auth/telegram.strategy.ts");
@@ -241,12 +249,12 @@ let AuthController = class AuthController {
                 const result = await this.authService.linkGoogle(memberId, user);
                 res.cookie('linkMemberId', '', { maxAge: 0 });
                 this.setAuthCookie(res, result.token);
-                return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+                return res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
             }
             else {
                 const result = await this.authService.googleLogin(user);
                 this.setAuthCookie(res, result.token);
-                return res.redirect(`${frontendUrl}/?token=${result.token}`);
+                return res.redirect(`${frontendUrl}/?token=${result.token}&refresh=${result.refresh}`);
             }
         }
         catch (err) {
@@ -262,7 +270,7 @@ let AuthController = class AuthController {
         }
         const result = await this.authService.telegramLogin(telegramData);
         this.setAuthCookie(res, result.token);
-        return res.json({ token: result.token });
+        return res.json({ token: result.token, refresh: result.refresh });
     }
     async linkTelegram(body, res) {
         const { memberId, ...telegramData } = body;
@@ -272,7 +280,7 @@ let AuthController = class AuthController {
         }
         const result = await this.authService.linkTelegram(memberId, telegramData);
         this.setAuthCookie(res, result.token);
-        return res.json({ token: result.token });
+        return res.json({ token: result.token, refresh: result.refresh });
     }
     async linkGoogle(req, res) {
         const memberId = req.query.state;
@@ -293,7 +301,7 @@ let AuthController = class AuthController {
                 return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
             }
             const result = await this.authService.linkGoogle(memberId, req.user);
-            res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+            res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
         }
         catch (err) {
             res.redirect(`${this.getFrontendUrl()}/mypage?error=${encodeURIComponent(err.message)}`);
@@ -325,6 +333,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuthCallback", null);
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 10, ttl: 60000 } }),
     (0, common_1.Post)('telegram'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)()),
@@ -333,6 +342,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "telegramAuth", null);
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 10, ttl: 60000 } }),
     (0, common_1.Post)('link/telegram'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)()),
@@ -477,19 +487,46 @@ let AuthService = class AuthService {
             memberWarnings: doc.memberWarnings,
             memberBlocks: doc.memberBlocks,
         };
-        return await this.jwtService.signAsync(payload);
+        payload.tokenType = 'access';
+        return await this.jwtService.signAsync(payload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '1h' });
+    }
+    async createRefreshToken(member) {
+        const doc = member['_doc'] ? member['_doc'] : member;
+        return await this.jwtService.signAsync({ _id: doc._id, tokenType: 'refresh' }, { expiresIn: process.env.REFRESH_TOKEN_TTL || '30d' });
+    }
+    async createTokenPair(member) {
+        const token = await this.createToken(member);
+        const refresh = await this.createRefreshToken(member);
+        return { token, refresh };
     }
     async verifyToken(token) {
         const member = await this.jwtService.verifyAsync(token);
+        if (member?.tokenType === 'refresh')
+            throw new Error('Refresh token cannot be used for authentication');
         member._id = (0, config_1.ShapeIntoMongoObjectId)(member._id);
         return member;
+    }
+    async refreshTokens(refreshToken) {
+        let payload;
+        try {
+            payload = await this.jwtService.verifyAsync(refreshToken);
+        }
+        catch {
+            throw new Error('Invalid or expired refresh token');
+        }
+        if (payload?.tokenType !== 'refresh')
+            throw new Error('Invalid refresh token');
+        const member = await this.memberModel.findById((0, config_1.ShapeIntoMongoObjectId)(payload._id)).exec();
+        if (!member || member.memberStatus !== member_enum_1.MemberStatus.ACTIVE)
+            throw new Error('Member is not active');
+        const pair = await this.createTokenPair(member);
+        return { member, ...pair };
     }
     async googleLogin(googleUser) {
         const { email, firstName, lastName, picture, sub } = googleUser;
         let member = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
         if (member) {
-            const token = await this.createToken(member);
-            return { token };
+            return await this.createTokenPair(member);
         }
         member = await this.memberModel.findOne({ memberEmail: email }).exec();
         if (member) {
@@ -498,8 +535,7 @@ let AuthService = class AuthService {
                     .findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
                     .exec();
             }
-            const token = await this.createToken(member);
-            return { token };
+            return await this.createTokenPair(member);
         }
         member = await this.memberModel.create({
             memberNick: email.split('@')[0] + '_' + Date.now(),
@@ -511,8 +547,7 @@ let AuthService = class AuthService {
             memberType: member_enum_1.MemberType.USER,
             memberGoogleId: sub,
         });
-        const token = await this.createToken(member);
-        return { token };
+        return await this.createTokenPair(member);
     }
     async telegramLogin(telegramUser) {
         const { id, first_name, last_name, username, photo_url } = telegramUser;
@@ -528,8 +563,7 @@ let AuthService = class AuthService {
                 memberTelegramId: String(id),
             });
         }
-        const token = await this.createToken(member);
-        return { token };
+        return await this.createTokenPair(member);
     }
     async linkTelegram(memberId, telegramUser) {
         const { id } = telegramUser;
@@ -539,16 +573,14 @@ let AuthService = class AuthService {
         const member = await this.memberModel
             .findOneAndUpdate({ _id: memberId }, { memberTelegramId: String(id) }, { new: true })
             .exec();
-        const token = await this.createToken(member);
-        return { token };
+        return await this.createTokenPair(member);
     }
     async linkGoogle(memberId, googleUser) {
         const { email, sub } = googleUser;
         const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
         if (existingGoogle) {
             if (existingGoogle._id.toString() === memberId) {
-                const token = await this.createToken(existingGoogle);
-                return { token };
+                return await this.createTokenPair(existingGoogle);
             }
             throw new Error('This Google account is already linked to another account!');
         }
@@ -562,8 +594,7 @@ let AuthService = class AuthService {
         const updatedMember = await this.memberModel.findOneAndUpdate({ _id: memberId }, updateData, { new: true }).exec();
         if (!updatedMember)
             throw new Error('Failed to update member!');
-        const token = await this.createToken(updatedMember);
-        return { token };
+        return await this.createTokenPair(updatedMember);
     }
 };
 exports.AuthService = AuthService;
@@ -737,6 +768,50 @@ exports.AuthGuard = AuthGuard = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
 ], AuthGuard);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/auth/guards/gql-throttler.guard.ts":
+/*!****************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/auth/guards/gql-throttler.guard.ts ***!
+  \****************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GqlThrottlerGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/throttler");
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+let GqlThrottlerGuard = class GqlThrottlerGuard extends throttler_1.ThrottlerGuard {
+    getRequestResponse(context) {
+        if (context.getType() === 'graphql') {
+            const gqlCtx = graphql_1.GqlExecutionContext.create(context).getContext();
+            return { req: gqlCtx.req, res: gqlCtx.res ?? gqlCtx.req?.res };
+        }
+        const http = context.switchToHttp();
+        return { req: http.getRequest(), res: http.getResponse() };
+    }
+    async canActivate(context) {
+        if (context.getType() === 'ws')
+            return true;
+        const { req, res } = this.getRequestResponse(context);
+        if (!req || !res)
+            return true;
+        return super.canActivate(context);
+    }
+};
+exports.GqlThrottlerGuard = GqlThrottlerGuard;
+exports.GqlThrottlerGuard = GqlThrottlerGuard = __decorate([
+    (0, common_1.Injectable)()
+], GqlThrottlerGuard);
 
 
 /***/ }),
@@ -2410,7 +2485,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -2418,6 +2493,7 @@ const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/zin
 const member_input_1 = __webpack_require__(/*! ../../libs/dto/member/member.input */ "./apps/zinfurn-api/src/libs/dto/member/member.input.ts");
 const member_1 = __webpack_require__(/*! ../../libs/dto/member/member */ "./apps/zinfurn-api/src/libs/dto/member/member.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/throttler");
 const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
 const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
@@ -2431,6 +2507,7 @@ const graphql_upload_1 = __webpack_require__(/*! graphql-upload */ "graphql-uplo
 const fs_1 = __webpack_require__(/*! fs */ "fs");
 const sharp_1 = __webpack_require__(/*! sharp */ "sharp");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+const ALLOWED_UPLOAD_TARGETS = ['member', 'property', 'article', 'repair', 'review'];
 let MemberResolver = class MemberResolver {
     memberService;
     constructor(memberService) {
@@ -2443,6 +2520,11 @@ let MemberResolver = class MemberResolver {
     }
     async login(input, ctx) {
         const member = await this.memberService.login(input);
+        this.setAuthCookie(ctx.res, member.accessToken);
+        return member;
+    }
+    async refreshToken(refreshToken, ctx) {
+        const member = await this.memberService.refreshToken(refreshToken);
         this.setAuthCookie(ctx.res, member.accessToken);
         return member;
     }
@@ -2490,10 +2572,12 @@ let MemberResolver = class MemberResolver {
     async imageUploader({ createReadStream, filename, mimetype }, target) {
         if (!filename)
             throw new Error(common_enum_1.Message.UPLOAD_FAILED);
+        if (!ALLOWED_UPLOAD_TARGETS.includes(String(target)))
+            throw new Error(common_enum_1.Message.UPLOAD_FAILED);
         const validMime = config_1.validMimeTypes.includes(mimetype);
         if (!validMime)
             throw new Error(common_enum_1.Message.PROVIDE_ALLOWED_FORMAT);
-        const imageName = (0, config_1.getSerialForImage)(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
+        const imageName = (0, config_1.getSerialForImage)(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
         (0, fs_1.mkdirSync)(`uploads/${target}`, { recursive: true });
         const url = `uploads/${target}/${imageName}`;
         const stream = createReadStream();
@@ -2517,10 +2601,12 @@ let MemberResolver = class MemberResolver {
         const promisedList = files.map(async (img, index) => {
             try {
                 const { filename, mimetype, encoding, createReadStream } = await img;
+                if (!ALLOWED_UPLOAD_TARGETS.includes(String(target)))
+                    throw new Error(common_enum_1.Message.UPLOAD_FAILED);
                 const validMime = config_1.validMimeTypes.includes(mimetype);
                 if (!validMime)
                     throw new Error(common_enum_1.Message.PROVIDE_ALLOWED_FORMAT);
-                const imageName = (0, config_1.getSerialForImage)(filename).replace(/\.(png|jpeg|webp)$/i, '.jpg');
+                const imageName = (0, config_1.getSerialForImage)(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
                 (0, fs_1.mkdirSync)(`uploads/${target}`, { recursive: true });
                 const url = `uploads/${target}/${imageName}`;
                 const stream = createReadStream();
@@ -2549,6 +2635,7 @@ let MemberResolver = class MemberResolver {
 };
 exports.MemberResolver = MemberResolver;
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60000 } }),
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, graphql_1.Context)()),
@@ -2557,6 +2644,7 @@ __decorate([
     __metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
 ], MemberResolver.prototype, "signup", null);
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60000 } }),
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, graphql_1.Context)()),
@@ -2565,12 +2653,21 @@ __decorate([
     __metadata("design:returntype", typeof (_e = typeof Promise !== "undefined" && Promise) === "function" ? _e : Object)
 ], MemberResolver.prototype, "login", null);
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 20, ttl: 60000 } }),
+    (0, graphql_1.Mutation)(() => member_1.Member),
+    __param(0, (0, graphql_1.Args)('refreshToken')),
+    __param(1, (0, graphql_1.Context)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], MemberResolver.prototype, "refreshToken", null);
+__decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, graphql_1.Query)(() => member_1.Member),
     __param(0, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object]),
-    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+    __metadata("design:paramtypes", [typeof (_g = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _g : Object]),
+    __metadata("design:returntype", typeof (_h = typeof Promise !== "undefined" && Promise) === "function" ? _h : Object)
 ], MemberResolver.prototype, "getMyProfile", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -2578,7 +2675,7 @@ __decorate([
     __param(0, (0, authMember_decorator_1.AuthMember)('memberNick')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", typeof (_h = typeof Promise !== "undefined" && Promise) === "function" ? _h : Object)
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], MemberResolver.prototype, "checkAuth", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.USER, member_enum_1.MemberType.AGENT),
@@ -2586,8 +2683,8 @@ __decorate([
     (0, graphql_1.Query)(() => String),
     __param(0, (0, authMember_decorator_1.AuthMember)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_j = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _j : Object]),
-    __metadata("design:returntype", typeof (_k = typeof Promise !== "undefined" && Promise) === "function" ? _k : Object)
+    __metadata("design:paramtypes", [typeof (_k = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _k : Object]),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
 ], MemberResolver.prototype, "checkAuthRoles", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -2595,8 +2692,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_l = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _l : Object, typeof (_m = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _m : Object]),
-    __metadata("design:returntype", typeof (_o = typeof Promise !== "undefined" && Promise) === "function" ? _o : Object)
+    __metadata("design:paramtypes", [typeof (_m = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _m : Object, typeof (_o = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _o : Object]),
+    __metadata("design:returntype", typeof (_p = typeof Promise !== "undefined" && Promise) === "function" ? _p : Object)
 ], MemberResolver.prototype, "updateMember", null);
 __decorate([
     (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
@@ -2604,8 +2701,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('memberId')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_p = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _p : Object]),
-    __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
+    __metadata("design:paramtypes", [String, typeof (_q = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _q : Object]),
+    __metadata("design:returntype", typeof (_r = typeof Promise !== "undefined" && Promise) === "function" ? _r : Object)
 ], MemberResolver.prototype, "getMember", null);
 __decorate([
     (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
@@ -2613,8 +2710,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_r = typeof member_input_1.AgentsInquiry !== "undefined" && member_input_1.AgentsInquiry) === "function" ? _r : Object, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
-    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+    __metadata("design:paramtypes", [typeof (_s = typeof member_input_1.AgentsInquiry !== "undefined" && member_input_1.AgentsInquiry) === "function" ? _s : Object, typeof (_t = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _t : Object]),
+    __metadata("design:returntype", typeof (_u = typeof Promise !== "undefined" && Promise) === "function" ? _u : Object)
 ], MemberResolver.prototype, "getAgents", null);
 __decorate([
     (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
@@ -2622,8 +2719,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_u = typeof member_input_1.TechnicianInquiry !== "undefined" && member_input_1.TechnicianInquiry) === "function" ? _u : Object, typeof (_v = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _v : Object]),
-    __metadata("design:returntype", typeof (_w = typeof Promise !== "undefined" && Promise) === "function" ? _w : Object)
+    __metadata("design:paramtypes", [typeof (_v = typeof member_input_1.TechnicianInquiry !== "undefined" && member_input_1.TechnicianInquiry) === "function" ? _v : Object, typeof (_w = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _w : Object]),
+    __metadata("design:returntype", typeof (_x = typeof Promise !== "undefined" && Promise) === "function" ? _x : Object)
 ], MemberResolver.prototype, "getTechnicians", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -2631,8 +2728,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('memberId')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_x = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _x : Object]),
-    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
+    __metadata("design:paramtypes", [String, typeof (_y = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _y : Object]),
+    __metadata("design:returntype", typeof (_z = typeof Promise !== "undefined" && Promise) === "function" ? _z : Object)
 ], MemberResolver.prototype, "likeTargetMember", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -2640,8 +2737,8 @@ __decorate([
     (0, graphql_1.Query)(() => member_1.Members),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_z = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _z : Object]),
-    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
+    __metadata("design:paramtypes", [typeof (_0 = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _0 : Object]),
+    __metadata("design:returntype", typeof (_1 = typeof Promise !== "undefined" && Promise) === "function" ? _1 : Object)
 ], MemberResolver.prototype, "getAllMembersByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -2649,8 +2746,8 @@ __decorate([
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_1 = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _1 : Object]),
-    __metadata("design:returntype", typeof (_2 = typeof Promise !== "undefined" && Promise) === "function" ? _2 : Object)
+    __metadata("design:paramtypes", [typeof (_2 = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _2 : Object]),
+    __metadata("design:returntype", typeof (_3 = typeof Promise !== "undefined" && Promise) === "function" ? _3 : Object)
 ], MemberResolver.prototype, "updateMemberByAdmin", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -2658,8 +2755,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)({ name: 'file', type: () => graphql_upload_1.GraphQLUpload })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_3 = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _3 : Object, typeof (_4 = typeof String !== "undefined" && String) === "function" ? _4 : Object]),
-    __metadata("design:returntype", typeof (_5 = typeof Promise !== "undefined" && Promise) === "function" ? _5 : Object)
+    __metadata("design:paramtypes", [typeof (_4 = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _4 : Object, typeof (_5 = typeof String !== "undefined" && String) === "function" ? _5 : Object]),
+    __metadata("design:returntype", typeof (_6 = typeof Promise !== "undefined" && Promise) === "function" ? _6 : Object)
 ], MemberResolver.prototype, "imageUploader", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -2667,8 +2764,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('files', { type: () => [graphql_upload_1.GraphQLUpload] })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array, typeof (_6 = typeof String !== "undefined" && String) === "function" ? _6 : Object]),
-    __metadata("design:returntype", typeof (_7 = typeof Promise !== "undefined" && Promise) === "function" ? _7 : Object)
+    __metadata("design:paramtypes", [Array, typeof (_7 = typeof String !== "undefined" && String) === "function" ? _7 : Object]),
+    __metadata("design:returntype", typeof (_8 = typeof Promise !== "undefined" && Promise) === "function" ? _8 : Object)
 ], MemberResolver.prototype, "imagesUploader", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
@@ -2732,6 +2829,7 @@ let MemberService = class MemberService {
         try {
             const result = await this.memberModel.create(input);
             result.accessToken = await this.authService.createToken(result);
+            result.refreshToken = await this.authService.createRefreshToken(result);
             return result;
         }
         catch (err) {
@@ -2760,7 +2858,20 @@ let MemberService = class MemberService {
         if (!isMatch)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.WRONG_PASSWORD);
         response.accessToken = await this.authService.createToken(response);
+        response.refreshToken = await this.authService.createRefreshToken(response);
         return response;
+    }
+    async refreshToken(refreshToken) {
+        try {
+            const { member, token, refresh } = await this.authService.refreshTokens(refreshToken);
+            member.accessToken = token;
+            member.refreshToken = refresh;
+            return member;
+        }
+        catch (err) {
+            common_1.Logger.warn(`Refresh token rejected: ${err.message}`);
+            throw new common_1.UnauthorizedException(common_enum_1.Message.NOT_AUTHENTICATED);
+        }
     }
     async getMyProfile(memberId) {
         const member = await this.memberModel.findById(memberId).exec();
@@ -2778,6 +2889,7 @@ let MemberService = class MemberService {
         if (!result)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
         result.accessToken = await this.authService.createToken(result);
+        result.refreshToken = await this.authService.createRefreshToken(result);
         return result;
     }
     async getMember(memberId, targetId) {
@@ -7443,6 +7555,7 @@ let Member = class Member {
     createdAt;
     updatedAt;
     accessToken;
+    refreshToken;
     meLiked;
     meFollowed;
 };
@@ -7559,6 +7672,10 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], Member.prototype, "accessToken", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Member.prototype, "refreshToken", void 0);
 __decorate([
     (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
     __metadata("design:type", Array)
@@ -11974,6 +12091,16 @@ module.exports = require("@nestjs/platform-ws");
 
 /***/ }),
 
+/***/ "@nestjs/throttler":
+/*!************************************!*\
+  !*** external "@nestjs/throttler" ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/throttler");
+
+/***/ }),
+
 /***/ "@nestjs/websockets":
 /*!*************************************!*\
   !*** external "@nestjs/websockets" ***!
@@ -12051,6 +12178,16 @@ module.exports = require("express-session");
 /***/ ((module) => {
 
 module.exports = require("graphql");
+
+/***/ }),
+
+/***/ "graphql-depth-limit":
+/*!**************************************!*\
+  !*** external "graphql-depth-limit" ***!
+  \**************************************/
+/***/ ((module) => {
+
+module.exports = require("graphql-depth-limit");
 
 /***/ }),
 
@@ -12219,8 +12356,10 @@ const helmet_1 = __webpack_require__(/*! helmet */ "helmet");
 const express = __webpack_require__(/*! express */ "express");
 const session = __webpack_require__(/*! express-session */ "express-session");
 const platform_ws_1 = __webpack_require__(/*! @nestjs/platform-ws */ "@nestjs/platform-ws");
+const crypto_1 = __webpack_require__(/*! crypto */ "crypto");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
     app.use((0, helmet_1.default)({
         contentSecurityPolicy: false,
         crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -12240,10 +12379,15 @@ async function bootstrap() {
     app.use((0, graphql_upload_1.graphqlUploadExpress)({ maxFileSize: 15000000, maxFiles: 10 }));
     app.use('/uploads', express.static('./uploads'));
     app.use(session({
-        secret: process.env.SESSION_SECRET || 'zinfurn-secret-key',
+        secret: process.env.SESSION_SECRET || (0, crypto_1.randomBytes)(32).toString('hex'),
         resave: false,
-        saveUninitialized: true,
-        cookie: { secure: false, httpOnly: true, maxAge: 60000 }
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: 10 * 60 * 1000,
+        },
     }));
     app.useWebSocketAdapter(new platform_ws_1.WsAdapter(app));
     await app.listen(process.env.PORT_API ?? 3000);

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Req, Res, UseGuards, Logger } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
@@ -65,12 +66,12 @@ export class AuthController {
 				const result = await this.authService.linkGoogle(memberId, user);
 				res.cookie('linkMemberId', '', { maxAge: 0 });
 				this.setAuthCookie(res, result.token);
-				return res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+				return res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
 			} else {
 				// Normal login
 				const result = await this.authService.googleLogin(user);
 				this.setAuthCookie(res, result.token);
-				return res.redirect(`${frontendUrl}/?token=${result.token}`);
+				return res.redirect(`${frontendUrl}/?token=${result.token}&refresh=${result.refresh}`);
 			}
 		} catch (err: any) {
 			Logger.error('Google callback error:', err);
@@ -79,6 +80,7 @@ export class AuthController {
 		}
 	}
 
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('telegram')
 	async telegramAuth(@Body() telegramData: any, @Res() res: any) {
 		const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
@@ -87,9 +89,10 @@ export class AuthController {
 		}
 		const result = await this.authService.telegramLogin(telegramData);
 		this.setAuthCookie(res, result.token);
-		return res.json({ token: result.token });
+		return res.json({ token: result.token, refresh: result.refresh });
 	}
 
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('link/telegram')
 	async linkTelegram(@Body() body: any, @Res() res: any) {
 		const { memberId, ...telegramData } = body;
@@ -99,7 +102,7 @@ export class AuthController {
 		}
 		const result = await this.authService.linkTelegram(memberId, telegramData);
 		this.setAuthCookie(res, result.token);
-		return res.json({ token: result.token });
+		return res.json({ token: result.token, refresh: result.refresh });
 	}
 
 	@Get('link/google')
@@ -128,7 +131,7 @@ export class AuthController {
 				return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
 			}
 			const result = await this.authService.linkGoogle(memberId, req.user);
-			res.redirect(`${frontendUrl}/mypage?token=${result.token}`);
+			res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
 		} catch (err: any) {
 			res.redirect(`${this.getFrontendUrl()}/mypage?error=${encodeURIComponent(err.message)}`);
 		}

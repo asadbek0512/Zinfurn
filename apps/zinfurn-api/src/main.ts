@@ -7,9 +7,12 @@ import helmet from 'helmet';
 import * as express from 'express';
 import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
+import { randomBytes } from 'crypto';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Nginx orqasidamiz — req.ip haqiqiy client IP bo'lishi uchun (rate-limit va secure cookie'ga zarur)
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   // Xavfsizlik headerlari (HSTS, X-Frame-Options, nosniff, ...).
   // - contentSecurityPolicy: false — bu GraphQL/JSON API, CSP frontend tomonida; Apollo sandbox'ni buzmaslik uchun
@@ -37,11 +40,17 @@ async function bootstrap() {
   app.use('/uploads', express.static('./uploads'));
 
   // Session for OAuth state management
+  // OAuth state session: secret env'dan; yo'q bo'lsa tasodifiy (restart'da eski sessionlar bekor — OAuth 60s oqim uchun muammo emas)
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'zinfurn-secret-key',
+    secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false, httpOnly: true, maxAge: 60000 }
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+    },
   }));
 
   app.useWebSocketAdapter(new WsAdapter(app))
