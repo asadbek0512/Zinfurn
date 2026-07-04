@@ -1,0 +1,9 @@
+#!/bin/sh
+# Push oldidan build tekshiruvi — buzuq kod serverga ketmasin
+echo "[pre-push] npm run build tekshiruvi..."
+npm run build || {
+  echo ""
+  echo "[pre-push] ❌ BUILD YIQILDI — push bekor qilindi. (o'tkazib yuborish: git push --no-verify)"
+  exit 1
+}
+echo "[pre-push] ✅ build toza"

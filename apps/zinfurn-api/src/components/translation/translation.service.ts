@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 /**
- * Product nom/description'ni 5 tilga tarjima qiladi (Gemini).
+ * Product nom/description'ni 5 tilga tarjima qiladi.
+ * ASOSIY: Groq (llama-3.3-70b, bepul limiti baland, tez) — GROQ_API_KEY bo'lsa.
+ * FALLBACK: Gemini (bepul kunlik limiti juda past) — Groq yo'q/yiqilsa.
  * Brand/model nomlari o'z holicha qoladi, faqat tarjima qilsa bo'ladigan so'zlar tarjima qilinadi.
  * MUHIM: bu xizmat xato bersa ham chaqiruvchi joy buzilmasligi kerak (non-blocking ishlatiladi).
  */
@@ -17,8 +19,9 @@ const LOCALE_NAMES: Record<SupportedLocale, string> = {
 	ar: 'Arabic',
 };
 
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_TIMEOUT_MS = 15000;
+const TRANSLATE_TIMEOUT_MS = 15000;
 
 export interface I18nText {
 	title: string;
@@ -86,8 +89,67 @@ CONTENT: ${content || ''}`;
 		return this.run(this.buildArticlePrompt(title, content || ''));
 	}
 
-	/** Umumiy Gemini chaqiruv + parse. Xato bo'lsa null. */
+	/** Tarjima: avval Groq, bo'lmasa Gemini. Xato bo'lsa null. */
 	private async run(prompt: string): Promise<PropertyTranslationsMap | null> {
+		if (process.env.GROQ_API_KEY) {
+			const viaGroq = await this.runGroq(prompt);
+			if (viaGroq) return viaGroq;
+			this.logger.warn('Groq tarjima bermadi — Gemini fallback urinilyapti');
+		}
+		return this.runGemini(prompt);
+	}
+
+	/** Groq (OpenAI-uslub chat API, JSON mode). Xato bo'lsa null. */
+	private async runGroq(prompt: string): Promise<PropertyTranslationsMap | null> {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), TRANSLATE_TIMEOUT_MS);
+		try {
+			const jsonShape = SUPPORTED_LOCALES.map((k) => `"${k}": {"title": "...", "desc": "..."}`).join(', ');
+			const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+				},
+				body: JSON.stringify({
+					model: GROQ_MODEL,
+					messages: [
+						{ role: 'system', content: `Respond ONLY with a JSON object exactly in this shape: {${jsonShape}}` },
+						{ role: 'user', content: prompt },
+					],
+					response_format: { type: 'json_object' },
+					temperature: 0.2,
+				}),
+				signal: controller.signal,
+			});
+			if (!res.ok) {
+				const errText = await res.text();
+				this.logger.warn(`Groq tarjima xato (${res.status}): ${errText.slice(0, 200)}`);
+				return null;
+			}
+			const data: any = await res.json();
+			const raw = data?.choices?.[0]?.message?.content;
+			if (!raw) return null;
+			return this.cleanParsed(JSON.parse(raw));
+		} catch (err: any) {
+			this.logger.warn(`Groq tarjima bajarilmadi: ${err?.message || err}`);
+			return null;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	/** Parse natijasidan faqat ruxsat etilgan tillarni qoldirish */
+	private cleanParsed(parsed: PropertyTranslationsMap): PropertyTranslationsMap | null {
+		const clean: PropertyTranslationsMap = {};
+		for (const loc of SUPPORTED_LOCALES) {
+			if (parsed[loc]?.title) clean[loc] = { title: parsed[loc]!.title, desc: parsed[loc]!.desc || '' };
+		}
+		return Object.keys(clean).length ? clean : null;
+	}
+
+	/** Gemini fallback. Xato bo'lsa null. */
+	private async runGemini(prompt: string): Promise<PropertyTranslationsMap | null> {
 		const key = process.env.GEMINI_API_KEY;
 		if (!key) {
 			this.logger.warn('GEMINI_API_KEY topilmadi — tarjima o\'tkazib yuborildi');
@@ -95,7 +157,7 @@ CONTENT: ${content || ''}`;
 		}
 
 		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+		const timer = setTimeout(() => controller.abort(), TRANSLATE_TIMEOUT_MS);
 		try {
 			const res = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
@@ -121,13 +183,7 @@ CONTENT: ${content || ''}`;
 			const data: any = await res.json();
 			const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 			if (!raw) return null;
-			const parsed = JSON.parse(raw) as PropertyTranslationsMap;
-			// Faqat ruxsat etilgan tillarni qoldiramiz
-			const clean: PropertyTranslationsMap = {};
-			for (const loc of SUPPORTED_LOCALES) {
-				if (parsed[loc]?.title) clean[loc] = { title: parsed[loc]!.title, desc: parsed[loc]!.desc || '' };
-			}
-			return Object.keys(clean).length ? clean : null;
+			return this.cleanParsed(JSON.parse(raw) as PropertyTranslationsMap);
 		} catch (err: any) {
 			this.logger.warn(`Tarjima bajarilmadi: ${err?.message || err}`);
 			return null;

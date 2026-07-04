@@ -45,23 +45,58 @@ export class AuthService {
 			memberWarnings: doc.memberWarnings,
 			memberBlocks: doc.memberBlocks,
 		};
-		return await this.jwtService.signAsync(payload);
+		payload.tokenType = 'access';
+		return await this.jwtService.signAsync(payload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '1h' });
+	}
+
+	/** Refresh token — minimal payload, 30 kun. Access sifatida ishlatib BO'LMAYDI (verifyToken rad etadi). */
+	public async createRefreshToken(member: Member): Promise<string> {
+		const doc = member['_doc'] ? member['_doc'] : member;
+		return await this.jwtService.signAsync(
+			{ _id: doc._id, tokenType: 'refresh' },
+			{ expiresIn: process.env.REFRESH_TOKEN_TTL || '30d' },
+		);
+	}
+
+	/** Access + refresh juftligi — login/signup/OAuth/linking hammasi shu orqali. */
+	public async createTokenPair(member: Member): Promise<{ token: string; refresh: string }> {
+		const token = await this.createToken(member);
+		const refresh = await this.createRefreshToken(member);
+		return { token, refresh };
 	}
 
 	public async verifyToken(token: string): Promise<Member> {
 		const member = await this.jwtService.verifyAsync(token);
+		// Refresh token access o'rnida ishlatilmasin
+		if (member?.tokenType === 'refresh') throw new Error('Refresh token cannot be used for authentication');
 		member._id = ShapeIntoMongoObjectId(member._id);
 		return member;
 	}
 
-	public async googleLogin(googleUser: any): Promise<{ token: string }> {
+	/** Refresh token evaziga yangi juftlik. Member holati bazadan qayta tekshiriladi (bloklanganlar chetlatiladi). */
+	public async refreshTokens(refreshToken: string): Promise<{ member: Member; token: string; refresh: string }> {
+		let payload: T;
+		try {
+			payload = await this.jwtService.verifyAsync(refreshToken);
+		} catch {
+			throw new Error('Invalid or expired refresh token');
+		}
+		if (payload?.tokenType !== 'refresh') throw new Error('Invalid refresh token');
+
+		const member = await this.memberModel.findById(ShapeIntoMongoObjectId(payload._id)).exec();
+		if (!member || member.memberStatus !== MemberStatus.ACTIVE) throw new Error('Member is not active');
+
+		const pair = await this.createTokenPair(member);
+		return { member, ...pair };
+	}
+
+	public async googleLogin(googleUser: any): Promise<{ token: string; refresh: string }> {
 		const { email, firstName, lastName, picture, sub } = googleUser;
 
 		// 1. Google ID bilan qidir
 		let member = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
 		if (member) {
-			const token = await this.createToken(member);
-			return { token };
+			return await this.createTokenPair(member);
 		}
 
 		// 2. Email bilan qidir — Telegram bilan kirgan user bo'lishi mumkin
@@ -72,8 +107,7 @@ export class AuthService {
 					.findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
 					.exec();
 			}
-			const token = await this.createToken(member!);
-			return { token };
+			return await this.createTokenPair(member!);
 		}
 
 		// 3. Yangi user yaratamiz
@@ -88,11 +122,10 @@ export class AuthService {
 			memberGoogleId: sub,
 		});
 
-		const token = await this.createToken(member);
-		return { token };
+		return await this.createTokenPair(member);
 	}
 
-	public async telegramLogin(telegramUser: any): Promise<{ token: string }> {
+	public async telegramLogin(telegramUser: any): Promise<{ token: string; refresh: string }> {
 		const { id, first_name, last_name, username, photo_url } = telegramUser;
 
 		let member = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -108,11 +141,10 @@ export class AuthService {
 			});
 		}
 
-		const token = await this.createToken(member);
-		return { token };
+		return await this.createTokenPair(member);
 	}
 
-	public async linkTelegram(memberId: string, telegramUser: any): Promise<{ token: string }> {
+	public async linkTelegram(memberId: string, telegramUser: any): Promise<{ token: string; refresh: string }> {
 		const { id } = telegramUser;
 
 		const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -122,19 +154,17 @@ export class AuthService {
 			.findOneAndUpdate({ _id: memberId }, { memberTelegramId: String(id) }, { new: true })
 			.exec();
 
-		const token = await this.createToken(member!);
-		return { token };
+		return await this.createTokenPair(member!);
 	}
 
-	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string }> {
+	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string; refresh: string }> {
 		const { email, sub } = googleUser;
 
 		// 1. Bu Google ID allaqachon bog'langanmi
 		const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
 		if (existingGoogle) {
 			if (existingGoogle._id.toString() === memberId) {
-				const token = await this.createToken(existingGoogle);
-				return { token };
+				return await this.createTokenPair(existingGoogle);
 			}
 			throw new Error('This Google account is already linked to another account!');
 		}
@@ -153,7 +183,6 @@ export class AuthService {
 
 		if (!updatedMember) throw new Error('Failed to update member!');
 
-		const token = await this.createToken(updatedMember);
-		return { token };
+		return await this.createTokenPair(updatedMember);
 	}
 }
