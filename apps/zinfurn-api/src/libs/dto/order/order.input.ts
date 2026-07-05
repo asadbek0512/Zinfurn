@@ -60,6 +60,10 @@ export class CreateOrderInput {
 	@Field(() => Float)
 	orderTotal: number;
 
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	couponCode?: string;
+
 	@IsNotEmpty()
 	@Field(() => DeliveryInfoInput)
 	deliveryInfo: DeliveryInfoInput;

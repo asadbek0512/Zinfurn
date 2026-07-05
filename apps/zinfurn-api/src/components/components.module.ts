@@ -13,6 +13,7 @@ import { NoticeModule } from './notice/notice.module';
 import { OrderModule } from './order/order.module';
 import { ReviewModule } from './review/review.module';
 import { MessageModule } from './message/message.module';
+import { CouponModule } from './coupon/coupon.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MessageModule } from './message/message.module';
     NotificationModule,
     NoticeModule,
     OrderModule,
+    CouponModule,
     ReviewModule,
     MessageModule,
   ],

@@ -11,6 +11,7 @@ export const availablePropertySorts = [
     'propertyViews',
     'propertyRank',
     'propertyPrice',
+    'propertySaleExpiresAt',
 ]
 export const availableRepairPropertySorts = [
     'createdAt',

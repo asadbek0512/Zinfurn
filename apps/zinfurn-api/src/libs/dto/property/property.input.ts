@@ -124,6 +124,10 @@ export class PeriodsRange {
 
 @InputType()
 export class PISearch {
+    @IsOptional()
+    @Field(() => Boolean, { nullable: true })
+    propertyIsOnSale?: boolean;
+
   @IsOptional()
   @Field(() => String, { nullable: true })
   memberId?: ObjectId;

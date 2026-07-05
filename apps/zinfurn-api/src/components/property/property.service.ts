@@ -172,7 +172,14 @@ export class PropertyService {
             pricesRange,
             options,
             text,
+            propertyIsOnSale,
         } = input.search;
+
+        // Flash Sale: faqat AKTIV (muddati o'tmagan) chegirmadagi mahsulotlar
+        if (propertyIsOnSale) {
+            match.propertyIsOnSale = true;
+            match.propertySaleExpiresAt = { $gt: new Date() };
+        }
 
         if (memberId) match.memberId = ShapeIntoMongoObjectId(memberId);
         if (categoryList && categoryList.length) match.propertyCategory = { $in: categoryList };
