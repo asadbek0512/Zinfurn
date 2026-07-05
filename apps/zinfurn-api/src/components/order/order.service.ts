@@ -8,20 +8,38 @@ import { OrderStatus } from '../../libs/enums/order.enum';
 import { Message, Direction } from '../../libs/enums/common_enum';
 import { T } from '../../libs/types/common';
 import { lookupMember } from '../../libs/config';
+import { TelegramNotifyService } from './telegram-notify.service';
+import { CouponService } from '../coupon/coupon.service';
 
 @Injectable()
 export class OrderService {
 	constructor(
 		@InjectModel('Order') private readonly orderModel: Model<Order>,
 		@InjectModel('Property') private readonly propertyModel: Model<any>,
+		private readonly telegramNotify: TelegramNotifyService,
+		private readonly couponService: CouponService,
 	) {}
 
 	public async createOrder(memberId: ObjectId, input: CreateOrderInput): Promise<Order> {
 		input.memberId = memberId;
 		const orderId = `ZIN-${Date.now()}`;
+
+		// Kupon: server o'zi tekshiradi va chegirmani o'zi hisoblaydi (clientga ishonmaymiz)
+		let orderDiscount = 0;
+		let orderCouponCode: string | undefined;
+		if (input.couponCode) {
+			const redeemed = await this.couponService.redeemCoupon(input.couponCode, input.orderTotal);
+			orderDiscount = redeemed.discountAmount;
+			orderCouponCode = redeemed.couponCode;
+			input.orderTotal = Math.max(0, input.orderTotal - orderDiscount);
+		}
+
 		try {
-			const order = await this.orderModel.create({ ...input, orderId });
+			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode });
 			this.scheduleAutoProgression(order._id as ObjectId);
+			// Telegram xabarlar (non-blocking)
+			this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, order.orderTotal);
+			this.telegramNotify.notifyAdminNewOrder(orderId, order.orderTotal, order.orderItems?.length ?? 0);
 			return order;
 		} catch (err) {
 			Logger.error('OrderService.createOrder error:', err.message);
@@ -34,7 +52,8 @@ export class OrderService {
 		const advance = (status: OrderStatus, delayMs: number) => {
 			setTimeout(async () => {
 				try {
-					await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status });
+					const doc = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status }, { new: true });
+					if (doc) this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, status);
 				} catch {}
 			}, delayMs);
 		};
@@ -97,6 +116,8 @@ export class OrderService {
 			{ new: true },
 		) as unknown as Order;
 
+		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.CONFIRMED);
+
 		// increment sold count for each item
 		for (const item of order.orderItems) {
 			await this.propertyModel.findByIdAndUpdate(
@@ -114,6 +135,7 @@ export class OrderService {
 		if (!ACTIVE.includes(order.orderStatus)) {
 			throw new BadRequestException('Order is not in an active delivery state');
 		}
+		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.DELIVERED);
 		return this.orderModel.findByIdAndUpdate(
 			orderId,
 			{ orderStatus: OrderStatus.DELIVERED },
@@ -127,6 +149,7 @@ export class OrderService {
 		if (order.orderStatus !== OrderStatus.CONFIRMED) {
 			throw new BadRequestException('Order must be CONFIRMED before return request');
 		}
+		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.RETURN_REQUESTED);
 		return this.orderModel.findByIdAndUpdate(
 			input._id,
 			{
@@ -143,7 +166,11 @@ export class OrderService {
 	public async updateOrderStatusByAdmin(input: OrderUpdate): Promise<Order> {
 		const updateData: T = { orderStatus: input.orderStatus };
 		if (input.orderStatus === OrderStatus.RETURNED) updateData.returnedAt = new Date();
-		return this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true }) as unknown as Order;
+		const updated = (await this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true })) as unknown as Order;
+		if (updated && input.orderStatus) {
+			this.telegramNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
+		}
+		return updated;
 	}
 
 	public async getAllOrdersByAdmin(input: OrdersInquiry): Promise<Orders> {

@@ -30,6 +30,8 @@ const OrderSchema = new Schema(
 		orderItems: { type: [OrderItemSchema], required: true },
 		orderStatus: { type: String, enum: OrderStatus, default: OrderStatus.PENDING },
 		orderTotal: { type: Number, required: true },
+		orderCouponCode: { type: String },
+		orderDiscount: { type: Number, default: 0 },
 		deliveryInfo: { type: DeliveryInfoSchema, required: true },
 		confirmedAt: { type: Date },
 		cancelledAt: { type: Date },

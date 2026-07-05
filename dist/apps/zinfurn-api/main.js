@@ -1863,6 +1863,7 @@ const notice_module_1 = __webpack_require__(/*! ./notice/notice.module */ "./app
 const order_module_1 = __webpack_require__(/*! ./order/order.module */ "./apps/zinfurn-api/src/components/order/order.module.ts");
 const review_module_1 = __webpack_require__(/*! ./review/review.module */ "./apps/zinfurn-api/src/components/review/review.module.ts");
 const message_module_1 = __webpack_require__(/*! ./message/message.module */ "./apps/zinfurn-api/src/components/message/message.module.ts");
+const coupon_module_1 = __webpack_require__(/*! ./coupon/coupon.module */ "./apps/zinfurn-api/src/components/coupon/coupon.module.ts");
 let ComponentsModule = class ComponentsModule {
 };
 exports.ComponentsModule = ComponentsModule;
@@ -1881,11 +1882,260 @@ exports.ComponentsModule = ComponentsModule = __decorate([
             notification_module_1.NotificationModule,
             notice_module_1.NoticeModule,
             order_module_1.OrderModule,
+            coupon_module_1.CouponModule,
             review_module_1.ReviewModule,
             message_module_1.MessageModule,
         ],
     })
 ], ComponentsModule);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/coupon/coupon.module.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/coupon/coupon.module.ts ***!
+  \*****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const Coupon_model_1 = __webpack_require__(/*! ../../schemas/Coupon.model */ "./apps/zinfurn-api/src/schemas/Coupon.model.ts");
+const coupon_resolver_1 = __webpack_require__(/*! ./coupon.resolver */ "./apps/zinfurn-api/src/components/coupon/coupon.resolver.ts");
+const coupon_service_1 = __webpack_require__(/*! ./coupon.service */ "./apps/zinfurn-api/src/components/coupon/coupon.service.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
+let CouponModule = class CouponModule {
+};
+exports.CouponModule = CouponModule;
+exports.CouponModule = CouponModule = __decorate([
+    (0, common_1.Module)({
+        imports: [mongoose_1.MongooseModule.forFeature([{ name: 'Coupon', schema: Coupon_model_1.default }]), auth_module_1.AuthModule],
+        providers: [coupon_resolver_1.CouponResolver, coupon_service_1.CouponService],
+        exports: [coupon_service_1.CouponService],
+    })
+], CouponModule);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/coupon/coupon.resolver.ts":
+/*!*******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/coupon/coupon.resolver.ts ***!
+  \*******************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponResolver = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/throttler");
+const coupon_service_1 = __webpack_require__(/*! ./coupon.service */ "./apps/zinfurn-api/src/components/coupon/coupon.service.ts");
+const coupon_1 = __webpack_require__(/*! ../../libs/dto/coupon/coupon */ "./apps/zinfurn-api/src/libs/dto/coupon/coupon.ts");
+const coupon_input_1 = __webpack_require__(/*! ../../libs/dto/coupon/coupon.input */ "./apps/zinfurn-api/src/libs/dto/coupon/coupon.input.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/zinfurn-api/src/components/auth/guards/auth.guard.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/zinfurn-api/src/components/auth/guards/roles.guard.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/zinfurn-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/zinfurn-api/src/libs/enums/member.enum.ts");
+let CouponResolver = class CouponResolver {
+    couponService;
+    constructor(couponService) {
+        this.couponService = couponService;
+    }
+    async validateCoupon(couponCode, orderTotal) {
+        return this.couponService.validateCoupon(couponCode, orderTotal);
+    }
+    async createCoupon(input) {
+        return this.couponService.createCoupon(input);
+    }
+    async updateCouponByAdmin(input) {
+        return this.couponService.updateCouponByAdmin(input);
+    }
+    async getAllCouponsByAdmin() {
+        return this.couponService.getAllCouponsByAdmin();
+    }
+};
+exports.CouponResolver = CouponResolver;
+__decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 15, ttl: 60000 } }),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)(() => coupon_1.CouponValidation),
+    __param(0, (0, graphql_1.Args)('couponCode')),
+    __param(1, (0, graphql_1.Args)('orderTotal')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
+], CouponResolver.prototype, "validateCoupon", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)(() => coupon_1.Coupon),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_c = typeof coupon_input_1.CouponCreateInput !== "undefined" && coupon_input_1.CouponCreateInput) === "function" ? _c : Object]),
+    __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
+], CouponResolver.prototype, "createCoupon", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)(() => coupon_1.Coupon),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof coupon_input_1.CouponUpdateInput !== "undefined" && coupon_input_1.CouponUpdateInput) === "function" ? _e : Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], CouponResolver.prototype, "updateCouponByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)(() => [coupon_1.Coupon]),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+], CouponResolver.prototype, "getAllCouponsByAdmin", null);
+exports.CouponResolver = CouponResolver = __decorate([
+    (0, graphql_1.Resolver)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof coupon_service_1.CouponService !== "undefined" && coupon_service_1.CouponService) === "function" ? _a : Object])
+], CouponResolver);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/coupon/coupon.service.ts":
+/*!******************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/coupon/coupon.service.ts ***!
+  \******************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var CouponService_1;
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const coupon_enum_1 = __webpack_require__(/*! ../../libs/enums/coupon.enum */ "./apps/zinfurn-api/src/libs/enums/coupon.enum.ts");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
+let CouponService = CouponService_1 = class CouponService {
+    couponModel;
+    logger = new common_1.Logger(CouponService_1.name);
+    constructor(couponModel) {
+        this.couponModel = couponModel;
+    }
+    async validateCoupon(code, orderTotal) {
+        const fail = (message) => ({
+            valid: false,
+            message,
+            discountAmount: 0,
+            finalTotal: orderTotal,
+        });
+        const coupon = await this.couponModel.findOne({ couponCode: code.trim().toUpperCase() }).exec();
+        if (!coupon)
+            return fail('Kupon topilmadi');
+        if (coupon.couponStatus !== coupon_enum_1.CouponStatus.ACTIVE)
+            return fail('Kupon faol emas');
+        if (coupon.validUntil && coupon.validUntil.getTime() < Date.now())
+            return fail('Kupon muddati tugagan');
+        if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses)
+            return fail('Kupon limiti tugagan');
+        if (orderTotal < (coupon.minOrderAmount || 0)) {
+            return fail(`Bu kupon uchun minimal buyurtma: ${coupon.minOrderAmount}`);
+        }
+        const discountAmount = this.calcDiscount(coupon, orderTotal);
+        return {
+            valid: true,
+            message: 'Kupon qo\'llandi',
+            discountAmount,
+            finalTotal: Math.max(0, orderTotal - discountAmount),
+            couponCode: coupon.couponCode,
+        };
+    }
+    async redeemCoupon(code, orderTotal) {
+        const check = await this.validateCoupon(code, orderTotal);
+        if (!check.valid)
+            throw new common_1.BadRequestException(check.message);
+        const filter = {
+            couponCode: check.couponCode,
+            couponStatus: coupon_enum_1.CouponStatus.ACTIVE,
+        };
+        const redeemed = await this.couponModel
+            .findOneAndUpdate({ ...filter, $or: [{ maxUses: 0 }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] }, { $inc: { usedCount: 1 } }, { new: true })
+            .exec();
+        if (!redeemed)
+            throw new common_1.BadRequestException('Kupon limiti tugagan');
+        return { discountAmount: check.discountAmount, couponCode: check.couponCode };
+    }
+    calcDiscount(coupon, orderTotal) {
+        if (coupon.couponType === coupon_enum_1.CouponType.PERCENT) {
+            return Math.round((orderTotal * Math.min(coupon.couponValue, 100)) / 100);
+        }
+        return Math.min(coupon.couponValue, orderTotal);
+    }
+    async createCoupon(input) {
+        if (input.couponType === coupon_enum_1.CouponType.PERCENT && input.couponValue > 100) {
+            throw new common_1.BadRequestException('Foiz chegirma 100 dan oshmasin');
+        }
+        try {
+            return await this.couponModel.create({ ...input, couponCode: input.couponCode.trim().toUpperCase() });
+        }
+        catch (err) {
+            if (err?.code === 11000)
+                throw new common_1.BadRequestException('Bunday kupon kodi allaqachon bor');
+            this.logger.error(`createCoupon: ${err.message}`);
+            throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+        }
+    }
+    async updateCouponByAdmin(input) {
+        const { _id, ...update } = input;
+        const result = await this.couponModel.findByIdAndUpdate(_id, update, { new: true }).exec();
+        if (!result)
+            throw new common_1.BadRequestException(common_enum_1.Message.NO_DATA_FOUND);
+        return result;
+    }
+    async getAllCouponsByAdmin() {
+        return this.couponModel.find().sort({ createdAt: -1 }).exec();
+    }
+};
+exports.CouponService = CouponService;
+exports.CouponService = CouponService = CouponService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Coupon')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], CouponService);
 
 
 /***/ }),
@@ -3913,10 +4163,13 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/zinfurn-api/src/components/auth/auth.module.ts");
 const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/zinfurn-api/src/components/member/member.module.ts");
+const coupon_module_1 = __webpack_require__(/*! ../coupon/coupon.module */ "./apps/zinfurn-api/src/components/coupon/coupon.module.ts");
 const Order_model_1 = __webpack_require__(/*! ../../schemas/Order.model */ "./apps/zinfurn-api/src/schemas/Order.model.ts");
+const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/zinfurn-api/src/schemas/Member.model.ts");
 const Property_model_1 = __webpack_require__(/*! ../../schemas/Property.model */ "./apps/zinfurn-api/src/schemas/Property.model.ts");
 const order_resolver_1 = __webpack_require__(/*! ./order.resolver */ "./apps/zinfurn-api/src/components/order/order.resolver.ts");
 const order_service_1 = __webpack_require__(/*! ./order.service */ "./apps/zinfurn-api/src/components/order/order.service.ts");
+const telegram_notify_service_1 = __webpack_require__(/*! ./telegram-notify.service */ "./apps/zinfurn-api/src/components/order/telegram-notify.service.ts");
 let OrderModule = class OrderModule {
 };
 exports.OrderModule = OrderModule;
@@ -3926,11 +4179,13 @@ exports.OrderModule = OrderModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: 'Order', schema: Order_model_1.default },
                 { name: 'Property', schema: Property_model_1.default },
+                { name: 'Member', schema: Member_model_1.default },
             ]),
             auth_module_1.AuthModule,
             member_module_1.MemberModule,
+            coupon_module_1.CouponModule,
         ],
-        providers: [order_resolver_1.OrderResolver, order_service_1.OrderService],
+        providers: [order_resolver_1.OrderResolver, order_service_1.OrderService, telegram_notify_service_1.TelegramNotifyService],
         exports: [order_service_1.OrderService],
     })
 ], OrderModule);
@@ -4105,7 +4360,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b;
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OrderService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -4114,19 +4369,35 @@ const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const order_enum_1 = __webpack_require__(/*! ../../libs/enums/order.enum */ "./apps/zinfurn-api/src/libs/enums/order.enum.ts");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common_enum */ "./apps/zinfurn-api/src/libs/enums/common_enum.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/zinfurn-api/src/libs/config.ts");
+const telegram_notify_service_1 = __webpack_require__(/*! ./telegram-notify.service */ "./apps/zinfurn-api/src/components/order/telegram-notify.service.ts");
+const coupon_service_1 = __webpack_require__(/*! ../coupon/coupon.service */ "./apps/zinfurn-api/src/components/coupon/coupon.service.ts");
 let OrderService = class OrderService {
     orderModel;
     propertyModel;
-    constructor(orderModel, propertyModel) {
+    telegramNotify;
+    couponService;
+    constructor(orderModel, propertyModel, telegramNotify, couponService) {
         this.orderModel = orderModel;
         this.propertyModel = propertyModel;
+        this.telegramNotify = telegramNotify;
+        this.couponService = couponService;
     }
     async createOrder(memberId, input) {
         input.memberId = memberId;
         const orderId = `ZIN-${Date.now()}`;
+        let orderDiscount = 0;
+        let orderCouponCode;
+        if (input.couponCode) {
+            const redeemed = await this.couponService.redeemCoupon(input.couponCode, input.orderTotal);
+            orderDiscount = redeemed.discountAmount;
+            orderCouponCode = redeemed.couponCode;
+            input.orderTotal = Math.max(0, input.orderTotal - orderDiscount);
+        }
         try {
-            const order = await this.orderModel.create({ ...input, orderId });
+            const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode });
             this.scheduleAutoProgression(order._id);
+            this.telegramNotify.notifyCustomer(memberId, orderId, order_enum_1.OrderStatus.PENDING, order.orderTotal);
+            this.telegramNotify.notifyAdminNewOrder(orderId, order.orderTotal, order.orderItems?.length ?? 0);
             return order;
         }
         catch (err) {
@@ -4138,7 +4409,9 @@ let OrderService = class OrderService {
         const advance = (status, delayMs) => {
             setTimeout(async () => {
                 try {
-                    await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status });
+                    const doc = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status }, { new: true });
+                    if (doc)
+                        this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, status);
                 }
                 catch { }
             }, delayMs);
@@ -4192,6 +4465,7 @@ let OrderService = class OrderService {
             throw new common_1.BadRequestException('Order must be DELIVERED before confirmation');
         }
         const confirmed = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: order_enum_1.OrderStatus.CONFIRMED, confirmedAt: new Date() }, { new: true });
+        this.telegramNotify.notifyCustomer(memberId, order.orderId, order_enum_1.OrderStatus.CONFIRMED);
         for (const item of order.orderItems) {
             await this.propertyModel.findByIdAndUpdate(item.propertyId, { $inc: { propertySoldCount: item.quantity } });
         }
@@ -4205,6 +4479,7 @@ let OrderService = class OrderService {
         if (!ACTIVE.includes(order.orderStatus)) {
             throw new common_1.BadRequestException('Order is not in an active delivery state');
         }
+        this.telegramNotify.notifyCustomer(memberId, order.orderId, order_enum_1.OrderStatus.DELIVERED);
         return this.orderModel.findByIdAndUpdate(orderId, { orderStatus: order_enum_1.OrderStatus.DELIVERED }, { new: true });
     }
     async requestReturn(memberId, input) {
@@ -4214,6 +4489,7 @@ let OrderService = class OrderService {
         if (order.orderStatus !== order_enum_1.OrderStatus.CONFIRMED) {
             throw new common_1.BadRequestException('Order must be CONFIRMED before return request');
         }
+        this.telegramNotify.notifyCustomer(memberId, order.orderId, order_enum_1.OrderStatus.RETURN_REQUESTED);
         return this.orderModel.findByIdAndUpdate(input._id, {
             orderStatus: order_enum_1.OrderStatus.RETURN_REQUESTED,
             returnRequestedAt: new Date(),
@@ -4224,7 +4500,11 @@ let OrderService = class OrderService {
         const updateData = { orderStatus: input.orderStatus };
         if (input.orderStatus === order_enum_1.OrderStatus.RETURNED)
             updateData.returnedAt = new Date();
-        return this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true });
+        const updated = (await this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true }));
+        if (updated && input.orderStatus) {
+            this.telegramNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
+        }
+        return updated;
     }
     async getAllOrdersByAdmin(input) {
         const { page, limit, sort, direction, search } = input;
@@ -4257,8 +4537,122 @@ exports.OrderService = OrderService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Order')),
     __param(1, (0, mongoose_1.InjectModel)('Property')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object, typeof (_c = typeof telegram_notify_service_1.TelegramNotifyService !== "undefined" && telegram_notify_service_1.TelegramNotifyService) === "function" ? _c : Object, typeof (_d = typeof coupon_service_1.CouponService !== "undefined" && coupon_service_1.CouponService) === "function" ? _d : Object])
 ], OrderService);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/components/order/telegram-notify.service.ts":
+/*!**************************************************************************!*\
+  !*** ./apps/zinfurn-api/src/components/order/telegram-notify.service.ts ***!
+  \**************************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var TelegramNotifyService_1;
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TelegramNotifyService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const order_enum_1 = __webpack_require__(/*! ../../libs/enums/order.enum */ "./apps/zinfurn-api/src/libs/enums/order.enum.ts");
+let TelegramNotifyService = TelegramNotifyService_1 = class TelegramNotifyService {
+    memberModel;
+    logger = new common_1.Logger(TelegramNotifyService_1.name);
+    constructor(memberModel) {
+        this.memberModel = memberModel;
+    }
+    STATUS_TEXT = {
+        [order_enum_1.OrderStatus.PENDING]: "🕐 Qabul qilindi — tez orada tayyorlaymiz",
+        [order_enum_1.OrderStatus.PROCESSING]: '📦 Tayyorlanmoqda',
+        [order_enum_1.OrderStatus.SHIPPED]: "🚚 Yo'lga chiqdi",
+        [order_enum_1.OrderStatus.DELIVERED]: '📬 Yetkazib berildi',
+        [order_enum_1.OrderStatus.CONFIRMED]: '✅ Yakunlandi — xaridingiz uchun rahmat!',
+        [order_enum_1.OrderStatus.CANCELLED]: '❌ Bekor qilindi',
+        [order_enum_1.OrderStatus.RETURN_REQUESTED]: "↩️ Qaytarish so'rovi qabul qilindi",
+        [order_enum_1.OrderStatus.RETURNED]: '🔄 Qaytarildi',
+    };
+    notifyCustomer(memberId, orderCode, status, orderTotal) {
+        this.send(memberId, this.buildMessage(orderCode, status, orderTotal)).catch(() => undefined);
+    }
+    notifyAdminNewOrder(orderCode, orderTotal, itemsCount) {
+        const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
+        if (!chatId)
+            return;
+        const text = `🆕 <b>Yangi buyurtma!</b>\n` +
+            `📦 <code>${orderCode}</code>\n` +
+            `🛒 Mahsulotlar: ${itemsCount} ta\n` +
+            `💰 Summa: ${this.formatAmount(orderTotal)}`;
+        this.sendRaw(chatId, text).catch(() => undefined);
+    }
+    buildMessage(orderCode, status, orderTotal) {
+        const lines = [
+            `🛋 <b>Zinfurn</b> — buyurtma yangilandi`,
+            `📦 Buyurtma: <code>${orderCode}</code>`,
+            `Holat: <b>${this.STATUS_TEXT[status] ?? status}</b>`,
+        ];
+        if (orderTotal)
+            lines.push(`💰 Summa: ${this.formatAmount(orderTotal)}`);
+        lines.push(`\n🔗 zinfurn.uz/mypage?category=myOrders`);
+        return lines.join('\n');
+    }
+    formatAmount(n) {
+        return `₩${Math.round(n).toLocaleString('en-US')}`;
+    }
+    async send(memberId, text) {
+        try {
+            const member = await this.memberModel.findById(memberId).select('memberTelegramId').exec();
+            if (!member?.memberTelegramId)
+                return;
+            await this.sendRaw(member.memberTelegramId, text);
+        }
+        catch (err) {
+            this.logger.warn(`Telegram notify skipped: ${err?.message || err}`);
+        }
+    }
+    async sendRaw(chatId, text) {
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (!token)
+            return;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+                signal: controller.signal,
+            });
+            if (!res.ok) {
+                const body = await res.text();
+                this.logger.warn(`Telegram sendMessage ${res.status}: ${body.slice(0, 120)}`);
+            }
+        }
+        finally {
+            clearTimeout(timer);
+        }
+    }
+};
+exports.TelegramNotifyService = TelegramNotifyService;
+exports.TelegramNotifyService = TelegramNotifyService = TelegramNotifyService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Member')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], TelegramNotifyService);
 
 
 /***/ }),
@@ -5760,8 +6154,9 @@ const LOCALE_NAMES = {
     kr: 'Korean',
     ar: 'Arabic',
 };
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_TIMEOUT_MS = 15000;
+const TRANSLATE_TIMEOUT_MS = 15000;
 let TranslationService = TranslationService_1 = class TranslationService {
     logger = new common_1.Logger(TranslationService_1.name);
     buildPrompt(title, desc) {
@@ -5816,13 +6211,71 @@ CONTENT: ${content || ''}`;
         return this.run(this.buildArticlePrompt(title, content || ''));
     }
     async run(prompt) {
+        if (process.env.GROQ_API_KEY) {
+            const viaGroq = await this.runGroq(prompt);
+            if (viaGroq)
+                return viaGroq;
+            this.logger.warn('Groq tarjima bermadi — Gemini fallback urinilyapti');
+        }
+        return this.runGemini(prompt);
+    }
+    async runGroq(prompt) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TRANSLATE_TIMEOUT_MS);
+        try {
+            const jsonShape = exports.SUPPORTED_LOCALES.map((k) => `"${k}": {"title": "...", "desc": "..."}`).join(', ');
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    model: GROQ_MODEL,
+                    messages: [
+                        { role: 'system', content: `Respond ONLY with a JSON object exactly in this shape: {${jsonShape}}` },
+                        { role: 'user', content: prompt },
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: 0.2,
+                }),
+                signal: controller.signal,
+            });
+            if (!res.ok) {
+                const errText = await res.text();
+                this.logger.warn(`Groq tarjima xato (${res.status}): ${errText.slice(0, 200)}`);
+                return null;
+            }
+            const data = await res.json();
+            const raw = data?.choices?.[0]?.message?.content;
+            if (!raw)
+                return null;
+            return this.cleanParsed(JSON.parse(raw));
+        }
+        catch (err) {
+            this.logger.warn(`Groq tarjima bajarilmadi: ${err?.message || err}`);
+            return null;
+        }
+        finally {
+            clearTimeout(timer);
+        }
+    }
+    cleanParsed(parsed) {
+        const clean = {};
+        for (const loc of exports.SUPPORTED_LOCALES) {
+            if (parsed[loc]?.title)
+                clean[loc] = { title: parsed[loc].title, desc: parsed[loc].desc || '' };
+        }
+        return Object.keys(clean).length ? clean : null;
+    }
+    async runGemini(prompt) {
         const key = process.env.GEMINI_API_KEY;
         if (!key) {
             this.logger.warn('GEMINI_API_KEY topilmadi — tarjima o\'tkazib yuborildi');
             return null;
         }
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+        const timer = setTimeout(() => controller.abort(), TRANSLATE_TIMEOUT_MS);
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
                 method: 'POST',
@@ -5846,13 +6299,7 @@ CONTENT: ${content || ''}`;
             const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!raw)
                 return null;
-            const parsed = JSON.parse(raw);
-            const clean = {};
-            for (const loc of exports.SUPPORTED_LOCALES) {
-                if (parsed[loc]?.title)
-                    clean[loc] = { title: parsed[loc].title, desc: parsed[loc].desc || '' };
-            }
-            return Object.keys(clean).length ? clean : null;
+            return this.cleanParsed(JSON.parse(raw));
         }
         catch (err) {
             this.logger.warn(`Tarjima bajarilmadi: ${err?.message || err}`);
@@ -6919,6 +7366,225 @@ __decorate([
 exports.CommentUpdate = CommentUpdate = __decorate([
     (0, graphql_1.InputType)()
 ], CommentUpdate);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/coupon/coupon.input.ts":
+/*!**************************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/coupon/coupon.input.ts ***!
+  \**************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponUpdateInput = exports.CouponCreateInput = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const coupon_enum_1 = __webpack_require__(/*! ../../enums/coupon.enum */ "./apps/zinfurn-api/src/libs/enums/coupon.enum.ts");
+let CouponCreateInput = class CouponCreateInput {
+    couponCode;
+    couponType;
+    couponValue;
+    maxUses;
+    minOrderAmount;
+    validUntil;
+};
+exports.CouponCreateInput = CouponCreateInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Length)(3, 24),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], CouponCreateInput.prototype, "couponCode", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => coupon_enum_1.CouponType),
+    __metadata("design:type", typeof (_a = typeof coupon_enum_1.CouponType !== "undefined" && coupon_enum_1.CouponType) === "function" ? _a : Object)
+], CouponCreateInput.prototype, "couponType", void 0);
+__decorate([
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], CouponCreateInput.prototype, "couponValue", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(0),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], CouponCreateInput.prototype, "maxUses", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(0),
+    (0, graphql_1.Field)(() => Number, { nullable: true }),
+    __metadata("design:type", Number)
+], CouponCreateInput.prototype, "minOrderAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof Date !== "undefined" && Date) === "function" ? _b : Object)
+], CouponCreateInput.prototype, "validUntil", void 0);
+exports.CouponCreateInput = CouponCreateInput = __decorate([
+    (0, graphql_1.InputType)()
+], CouponCreateInput);
+let CouponUpdateInput = class CouponUpdateInput {
+    _id;
+    couponStatus;
+    maxUses;
+    validUntil;
+};
+exports.CouponUpdateInput = CouponUpdateInput;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], CouponUpdateInput.prototype, "_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => coupon_enum_1.CouponStatus, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof coupon_enum_1.CouponStatus !== "undefined" && coupon_enum_1.CouponStatus) === "function" ? _c : Object)
+], CouponUpdateInput.prototype, "couponStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(0),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], CouponUpdateInput.prototype, "maxUses", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
+], CouponUpdateInput.prototype, "validUntil", void 0);
+exports.CouponUpdateInput = CouponUpdateInput = __decorate([
+    (0, graphql_1.InputType)()
+], CouponUpdateInput);
+
+
+/***/ }),
+
+/***/ "./apps/zinfurn-api/src/libs/dto/coupon/coupon.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/dto/coupon/coupon.ts ***!
+  \********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponValidation = exports.Coupon = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const coupon_enum_1 = __webpack_require__(/*! ../../enums/coupon.enum */ "./apps/zinfurn-api/src/libs/enums/coupon.enum.ts");
+let Coupon = class Coupon {
+    _id;
+    couponCode;
+    couponType;
+    couponValue;
+    couponStatus;
+    maxUses;
+    usedCount;
+    minOrderAmount;
+    validUntil;
+    createdAt;
+    updatedAt;
+};
+exports.Coupon = Coupon;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], Coupon.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], Coupon.prototype, "couponCode", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => coupon_enum_1.CouponType),
+    __metadata("design:type", typeof (_b = typeof coupon_enum_1.CouponType !== "undefined" && coupon_enum_1.CouponType) === "function" ? _b : Object)
+], Coupon.prototype, "couponType", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], Coupon.prototype, "couponValue", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => coupon_enum_1.CouponStatus),
+    __metadata("design:type", typeof (_c = typeof coupon_enum_1.CouponStatus !== "undefined" && coupon_enum_1.CouponStatus) === "function" ? _c : Object)
+], Coupon.prototype, "couponStatus", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], Coupon.prototype, "maxUses", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], Coupon.prototype, "usedCount", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], Coupon.prototype, "minOrderAmount", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
+], Coupon.prototype, "validUntil", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+], Coupon.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
+], Coupon.prototype, "updatedAt", void 0);
+exports.Coupon = Coupon = __decorate([
+    (0, graphql_1.ObjectType)()
+], Coupon);
+let CouponValidation = class CouponValidation {
+    valid;
+    message;
+    discountAmount;
+    finalTotal;
+    couponCode;
+};
+exports.CouponValidation = CouponValidation;
+__decorate([
+    (0, graphql_1.Field)(() => Boolean),
+    __metadata("design:type", Boolean)
+], CouponValidation.prototype, "valid", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", String)
+], CouponValidation.prototype, "message", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], CouponValidation.prototype, "discountAmount", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Number),
+    __metadata("design:type", Number)
+], CouponValidation.prototype, "finalTotal", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], CouponValidation.prototype, "couponCode", void 0);
+exports.CouponValidation = CouponValidation = __decorate([
+    (0, graphql_1.ObjectType)()
+], CouponValidation);
 
 
 /***/ }),
@@ -8483,6 +9149,7 @@ exports.DeliveryInfoInput = DeliveryInfoInput = __decorate([
 let CreateOrderInput = class CreateOrderInput {
     orderItems;
     orderTotal;
+    couponCode;
     deliveryInfo;
     memberId;
 };
@@ -8497,6 +9164,11 @@ __decorate([
     (0, graphql_1.Field)(() => graphql_1.Float),
     __metadata("design:type", Number)
 ], CreateOrderInput.prototype, "orderTotal", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], CreateOrderInput.prototype, "couponCode", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, graphql_1.Field)(() => DeliveryInfoInput),
@@ -8651,6 +9323,8 @@ let Order = class Order {
     orderItems;
     orderStatus;
     orderTotal;
+    orderCouponCode;
+    orderDiscount;
     deliveryInfo;
     confirmedAt;
     cancelledAt;
@@ -8686,6 +9360,14 @@ __decorate([
     (0, graphql_1.Field)(() => graphql_1.Float),
     __metadata("design:type", Number)
 ], Order.prototype, "orderTotal", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "orderCouponCode", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Float, { nullable: true }),
+    __metadata("design:type", Number)
+], Order.prototype, "orderDiscount", void 0);
 __decorate([
     (0, graphql_1.Field)(() => DeliveryInfo),
     __metadata("design:type", DeliveryInfo)
@@ -10631,6 +11313,32 @@ var Direction;
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/libs/enums/coupon.enum.ts":
+/*!********************************************************!*\
+  !*** ./apps/zinfurn-api/src/libs/enums/coupon.enum.ts ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CouponStatus = exports.CouponType = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+var CouponType;
+(function (CouponType) {
+    CouponType["PERCENT"] = "PERCENT";
+    CouponType["FIXED"] = "FIXED";
+})(CouponType || (exports.CouponType = CouponType = {}));
+(0, graphql_1.registerEnumType)(CouponType, { name: 'CouponType' });
+var CouponStatus;
+(function (CouponStatus) {
+    CouponStatus["ACTIVE"] = "ACTIVE";
+    CouponStatus["PAUSED"] = "PAUSED";
+})(CouponStatus || (exports.CouponStatus = CouponStatus = {}));
+(0, graphql_1.registerEnumType)(CouponStatus, { name: 'CouponStatus' });
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/libs/enums/like.enum.ts":
 /*!******************************************************!*\
   !*** ./apps/zinfurn-api/src/libs/enums/like.enum.ts ***!
@@ -11130,6 +11838,31 @@ exports["default"] = CommentSchema;
 
 /***/ }),
 
+/***/ "./apps/zinfurn-api/src/schemas/Coupon.model.ts":
+/*!******************************************************!*\
+  !*** ./apps/zinfurn-api/src/schemas/Coupon.model.ts ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const coupon_enum_1 = __webpack_require__(/*! ../libs/enums/coupon.enum */ "./apps/zinfurn-api/src/libs/enums/coupon.enum.ts");
+const CouponSchema = new mongoose_1.Schema({
+    couponCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    couponType: { type: String, enum: coupon_enum_1.CouponType, required: true },
+    couponValue: { type: Number, required: true },
+    couponStatus: { type: String, enum: coupon_enum_1.CouponStatus, default: coupon_enum_1.CouponStatus.ACTIVE },
+    maxUses: { type: Number, default: 0 },
+    usedCount: { type: Number, default: 0 },
+    minOrderAmount: { type: Number, default: 0 },
+    validUntil: { type: Date },
+}, { timestamps: true, collection: 'coupons' });
+exports["default"] = CouponSchema;
+
+
+/***/ }),
+
 /***/ "./apps/zinfurn-api/src/schemas/Follow.model.ts":
 /*!******************************************************!*\
   !*** ./apps/zinfurn-api/src/schemas/Follow.model.ts ***!
@@ -11465,6 +12198,8 @@ const OrderSchema = new mongoose_1.Schema({
     orderItems: { type: [OrderItemSchema], required: true },
     orderStatus: { type: String, enum: order_enum_1.OrderStatus, default: order_enum_1.OrderStatus.PENDING },
     orderTotal: { type: Number, required: true },
+    orderCouponCode: { type: String },
+    orderDiscount: { type: Number, default: 0 },
     deliveryInfo: { type: DeliveryInfoSchema, required: true },
     confirmedAt: { type: Date },
     cancelledAt: { type: Date },
