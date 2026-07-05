@@ -5066,7 +5066,11 @@ let PropertyService = class PropertyService {
         return result[0];
     }
     shapeMatchQuery(match, input) {
-        const { memberId, categoryList, typeList, conditionList, materialList, colorList, pricesRange, options, text, } = input.search;
+        const { memberId, categoryList, typeList, conditionList, materialList, colorList, pricesRange, options, text, propertyIsOnSale, } = input.search;
+        if (propertyIsOnSale) {
+            match.propertyIsOnSale = true;
+            match.propertySaleExpiresAt = { $gt: new Date() };
+        }
         if (memberId)
             match.memberId = (0, config_1.ShapeIntoMongoObjectId)(memberId);
         if (categoryList && categoryList.length)
@@ -6551,6 +6555,7 @@ exports.availablePropertySorts = [
     'propertyViews',
     'propertyRank',
     'propertyPrice',
+    'propertySaleExpiresAt',
 ];
 exports.availableRepairPropertySorts = [
     'createdAt',
@@ -9687,6 +9692,7 @@ exports.PeriodsRange = PeriodsRange = __decorate([
     (0, graphql_1.InputType)()
 ], PeriodsRange);
 let PISearch = class PISearch {
+    propertyIsOnSale;
     memberId;
     categoryList;
     typeList;
@@ -9698,6 +9704,11 @@ let PISearch = class PISearch {
     text;
 };
 exports.PISearch = PISearch;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PISearch.prototype, "propertyIsOnSale", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, graphql_1.Field)(() => String, { nullable: true }),
