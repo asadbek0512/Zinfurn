@@ -1,5 +1,5 @@
 import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, Length, Min, IsInt, IsIn } from 'class-validator';
+import { IsNotEmpty, IsOptional, Length, MinLength, Min, IsInt, IsIn } from 'class-validator';
 import { PropertyType, PropertyStatus, PropertyCategory, PropertyMaterial, PropertyColor, PropertyCondition } from '../../enums/property.enum';
 import { ObjectId } from 'mongoose';
 import { availableOptions, availablePropertySorts } from '../../config';
@@ -56,7 +56,7 @@ export class PropertyInput {
     propertyImages?: string[];
 
     @IsOptional()
-    @Length(5, 500)
+    @MinLength(5)
     @Field(() => String, { nullable: true })
     propertyDesc?: string;
 
