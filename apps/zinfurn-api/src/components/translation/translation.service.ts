@@ -23,7 +23,7 @@ const LOCALE_NAMES: Record<SupportedLocale, string> = {
 // decommission bo'lgach `model_decommissioned` xato beradi. Groq tavsiyasi bo'yicha gpt-oss-120b.
 const GROQ_MODEL = 'openai/gpt-oss-120b';
 const GEMINI_MODEL = 'gemini-2.5-flash';
-const TRANSLATE_TIMEOUT_MS = 15000;
+const TRANSLATE_TIMEOUT_MS = 20000;
 
 export interface I18nText {
 	title: string;
@@ -121,6 +121,9 @@ CONTENT: ${content || ''}`;
 					],
 					response_format: { type: 'json_object' },
 					temperature: 0.2,
+					// gpt-oss reasoning model — 'low' bo'lmasa ichki reasoning sekin qiladi va
+					// 15s timeout'ga uriladi (tarjima ba'zan null bo'lib qolardi). Tarjima uchun reasoning shart emas.
+					reasoning_effort: 'low',
 				}),
 				signal: controller.signal,
 			});
