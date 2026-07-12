@@ -15,7 +15,10 @@ import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes } from '../..
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { createWriteStream, mkdirSync } from 'fs';
-import sharp from 'sharp';
+// sharp 0.35 CJS eksporti — callable funksiya (module.exports = sharp).
+// tsconfig'da esModuleInterop yo'q, shuning uchun `import sharp from 'sharp'` runtime'da
+// `sharp_1.default` (undefined) beradi. require bilan to'g'ri callable olamiz.
+const sharp = require('sharp') as typeof import('sharp').default;
 import { Message } from '../../libs/enums/common_enum';
 
 const ALLOWED_UPLOAD_TARGETS = ['member', 'property', 'article', 'repair', 'review'];
