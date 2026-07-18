@@ -9,6 +9,7 @@ import PropertySchema from '../../schemas/Property.model';
 import { OrderResolver } from './order.resolver';
 import { OrderService } from './order.service';
 import { TelegramNotifyService } from './telegram-notify.service';
+import { MailNotifyService } from './mail-notify.service';
 
 @Module({
 	imports: [
@@ -21,7 +22,7 @@ import { TelegramNotifyService } from './telegram-notify.service';
 		MemberModule,
 		CouponModule,
 	],
-	providers: [OrderResolver, OrderService, TelegramNotifyService],
+	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService],
 	exports: [OrderService],
 })
 export class OrderModule {}
