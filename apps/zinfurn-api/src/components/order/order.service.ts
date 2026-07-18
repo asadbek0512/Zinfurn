@@ -9,6 +9,7 @@ import { Message, Direction } from '../../libs/enums/common_enum';
 import { T } from '../../libs/types/common';
 import { lookupMember } from '../../libs/config';
 import { TelegramNotifyService } from './telegram-notify.service';
+import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class OrderService {
 		@InjectModel('Order') private readonly orderModel: Model<Order>,
 		@InjectModel('Property') private readonly propertyModel: Model<any>,
 		private readonly telegramNotify: TelegramNotifyService,
+		private readonly mailNotify: MailNotifyService,
 		private readonly couponService: CouponService,
 	) {}
 
@@ -39,6 +41,7 @@ export class OrderService {
 			this.scheduleAutoProgression(order._id as ObjectId);
 			// Telegram xabarlar (non-blocking)
 			this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, order.orderTotal);
+			this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, order.orderTotal);
 			this.telegramNotify.notifyAdminNewOrder(orderId, order.orderTotal, order.orderItems?.length ?? 0);
 			return order;
 		} catch (err) {
@@ -53,7 +56,10 @@ export class OrderService {
 			setTimeout(async () => {
 				try {
 					const doc = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status }, { new: true });
-					if (doc) this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, status);
+					if (doc) {
+						this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, status);
+						this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, status);
+					}
 				} catch {}
 			}, delayMs);
 		};
@@ -117,6 +123,7 @@ export class OrderService {
 		) as unknown as Order;
 
 		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.CONFIRMED);
+		this.mailNotify.notifyCustomer(memberId, order.orderId, OrderStatus.CONFIRMED);
 
 		// increment sold count for each item
 		for (const item of order.orderItems) {
@@ -136,6 +143,7 @@ export class OrderService {
 			throw new BadRequestException('Order is not in an active delivery state');
 		}
 		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.DELIVERED);
+		this.mailNotify.notifyCustomer(memberId, order.orderId, OrderStatus.DELIVERED);
 		return this.orderModel.findByIdAndUpdate(
 			orderId,
 			{ orderStatus: OrderStatus.DELIVERED },
@@ -150,6 +158,7 @@ export class OrderService {
 			throw new BadRequestException('Order must be CONFIRMED before return request');
 		}
 		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.RETURN_REQUESTED);
+		this.mailNotify.notifyCustomer(memberId, order.orderId, OrderStatus.RETURN_REQUESTED);
 		return this.orderModel.findByIdAndUpdate(
 			input._id,
 			{
@@ -169,6 +178,7 @@ export class OrderService {
 		const updated = (await this.orderModel.findByIdAndUpdate(input._id, updateData, { new: true })) as unknown as Order;
 		if (updated && input.orderStatus) {
 			this.telegramNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
+			this.mailNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
 		}
 		return updated;
 	}
