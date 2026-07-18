@@ -10,6 +10,7 @@ NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modu
 - **Rate limiting**: `@nestjs/throttler` with a GraphQL-aware guard (login/signup 5/min, refresh 20/min, global 300/min), `trust proxy` for real client IPs behind nginx
 - **Coupons**: atomic redemption (`$inc` guarded by usage limit — race-safe), server-side discount math, admin CRUD
 - **Telegram notifications**: non-blocking order-status messages to customers + optional admin new-order alerts (`ADMIN_TELEGRAM_CHAT_ID`)
+- **Email notifications**: non-blocking order-status emails to customers via Resend (branded HTML template, sent from a verified domain `no-reply@zinfurn.uz`); no npm dependency (REST via `fetch`), silently skipped when `RESEND_API_KEY` is unset
 - **Translation service**: Groq (Llama 3.3 70B, JSON mode) primary / Gemini fallback — auto-translates products, articles, notices into 5 locales on create/update, preserving brand names
 - **Uploads**: target whitelist (no path traversal), `sharp` transcode-to-JPEG (content validation by re-encoding), forced extensions
 - **GraphQL hardening**: depth limit 8, introspection/playground off in production
@@ -37,7 +38,7 @@ npm run start:dev:batch    # batch (watch)
 npm test                   # unit tests (auth token system)
 ```
 
-`.env` (see `.env.example`): `MONGO_DEV`, `SECRET_TOKEN`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID/SECRET`, `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`, optional `ADMIN_TELEGRAM_CHAT_ID`, `SESSION_SECRET`.
+`.env` (see `.env.example`): `MONGO_DEV`, `SECRET_TOKEN`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID/SECRET`, `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`, optional `ADMIN_TELEGRAM_CHAT_ID`, `RESEND_API_KEY`, `MAIL_FROM`, `SESSION_SECRET`.
 
 ## Known Limitations
 
