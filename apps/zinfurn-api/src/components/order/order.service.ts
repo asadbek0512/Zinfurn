@@ -52,21 +52,27 @@ export class OrderService {
 
 	// Demo: auto-progress order status for portfolio showcase
 	private scheduleAutoProgression(orderId: ObjectId): void {
-		const advance = (status: OrderStatus, delayMs: number) => {
+		// Faqat kutilgan oldingi statusdan o'tkazadi — manual status (masalan erta
+		// DELIVERED/CONFIRMED yoki CANCELLED) taymer tomonidan ORQAGA qaytarilmaydi.
+		const advance = (from: OrderStatus, to: OrderStatus, delayMs: number) => {
 			setTimeout(async () => {
 				try {
-					const doc = await this.orderModel.findByIdAndUpdate(orderId, { orderStatus: status }, { new: true });
+					const doc = await this.orderModel.findOneAndUpdate(
+						{ _id: orderId, orderStatus: from },
+						{ orderStatus: to },
+						{ new: true },
+					);
 					if (doc) {
-						this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, status);
-						this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, status);
+						this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, to);
+						this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, to);
 					}
 				} catch {}
 			}, delayMs);
 		};
 
-		advance(OrderStatus.PROCESSING, 15_000);   // 15s
-		advance(OrderStatus.SHIPPED,    35_000);   // 35s
-		advance(OrderStatus.DELIVERED,  60_000);   // 60s
+		advance(OrderStatus.PENDING,    OrderStatus.PROCESSING, 15_000);   // 15s
+		advance(OrderStatus.PROCESSING, OrderStatus.SHIPPED,    35_000);   // 35s
+		advance(OrderStatus.SHIPPED,    OrderStatus.DELIVERED,  60_000);   // 60s
 	}
 
 	public async getMyOrders(memberId: ObjectId, input: OrdersInquiry): Promise<Orders> {

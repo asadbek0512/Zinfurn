@@ -5,6 +5,9 @@ import { Member } from '../../libs/dto/member/member';
 import { MemberAuthType, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import * as crypto from 'crypto';
 
+// Telegram login payload amal qilish muddati (soniya) — replay attack himoyasi
+const TELEGRAM_AUTH_TTL_SEC = 86400; // 24 soat
+
 @Injectable()
 export class TelegramStrategy {
   constructor(
@@ -14,9 +17,18 @@ export class TelegramStrategy {
   // Telegram dan kelgan ma'lumotlarni tekshiradi
   verifyTelegramAuth(data: any): boolean {
     const botToken = process.env.TELEGRAM_BOT_TOKEN as string;
-    const secretKey = crypto.createHash('sha256').update(botToken).digest();
+    if (!botToken) return false;
 
     const { hash, ...userData } = data;
+    if (!hash || typeof hash !== 'string') return false;
+
+    // Replay himoyasi: eski (ushlab olingan) login payload qayta ishlatilmasin
+    const authDate = Number(userData.auth_date);
+    if (!authDate || Date.now() / 1000 - authDate > TELEGRAM_AUTH_TTL_SEC) {
+      return false;
+    }
+
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
 
     // Ma'lumotlarni tekshirish uchun string yaratamiz
     const checkString = Object.keys(userData)
@@ -29,7 +41,11 @@ export class TelegramStrategy {
       .update(checkString)
       .digest('hex');
 
-    return hmac === hash;
+    // Timing-safe solishtirish (uzunlik farq qilsa throw bo'lmasin — false qaytadi)
+    const hmacBuf = Buffer.from(hmac, 'hex');
+    const hashBuf = Buffer.from(hash, 'hex');
+    if (hmacBuf.length !== hashBuf.length) return false;
+    return crypto.timingSafeEqual(hmacBuf, hashBuf);
   }
 
   // Telegram user ni DB ga saqlaydi yoki topadi
