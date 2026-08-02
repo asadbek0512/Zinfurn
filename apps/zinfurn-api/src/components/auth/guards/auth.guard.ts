@@ -21,9 +21,10 @@ export class AuthGuard implements CanActivate {
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;
 
-			const cookieToken = parseCookieToken(request.headers.cookie);
+			// Bearer ustun: client refresh'dan keyin yangi tokenni Authorization'da yuboradi,
+			// brauzerdagi cookie esa hali eskirgan bo'lishi mumkin. Cookie — faqat fallback.
 			const bearerToken = request.headers.authorization;
-			const rawToken = cookieToken || (bearerToken ? bearerToken.split(' ')[1] : null);
+			const rawToken = (bearerToken ? bearerToken.split(' ')[1] : null) || parseCookieToken(request.headers.cookie);
 
 			if (!rawToken) throw new BadRequestException(Message.TOKEN_NOT_EXIST);
 			const authMember = await this.authService.verifyToken(rawToken);

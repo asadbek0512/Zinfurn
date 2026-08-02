@@ -84,10 +84,12 @@ export class MemberResolver {
     @Mutation(() => Member)
     public async updateMember(
         @Args('input') input: MemberUpdate,
-        @AuthMember('_id') memberId: ObjectId
+        @AuthMember() authMember: Member,
     ): Promise<Member> {
         delete input._id;
-        return await this.memberService.updateMember(memberId, input);
+        // Profil yangilanishi yangi token beradi, lekin sessiya boshlanish vaqti (sid) saqlanadi —
+        // aks holda profilni tahrirlash sessiya muddatini cheksiz uzaytirardi.
+        return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid);
     }
 
     @UseGuards(WithoutGuard)

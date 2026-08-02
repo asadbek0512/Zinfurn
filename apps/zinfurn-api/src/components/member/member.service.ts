@@ -33,8 +33,9 @@ export class MemberService {
         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {
             const result = await this.memberModel.create(input);
-            result.accessToken = await this.authService.createToken(result);
-            result.refreshToken = await this.authService.createRefreshToken(result);
+            const pair = await this.authService.createTokenPair(result);
+            result.accessToken = pair.token;
+            result.refreshToken = pair.refresh;
             return result;
         } catch (err) {
             Logger.error('Error, Service.model:', err.message);
@@ -62,8 +63,9 @@ export class MemberService {
 
         const isMatch = await this.authService.comparePasswords(input.memberPassword, response.memberPassword || '') /// ??????
         if (!isMatch) throw new InternalServerErrorException(Message.WRONG_PASSWORD);
-        response.accessToken = await this.authService.createToken(response);
-        response.refreshToken = await this.authService.createRefreshToken(response);
+        const pair = await this.authService.createTokenPair(response);
+        response.accessToken = pair.token;
+        response.refreshToken = pair.refresh;
 
         return response;
     }
@@ -87,7 +89,7 @@ export class MemberService {
         return member;
     }
 
-    public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
+    public async updateMember(memberId: ObjectId, input: MemberUpdate, sessionStartedAt?: number): Promise<Member> {
         const result: Member | null = await this.memberModel   /// ??? | null qoyib ketildi
             .findOneAndUpdate(
                 {
@@ -100,8 +102,9 @@ export class MemberService {
             .exec()
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
-        result.accessToken = await this.authService.createToken(result);
-        result.refreshToken = await this.authService.createRefreshToken(result);
+        const pair = await this.authService.createTokenPair(result, sessionStartedAt);
+        result.accessToken = pair.token;
+        result.refreshToken = pair.refresh;
         return result;
     }
 

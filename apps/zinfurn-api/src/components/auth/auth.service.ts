@@ -8,12 +8,24 @@ import { T } from '../../libs/types/common';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 import { MemberAuthType, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 
+/** Sessiyaning MUTLAQ umri — login paytidan boshlab. Refresh rotation buni uzaytira olmaydi. */
+const SESSION_MAX_AGE_SEC = Number(process.env.SESSION_MAX_AGE_SEC) || 10 * 60 * 60; // 10 soat
+/** Access token umri — sessiya qoldig'idan oshmaydi. */
+const ACCESS_TOKEN_TTL_SEC = Number(process.env.ACCESS_TOKEN_TTL_SEC) || 60 * 60; // 1 soat
+
+const nowSec = (): number => Math.floor(Date.now() / 1000);
+
 @Injectable()
 export class AuthService {
 	constructor(
 		private jwtService: JwtService,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 	) {}
+
+	/** Sessiya tugashiga qolgan sekundlar. 0 yoki manfiy — sessiya o'lgan. */
+	private sessionRemaining(sessionStartedAt: number): number {
+		return sessionStartedAt + SESSION_MAX_AGE_SEC - nowSec();
+	}
 
 	public async hashPassword(memberPassword: string): Promise<string> {
 		const salt = await bcrypt.genSalt();
@@ -24,8 +36,16 @@ export class AuthService {
 		return await bcrypt.compare(password, hashedPassword);
 	}
 
-	public async createToken(member: Member): Promise<string> {
+	/**
+	 * Access token. `sessionStartedAt` berilmasa — yangi sessiya boshlanadi.
+	 * Muddati sessiya qoldig'idan oshmaydi: sessiya tugagach access ham darrov o'ladi.
+	 */
+	public async createToken(member: Member, sessionStartedAt?: number): Promise<string> {
 		const doc = member['_doc'] ? member['_doc'] : member;
+		const sid = sessionStartedAt ?? nowSec();
+		const remaining = this.sessionRemaining(sid);
+		if (remaining <= 0) throw new Error('Session expired');
+
 		const payload: T = {
 			_id: doc._id,
 			memberType: doc.memberType,
@@ -46,22 +66,38 @@ export class AuthService {
 			memberBlocks: doc.memberBlocks,
 		};
 		payload.tokenType = 'access';
-		return await this.jwtService.signAsync(payload, { expiresIn: process.env.ACCESS_TOKEN_TTL || '1h' });
+		payload.sid = sid;
+		payload.sessionExpiresAt = sid + SESSION_MAX_AGE_SEC;
+
+		return await this.jwtService.signAsync(payload, {
+			expiresIn: Math.min(ACCESS_TOKEN_TTL_SEC, remaining),
+		});
 	}
 
-	/** Refresh token — minimal payload, 30 kun. Access sifatida ishlatib BO'LMAYDI (verifyToken rad etadi). */
-	public async createRefreshToken(member: Member): Promise<string> {
+	/**
+	 * Refresh token — minimal payload. Access sifatida ishlatib BO'LMAYDI (verifyToken rad etadi).
+	 * Muddati sessiya qoldig'iga teng, shuning uchun rotation sessiyani uzaytira olmaydi.
+	 */
+	public async createRefreshToken(member: Member, sessionStartedAt?: number): Promise<string> {
 		const doc = member['_doc'] ? member['_doc'] : member;
+		const sid = sessionStartedAt ?? nowSec();
+		const remaining = this.sessionRemaining(sid);
+		if (remaining <= 0) throw new Error('Session expired');
+
 		return await this.jwtService.signAsync(
-			{ _id: doc._id, tokenType: 'refresh' },
-			{ expiresIn: process.env.REFRESH_TOKEN_TTL || '30d' },
+			{ _id: doc._id, tokenType: 'refresh', sid },
+			{ expiresIn: remaining },
 		);
 	}
 
-	/** Access + refresh juftligi — login/signup/OAuth/linking hammasi shu orqali. */
-	public async createTokenPair(member: Member): Promise<{ token: string; refresh: string }> {
-		const token = await this.createToken(member);
-		const refresh = await this.createRefreshToken(member);
+	/**
+	 * Access + refresh juftligi — login/signup/OAuth/linking hammasi shu orqali.
+	 * `sessionStartedAt` berilsa mavjud sessiya davom etadi, aks holda yangisi boshlanadi.
+	 */
+	public async createTokenPair(member: Member, sessionStartedAt?: number): Promise<{ token: string; refresh: string }> {
+		const sid = sessionStartedAt ?? nowSec();
+		const token = await this.createToken(member, sid);
+		const refresh = await this.createRefreshToken(member, sid);
 		return { token, refresh };
 	}
 
@@ -83,10 +119,15 @@ export class AuthService {
 		}
 		if (payload?.tokenType !== 'refresh') throw new Error('Invalid refresh token');
 
+		// Sessiyaning mutlaq umri: rotation yangi refresh bersa ham `sid` o'zgarmaydi,
+		// shuning uchun login paytidan SESSION_MAX_AGE_SEC o'tgach sessiya butunlay tugaydi.
+		const sid: number = typeof payload.sid === 'number' ? payload.sid : 0;
+		if (this.sessionRemaining(sid) <= 0) throw new Error('Session expired');
+
 		const member = await this.memberModel.findById(ShapeIntoMongoObjectId(payload._id)).exec();
 		if (!member || member.memberStatus !== MemberStatus.ACTIVE) throw new Error('Member is not active');
 
-		const pair = await this.createTokenPair(member);
+		const pair = await this.createTokenPair(member, sid);
 		return { member, ...pair };
 	}
 

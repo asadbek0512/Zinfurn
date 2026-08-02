@@ -19,9 +19,9 @@ export class WithoutGuard implements CanActivate {
 
 		if (context.contextType === 'graphql') {
 			const request = context.getArgByIndex(2).req;
-			const cookieToken = parseCookieToken(request.headers.cookie);
+			// Bearer ustun, cookie — fallback (AuthGuard bilan bir xil tartib).
 			const bearerToken = request.headers.authorization;
-			const rawToken = cookieToken || (bearerToken ? bearerToken.split(' ')[1] : null);
+			const rawToken = (bearerToken ? bearerToken.split(' ')[1] : null) || parseCookieToken(request.headers.cookie);
 
 			if (rawToken) {
 				try {
