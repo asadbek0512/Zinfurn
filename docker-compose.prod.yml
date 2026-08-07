@@ -1,4 +1,21 @@
 services:
+  # api and batch bind-mount the same directory, so node_modules and dist have
+  # to have exactly one writer. When both containers installed and built on
+  # start, a simultaneous restart raced them: npm died with ENOTEMPTY renaming
+  # a package it was mid-way through replacing, and binaries under
+  # node_modules/.bin came out without their exec bit. This service does the
+  # install and both builds once, and the two runtime services wait for it.
+  asadbek-zinfurn-deps:
+    container_name: asadbek-zinfurn-deps
+    restart: "no"
+    image: node:20-alpine
+    volumes:
+      - ./:/usr/src/zinfurn
+    working_dir: /usr/src/zinfurn
+    command: sh -c "npm install --no-audit --no-fund && npm run build && ./node_modules/.bin/nest build zinfurn-batch"
+    networks:
+      - asadbek-zinfurn-network
+
   asadbek-zinfurn-api:
     container_name: asadbek-zinfurn-api
     restart: always
@@ -8,7 +25,10 @@ services:
     volumes:
       - ./:/usr/src/zinfurn
     working_dir: /usr/src/zinfurn
-    command: sh -c "npm install && npm run build && npm run start:prod"
+    depends_on:
+      asadbek-zinfurn-deps:
+        condition: service_completed_successfully
+    command: sh -c "npm run start:prod"
     networks:
       - asadbek-zinfurn-network
 
@@ -21,10 +41,19 @@ services:
     volumes:
       - ./:/usr/src/zinfurn
     working_dir: /usr/src/zinfurn
-    command: sh -c "npm install && ./node_modules/.bin/nest build zinfurn-batch && npm run start:prod:batch"
+    depends_on:
+      asadbek-zinfurn-deps:
+        condition: service_completed_successfully
+    command: sh -c "npm run start:prod:batch"
     networks:
       - asadbek-zinfurn-network
 
 networks:
   asadbek-zinfurn-network:
     driver: bridge
+
+# Deploy runs `docker compose -f docker-compose.prod.yml up -d --force-recreate`,
+# which re-runs the deps service and only then recreates api and batch. A plain
+# `docker restart` on either service now just restarts the process against the
+# dist that deps already produced; it no longer rebuilds, so after a code change
+# go through deploy.sh rather than restarting a container by hand.
