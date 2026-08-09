@@ -1,13 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './libs/interceptor/Logging.interceptor';
+import { AllExceptionsFilter } from './libs/filter/AllExceptions.filter';
 import { graphqlUploadExpress } from 'graphql-upload';
 import helmet from 'helmet';
 import * as express from 'express';
 import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { randomBytes } from 'crypto';
+
+// Process darajasida ushlanmagan xatolar — bo'lmasa jarayon jimgina qulab tushadi
+// (yoki hech narsa aytmay osilib qoladi) va sabab loglarda ko'rinmaydi.
+const bootLogger = new Logger('Process');
+process.on('unhandledRejection', (reason) => {
+  bootLogger.error(`Unhandled Rejection: ${reason instanceof Error ? reason.stack : reason}`);
+});
+process.on('uncaughtException', (err) => {
+  bootLogger.error(`Uncaught Exception: ${err.stack ?? err.message}`);
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,6 +38,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalFilters(new AllExceptionsFilter());
   const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3006').split(',').map(o => o.trim());
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
