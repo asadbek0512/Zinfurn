@@ -44,16 +44,10 @@ Maqsad: Zinfurn'ga AI/AR asosidagi mebel tanlash funksiyasini qo'shish. Portfoli
 
 **Status:** boshlanmagan
 
-## Bosqich 2 — Mahsulotlarni 3D modelga aylantirish
+## Bosqich 2 — AR kamera orqali real 3D ko'rish
 
-- [ ] Pilot: bir nechta mahsulotda (masalan game chair) 2D rasmdan 3D model generatsiya qilib sinash
-- [ ] Sifatni baholash, professional darajaga yetkazish
+- [ ] Pilot: bir nechta mahsulotda (masalan game chair) 2D rasmdan 3D model generatsiya qilib sinash, sifatni baholash
 - [ ] Qolgan mahsulotlarga kengaytirish
-
-**Status:** boshlanmagan
-
-## Bosqich 3 — AR kamera orqali real joylashtirish
-
 - [ ] Kamera orqali xona sirtini aniqlash
 - [ ] Tanlangan 3D mebelni real joyga proyeksiya qilish, o'lchamga moslash
 - [ ] 5 soniya ushlab turish orqali joylashtirish trigger'i
