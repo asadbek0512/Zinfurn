@@ -7,7 +7,7 @@ import { PropertiesInquiry } from '../../libs/dto/property/property.input';
 import { PropertyCategory, PropertyColor, PropertyMaterial, PropertyType } from '../../libs/enums/property.enum';
 import { Message } from '../../libs/enums/common_enum';
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 const ANALYZE_TIMEOUT_MS = 20000;
 const MATCHED_PRODUCTS_LIMIT = 8;
 
