@@ -4,7 +4,7 @@ import { PropertyService } from '../property/property.service';
 import { RoomAnalysisInput } from '../../libs/dto/ai-room/ai-room.input';
 import { RoomAnalysisResult } from '../../libs/dto/ai-room/ai-room';
 import { PropertiesInquiry } from '../../libs/dto/property/property.input';
-import { PropertyCategory, PropertyColor, PropertyMaterial } from '../../libs/enums/property.enum';
+import { PropertyCategory, PropertyColor, PropertyMaterial, PropertyType } from '../../libs/enums/property.enum';
 import { Message } from '../../libs/enums/common_enum';
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
@@ -15,6 +15,7 @@ interface GeminiRoomAnalysis {
 	roomType: string;
 	dominantColors: string[];
 	suggestedMaterial?: string;
+	requestedType?: string;
 	styleNotes: string;
 }
 
@@ -33,11 +34,13 @@ export class AiRoomService {
 			.map((c) => this.cleanEnumValue(c, PropertyColor))
 			.filter((c): c is PropertyColor => !!c);
 		const suggestedMaterial = this.cleanEnumValue(raw.suggestedMaterial, PropertyMaterial);
+		const requestedType = this.cleanEnumValue(raw.requestedType, PropertyType);
 
-		const matchedProducts = await this.findMatchingProducts(roomType, dominantColors, suggestedMaterial);
+		const matchedProducts = await this.findMatchingProducts(roomType, dominantColors, suggestedMaterial, requestedType);
 
 		return {
 			roomType,
+			requestedType,
 			dominantColors,
 			suggestedMaterial,
 			styleNotes: raw.styleNotes || '',
@@ -49,6 +52,7 @@ export class AiRoomService {
 		roomType?: PropertyCategory,
 		colors?: PropertyColor[],
 		material?: PropertyMaterial,
+		requestedType?: PropertyType,
 	) {
 		// getProperties auth'siz chaqirilganda memberId undefined bo'lishi kutiladi — mavjud resolver'lar ham shunday ishlatadi.
 		const anonymousMemberId = undefined as unknown as ObjectId;
@@ -59,6 +63,7 @@ export class AiRoomService {
 				categoryList: roomType ? [roomType] : undefined,
 				colorList: colors && colors.length ? colors : undefined,
 				materialList: material ? [material] : undefined,
+				typeList: requestedType ? [requestedType] : undefined,
 			},
 		};
 		const result = await this.propertyService.getProperties(anonymousMemberId, inquiry);
@@ -71,18 +76,22 @@ export class AiRoomService {
 		return match;
 	}
 
-	private buildPrompt(): string {
+	private buildPrompt(userRequest?: string): string {
 		return `You are a furniture e-commerce room analysis assistant.
 Look at the room photo and determine:
 1. roomType — the single best-fitting category for this room.
 2. dominantColors — the 2-3 dominant wall/floor/decor colors in the room.
 3. suggestedMaterial — the furniture material that would best match this room's style (optional).
-4. styleNotes — one short sentence (in Uzbek) describing the room's style, to show the user.
+4. requestedType — the furniture type the user is asking for, extracted from their request text below (optional, only if a request text is given and it clearly names a furniture type).
+5. styleNotes — one short sentence (in Uzbek) describing the room's style, to show the user.
+
+${userRequest ? `User's request (may be in Uzbek): "${userRequest}"` : 'User did not provide a request text — leave requestedType empty.'}
 
 Respond ONLY with values from the allowed lists below.
 roomType allowed values: ${Object.values(PropertyCategory).join(', ')}
 dominantColors allowed values: ${Object.values(PropertyColor).join(', ')}
-suggestedMaterial allowed values: ${Object.values(PropertyMaterial).join(', ')}`;
+suggestedMaterial allowed values: ${Object.values(PropertyMaterial).join(', ')}
+requestedType allowed values: ${Object.values(PropertyType).join(', ')}`;
 	}
 
 	private buildResponseSchema() {
@@ -95,6 +104,7 @@ suggestedMaterial allowed values: ${Object.values(PropertyMaterial).join(', ')}`
 					items: { type: 'STRING', enum: Object.values(PropertyColor) },
 				},
 				suggestedMaterial: { type: 'STRING', enum: Object.values(PropertyMaterial) },
+				requestedType: { type: 'STRING', enum: Object.values(PropertyType) },
 				styleNotes: { type: 'STRING' },
 			},
 			required: ['roomType', 'dominantColors', 'styleNotes'],
@@ -121,7 +131,7 @@ suggestedMaterial allowed values: ${Object.values(PropertyMaterial).join(', ')}`
 						contents: [
 							{
 								parts: [
-									{ text: this.buildPrompt() },
+									{ text: this.buildPrompt(input.userRequest) },
 									{
 										inline_data: {
 											mime_type: input.mimeType || 'image/jpeg',
