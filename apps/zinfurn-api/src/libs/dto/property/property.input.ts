@@ -56,6 +56,10 @@ export class PropertyInput {
     propertyImages?: string[];
 
     @IsOptional()
+    @Field(() => String, { nullable: true })
+    propertyArModel?: string;
+
+    @IsOptional()
     @MinLength(5)
     @Field(() => String, { nullable: true })
     propertyDesc?: string;

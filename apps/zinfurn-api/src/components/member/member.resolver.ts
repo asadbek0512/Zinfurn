@@ -11,10 +11,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
-import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes } from '../../libs/config';
+import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes, validModelMimeTypes, GLB_MAGIC, MAX_MODEL_BYTES } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
-import { createWriteStream, mkdirSync } from 'fs';
+import { createWriteStream, mkdirSync, openSync, readSync, closeSync, statSync, unlinkSync } from 'fs';
 // sharp 0.35 CJS eksporti — callable funksiya (module.exports = sharp).
 // tsconfig'da esModuleInterop yo'q, shuning uchun `import sharp from 'sharp'` runtime'da
 // `sharp_1.default` (undefined) beradi. require bilan to'g'ri callable olamiz.
@@ -181,6 +181,57 @@ export class MemberResolver {
                 .on('error', () => reject(false));
         });
         if (!result) throw new Error(Message.UPLOAD_FAILED);
+
+        return url;
+    }
+
+    @UseGuards(AuthGuard)
+    @Mutation((returns) => String)
+    public async modelUploader(
+        @Args({ name: 'file', type: () => GraphQLUpload })
+        { createReadStream, filename, mimetype }: FileUpload,
+        @Args('target') target: String,
+    ): Promise<string> {
+
+        if (!filename) throw new Error(Message.UPLOAD_FAILED);
+        if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
+        if (!validModelMimeTypes.includes(mimetype)) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+
+        const modelName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.glb';
+        mkdirSync(`uploads/${target}`, { recursive: true });
+        const url = `uploads/${target}/${modelName}`;
+
+        const stream = createReadStream();
+        const written = await new Promise((resolve, reject) => {
+            stream
+                .pipe(createWriteStream(url))
+                .on('finish', () => resolve(true))
+                .on('error', () => reject(false));
+        });
+        if (!written) throw new Error(Message.UPLOAD_FAILED);
+
+        // A GLB cannot be transcoded the way images are, so the file is validated after
+        // landing on disk and removed if it is not a real glTF binary or is oversized.
+        const discard = () => {
+            try { unlinkSync(url); } catch { /* already gone */ }
+        };
+
+        if (statSync(url).size > MAX_MODEL_BYTES) {
+            discard();
+            throw new Error(Message.UPLOAD_FAILED);
+        }
+
+        const header = Buffer.alloc(4);
+        const descriptor = openSync(url, 'r');
+        try {
+            readSync(descriptor, header, 0, 4, 0);
+        } finally {
+            closeSync(descriptor);
+        }
+        if (header.toString('ascii') !== GLB_MAGIC) {
+            discard();
+            throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+        }
 
         return url;
     }

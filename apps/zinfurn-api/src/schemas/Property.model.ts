@@ -108,6 +108,10 @@ const PropertySchema = new Schema(
 			required: true,
 		},
 
+		propertyArModel: {
+			type: String,
+		},
+
 		propertyDesc: {
 			type: String,
 		},
