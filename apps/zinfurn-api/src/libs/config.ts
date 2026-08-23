@@ -30,6 +30,12 @@ import * as path from 'path';
 import { T } from "./types/common";
 
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+
+/** GLB 3D models for AR. Browsers are inconsistent about the mime type, so the
+ *  container header is what actually gets verified on upload. */
+export const validModelMimeTypes = ['model/gltf-binary', 'application/octet-stream'];
+export const GLB_MAGIC = 'glTF';
+export const MAX_MODEL_BYTES = 25 * 1024 * 1024;
 export const getSerialForImage = (filename: string) => {
     const ext = path.parse(filename).ext;
     return uuidv4() + ext;

@@ -73,6 +73,9 @@ export class Property {
     propertyImages?: string[];
 
     @Field(() => String, { nullable: true })
+    propertyArModel?: string;
+
+    @Field(() => String, { nullable: true })
     propertyDesc?: string;
 
     @Field(() => PropertyTranslations, { nullable: true })

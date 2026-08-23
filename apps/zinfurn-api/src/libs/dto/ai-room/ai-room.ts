@@ -22,3 +22,12 @@ export class RoomAnalysisResult {
 	@Field(() => [Property])
 	matchedProducts: Property[];
 }
+
+@ObjectType()
+export class GeneratedRoomImage {
+	@Field(() => String)
+	imageBase64: string;
+
+	@Field(() => String)
+	mimeType: string;
+}
