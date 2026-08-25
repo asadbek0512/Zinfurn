@@ -109,9 +109,6 @@ export class Property {
     propertyLikes?: number;
 
     @Field(() => Int, { nullable: true })
-    propertyComments?: number;
-
-    @Field(() => Int, { nullable: true })
     propertyReviews?: number;
 
     @Field(() => Float, { nullable: true })

@@ -29,6 +29,10 @@ export class CommentService {
 	) {}
 
 	public async createComment(memberId: ObjectId, input: CommentInput): Promise<Comment> {
+		// Mahsulot uchun izoh emas, faqat sotib olgandan keyingi review qoldiriladi
+		if (input.commentGroup === CommentGroup.PROPERTY) {
+			throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+		}
 		input.memberId = memberId;
 
 		let result: Comment | null = null;
@@ -44,16 +48,6 @@ export class CommentService {
 					await this.memberService.memberStatsEditor({
 						_id: input.commentRefId,
 						targetKey: 'memberComments',
-						modifier: 1,
-					});
-					break;
-				case CommentGroup.PROPERTY:
-					// @ts-ignore
-					const property = await this.propertyService.getProperty(null, input.commentRefId);
-					ownerId = property.memberId.toString();
-					await this.propertyService.propertyStatsEditor({
-						_id: input.commentRefId,
-						targetKey: 'propertyComments',
 						modifier: 1,
 					});
 					break;
@@ -113,11 +107,6 @@ export class CommentService {
 		let notificationDesc = '';
 
 		switch (commentGroup) {
-			case CommentGroup.PROPERTY:
-				// @ts-ignore
-				const property = await this.propertyService.getProperty(null, refId as any);
-				notificationDesc = `${commenterName} commented on your property "${property.propertyTitle}"`;
-				break;
 			case CommentGroup.REPAIR_PROPERTY:
 				// @ts-ignore
 				const repairProperty = await this.repairPropertyService.getRepairProperty(null, refId as any);
