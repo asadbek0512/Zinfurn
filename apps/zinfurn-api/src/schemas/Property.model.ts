@@ -78,11 +78,6 @@ const PropertySchema = new Schema(
 			default: 0,
 		},
 
-		propertyComments: {
-			type: Number,
-			default: 0,
-		},
-
 		propertyReviews: {
 			type: Number,
 			default: 0,
