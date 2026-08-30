@@ -48,6 +48,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Default JSON body limiti (100kb) base64 rasm (masalan AI xona tahlili) uchun yetarli emas
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
   app.use(graphqlUploadExpress({ maxFileSize: 15000000, maxFiles: 10 }))
   app.use('/uploads', express.static('./uploads'));
 

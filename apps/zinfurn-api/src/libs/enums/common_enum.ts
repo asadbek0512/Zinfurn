@@ -19,6 +19,7 @@ export enum Message {
     NOT_ALLOWED_REQUEST = 'Not Allowed Request!',
     PROVIDE_ALLOWED_FORMAT = 'Please provide jpg, jpeg or png images!',
     SELF_SUBSCRIPTION_DENIED = 'Self subscription is denied!',
+    DAILY_AI_LIMIT_REACHED = 'Daily AI request limit reached, please try again tomorrow!',
 }
 
 export enum Direction {

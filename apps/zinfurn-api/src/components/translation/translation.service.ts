@@ -22,7 +22,7 @@ const LOCALE_NAMES: Record<SupportedLocale, string> = {
 // llama-3.3-70b-versatile 2026-06-17 da Groq'da deprecate qilindi (free/dev tier) —
 // decommission bo'lgach `model_decommissioned` xato beradi. Groq tavsiyasi bo'yicha gpt-oss-120b.
 const GROQ_MODEL = 'openai/gpt-oss-120b';
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 const TRANSLATE_TIMEOUT_MS = 20000;
 
 export interface I18nText {

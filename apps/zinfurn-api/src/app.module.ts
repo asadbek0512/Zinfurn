@@ -25,6 +25,8 @@ import * as depthLimit from 'graphql-depth-limit';
       introspection: process.env.NODE_ENV !== 'production',
       uploads: false,
       autoSchemaFile: true,
+      // AI xona tahlili base64 rasm yuboradi — default 100kb limit yetarli emas
+      bodyParserConfig: { limit: '15mb' },
       // Chuqur nested query bilan DoS'ning oldini olish
       validationRules: [depthLimit(8)],
       context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
