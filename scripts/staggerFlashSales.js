@@ -21,7 +21,7 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const SALE_WINDOW_DAYS = 15; // 10-15 kun oralig'idagi eng uzuni — qamrov 5-6 oyga yetishi uchun
-const PRODUCTS_PER_WINDOW = 2; // guruh soni ko'p bo'lsin — 22 mahsulot ~5.5 oyni qoplaydi
+const MIN_PRODUCTS_PER_WINDOW = 3; // flash sale bo'limida doim kamida 3 ta kart tursin
 const DISCOUNT_PERCENT = 15; // sale narxi bo'lmagan mahsulotlar uchun
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -60,44 +60,54 @@ const asDate = (date) => date.toISOString().slice(0, 10);
 	const operations = [];
 	const preview = [];
 
-	candidates.forEach((product, index) => {
-		const windowIndex = Math.floor(index / PRODUCTS_PER_WINDOW);
+	// Guruhlar soni: har birida kamida 3 tadan bo'lishi kerak. Qoldiq mahsulotlar
+	// oxirida yolg'iz qolmasligi uchun boshidagi guruhlarga taqsimlanadi.
+	const windowCount = Math.max(1, Math.floor(candidates.length / MIN_PRODUCTS_PER_WINDOW));
+	const base = Math.floor(candidates.length / windowCount);
+	const extra = candidates.length % windowCount;
+
+	let cursor = 0;
+	for (let windowIndex = 0; windowIndex < windowCount; windowIndex++) {
+		const size = base + (windowIndex < extra ? 1 : 0);
 		const startsAt = new Date(now + windowIndex * SALE_WINDOW_DAYS * DAY_MS);
 		const expiresAt = new Date(now + (windowIndex + 1) * SALE_WINDOW_DAYS * DAY_MS);
-		const salePrice =
-			product.propertySalePrice && product.propertySalePrice < product.propertyPrice
-				? product.propertySalePrice
-				: roundPrice(product.propertyPrice * (1 - DISCOUNT_PERCENT / 100));
 
-		operations.push({
-			updateOne: {
-				filter: { _id: product._id },
-				update: {
-					$set: {
-						propertyIsOnSale: true,
-						propertySalePrice: salePrice,
-						propertySaleStartsAt: startsAt,
-						propertySaleExpiresAt: expiresAt,
+		for (let i = 0; i < size; i++) {
+			const product = candidates[cursor++];
+			const salePrice =
+				product.propertySalePrice && product.propertySalePrice < product.propertyPrice
+					? product.propertySalePrice
+					: roundPrice(product.propertyPrice * (1 - DISCOUNT_PERCENT / 100));
+
+			operations.push({
+				updateOne: {
+					filter: { _id: product._id },
+					update: {
+						$set: {
+							propertyIsOnSale: true,
+							propertySalePrice: salePrice,
+							propertySaleStartsAt: startsAt,
+							propertySaleExpiresAt: expiresAt,
+						},
 					},
 				},
-			},
-		});
-		preview.push({
-			guruh: windowIndex + 1,
-			mahsulot: product.propertyTitle,
-			narx: product.propertyPrice,
-			saleNarx: salePrice,
-			boshlanadi: asDate(startsAt),
-			tugaydi: asDate(expiresAt),
-		});
-	});
+			});
+			preview.push({
+				guruh: windowIndex + 1,
+				mahsulot: product.propertyTitle,
+				narx: product.propertyPrice,
+				saleNarx: salePrice,
+				boshlanadi: asDate(startsAt),
+				tugaydi: asDate(expiresAt),
+			});
+		}
+	}
 
-	const windows = Math.ceil(candidates.length / PRODUCTS_PER_WINDOW);
-	const coverageDays = windows * SALE_WINDOW_DAYS;
+	const coverageDays = windowCount * SALE_WINDOW_DAYS;
 
-	console.table(preview.slice(0, 15));
+	console.table(preview.slice(0, 12));
 	console.log(
-		`Jami ${candidates.length} mahsulot, ${windows} guruh × ${SALE_WINDOW_DAYS} kun ` +
+		`Jami ${candidates.length} mahsulot, ${windowCount} guruh × ${SALE_WINDOW_DAYS} kun ` +
 			`= ${coverageDays} kun (~${(coverageDays / 30).toFixed(1)} oy) uzluksiz flash sale.`,
 	);
 
