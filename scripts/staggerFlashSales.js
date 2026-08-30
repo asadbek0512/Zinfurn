@@ -1,14 +1,14 @@
 /**
  * Flash sale'larni navbatma-navbat joylashtirish.
  *
- * Bosh sahifadagi flash sale bo'limi bir vaqtda 3 ta chegirmadagi mahsulotni
+ * Bosh sahifadagi flash sale bo'limi chegirmadagi mahsulotlarni
  * ko'rsatadi. Hammasining muddati bir vaqtda tugasa bo'lim bo'sh qolib ketadi,
- * shuning uchun mahsulotlar 3 tadan guruhlarga bo'linib, har guruhga ketma-ket
+ * shuning uchun mahsulotlar kichik guruhlarga bo'linib, har guruhga ketma-ket
  * oyna beriladi:
  *
- *   1-guruh: bugundan  0 → 12-kun
- *   2-guruh:          12 → 24-kun
- *   3-guruh:          24 → 36-kun   ...
+ *   1-guruh: bugundan  0 → 15-kun
+ *   2-guruh:          15 → 30-kun
+ *   3-guruh:          30 → 45-kun   ...
  *
  * `propertySaleStartsAt` kelgunicha mahsulot chegirmada ko'rinmaydi, ya'ni bir
  * guruh tugashi bilan keyingisi o'zi ochiladi va sahifa hech qachon bo'shamaydi.
@@ -20,14 +20,19 @@
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
-const SALE_WINDOW_DAYS = 12; // 10-15 kun oralig'ida
-const PRODUCTS_PER_WINDOW = 3; // bosh sahifada bir vaqtda 3 ta kart ko'rinadi
+const SALE_WINDOW_DAYS = 15; // 10-15 kun oralig'idagi eng uzuni — qamrov 5-6 oyga yetishi uchun
+const PRODUCTS_PER_WINDOW = 2; // guruh soni ko'p bo'lsin — 22 mahsulot ~5.5 oyni qoplaydi
 const DISCOUNT_PERCENT = 15; // sale narxi bo'lmagan mahsulotlar uchun
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const dryRun = process.argv.includes('--dry');
 
-const roundPrice = (value) => Math.round(value / 1000) * 1000;
+// Narxlar turli miqyosda (47 dan 2200 gacha) — nolga tushib qolmasligi uchun
+// yaxlitlash qadami narxning o'ziga qarab tanlanadi.
+const roundPrice = (value) => {
+	const step = value >= 10000 ? 1000 : value >= 1000 ? 100 : value >= 100 ? 10 : 1;
+	return Math.max(step, Math.round(value / step) * step);
+};
 const asDate = (date) => date.toISOString().slice(0, 10);
 
 (async () => {
