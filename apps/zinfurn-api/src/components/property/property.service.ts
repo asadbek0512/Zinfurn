@@ -175,10 +175,14 @@ export class PropertyService {
             propertyIsOnSale,
         } = input.search;
 
-        // Flash Sale: faqat AKTIV (muddati o'tmagan) chegirmadagi mahsulotlar
+        // Flash Sale: sale oynasi ochilgan va muddati o'tmagan mahsulotlar.
+        // propertySaleStartsAt yo'q bo'lsa — eski yozuv, darrov aktiv hisoblanadi.
         if (propertyIsOnSale) {
+            const now = new Date();
             match.propertyIsOnSale = true;
-            match.propertySaleExpiresAt = { $gt: new Date() };
+            match.propertySaleExpiresAt = { $gt: now };
+            // $or emas, $and ichida — pastdagi `options` filtri $or'ni o'zi band qiladi
+            match.$and = [{ $or: [{ propertySaleStartsAt: { $lte: now } }, { propertySaleStartsAt: null }] }];
         }
 
         if (memberId) match.memberId = ShapeIntoMongoObjectId(memberId);

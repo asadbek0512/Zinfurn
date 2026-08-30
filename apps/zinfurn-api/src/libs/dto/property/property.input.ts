@@ -49,6 +49,10 @@ export class PropertyInput {
 
     @IsOptional()
     @Field(() => Date, { nullable: true })
+    propertySaleStartsAt?: Date;
+
+    @IsOptional()
+    @Field(() => Date, { nullable: true })
     propertySaleExpiresAt?: Date;
 
     @IsOptional()

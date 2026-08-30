@@ -64,6 +64,12 @@ const PropertySchema = new Schema(
 			default: false,
 		},
 
+		// Sale oynasining boshlanishi — kelajakdagi sale'lar shu sana kelgunicha
+		// mijozga ko'rinmaydi (flash sale navbatma-navbat almashishi uchun)
+		propertySaleStartsAt: {
+			type: Date,
+		},
+
 		propertySaleExpiresAt: {
 			type: Date,
 		},
