@@ -48,3 +48,5 @@ npm test                   # unit tests (auth token system)
 - Test coverage focused on the auth/token system; other modules rely on typed DTO contracts
 
 Deployed via Docker on a VPS behind nginx/SSL; a cron watches `main` and redeploys within a minute of a push (a committed pre-push hook build-gates every push).
+
+<!-- deploy pipeline check -->
