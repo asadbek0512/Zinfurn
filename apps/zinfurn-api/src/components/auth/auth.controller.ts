@@ -23,6 +23,35 @@ export class AuthController {
 		return urls.find((u) => u.includes('localhost')) || urls[0];
 	}
 
+	// Mobil app (Capacitor) Google OAuth'ni tizim brauzerida ochadi — Google embedded
+	// WebView'da OAuth'ni bloklaydi (disallowed_useragent). Callback esa app'ga custom
+	// scheme deep link orqali qaytadi, sayt URL'iga emas.
+	private getAppDeepLink(): string {
+		return process.env.APP_DEEP_LINK || 'uz.zinfurn.app://auth';
+	}
+
+	private parseCookies(req: any): Record<string, string> {
+		return Object.fromEntries(
+			(req.headers.cookie || '')
+				.split(';')
+				.map((c: string) => {
+					const [k, v] = c.trim().split('=');
+					return [k, decodeURIComponent(v ?? '')];
+				})
+				.filter(([k]: string[]) => k),
+		);
+	}
+
+	// path — muvaffaqiyatdan keyin ochiladigan sahifa ('/' yoki '/mypage')
+	private authRedirectUrl(isApp: boolean, path: string, params: Record<string, string>): string {
+		const qs = new URLSearchParams(params);
+		if (isApp) {
+			qs.set('target', path);
+			return `${this.getAppDeepLink()}?${qs.toString()}`;
+		}
+		return `${this.getFrontendUrl()}${path}?${qs.toString()}`;
+	}
+
 	private setAuthCookie(res: any, token: string): void {
 		res.cookie('accessToken', token, {
 			httpOnly: true,
@@ -38,6 +67,17 @@ export class AuthController {
 		return res.json({ success: true });
 	}
 
+	@Get('app/google')
+	async googleAuthFromApp(@Res() res: any) {
+		res.cookie('oauthClient', 'app', {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'lax',
+			maxAge: 5 * 60 * 1000,
+		});
+		return res.redirect('/auth/google');
+	}
+
 	@Get('google')
 	@UseGuards(AuthGuard('google'))
 	async googleAuth() {}
@@ -48,35 +88,30 @@ export class AuthController {
 		try {
 			
 			const user = req.user;
-			
-			// Cookie dan memberId olish (manual parsing)
-			const cookies = Object.fromEntries(
-				(req.headers.cookie || '').split(';').map(c => {
-					const [k, v] = c.trim().split('=');
-					return [k, decodeURIComponent(v)];
-				}).filter(([k]) => k)
-			);
-			
-			const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
+			const cookies = this.parseCookies(req);
+			const isApp = cookies.oauthClient === 'app';
+			if (isApp) res.cookie('oauthClient', '', { maxAge: 0 });
 
-			const frontendUrl = this.getFrontendUrl();
+			const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
 
 			if (memberId) {
 				// Account linking
 				const result = await this.authService.linkGoogle(memberId, user);
 				res.cookie('linkMemberId', '', { maxAge: 0 });
 				this.setAuthCookie(res, result.token);
-				return res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
+				return res.redirect(
+					this.authRedirectUrl(isApp, '/mypage', { token: result.token, refresh: result.refresh }),
+				);
 			} else {
 				// Normal login
 				const result = await this.authService.googleLogin(user);
 				this.setAuthCookie(res, result.token);
-				return res.redirect(`${frontendUrl}/?token=${result.token}&refresh=${result.refresh}`);
+				return res.redirect(this.authRedirectUrl(isApp, '/', { token: result.token, refresh: result.refresh }));
 			}
 		} catch (err: any) {
 			Logger.error('Google callback error:', err);
-			const frontendUrl = this.getFrontendUrl();
-			return res.redirect(`${frontendUrl}/?error=${encodeURIComponent(err.message)}`);
+			const isApp = this.parseCookies(req).oauthClient === 'app';
+			return res.redirect(this.authRedirectUrl(isApp, '/', { error: err.message }));
 		}
 	}
 
@@ -109,6 +144,15 @@ export class AuthController {
 	async linkGoogle(@Req() req: any, @Res() res: any) {
 		// Store memberId in cookie BEFORE OAuth redirect
 		const memberId = req.query.state;
+		// App'dan kelgan bo'lsa — callback deep link orqali qaytsin
+		if (req.query.client === 'app') {
+			res.cookie('oauthClient', 'app', {
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'lax',
+				maxAge: 5 * 60 * 1000,
+			});
+		}
 		res.cookie('linkMemberId', memberId, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
@@ -124,16 +168,17 @@ export class AuthController {
 	@Get('link/google/callback')
 	@UseGuards(AuthGuard('google'))
 	async linkGoogleCallback(@Req() req: any, @Res() res: any) {
+		const isApp = this.parseCookies(req).oauthClient === 'app';
+		if (isApp) res.cookie('oauthClient', '', { maxAge: 0 });
 		try {
-			const frontendUrl = this.getFrontendUrl();
 			const memberId = req.user?.memberId;
 			if (!memberId) {
-				return res.redirect(`${frontendUrl}/mypage?error=No memberId found`);
+				return res.redirect(this.authRedirectUrl(isApp, '/mypage', { error: 'No memberId found' }));
 			}
 			const result = await this.authService.linkGoogle(memberId, req.user);
-			res.redirect(`${frontendUrl}/mypage?token=${result.token}&refresh=${result.refresh}`);
+			res.redirect(this.authRedirectUrl(isApp, '/mypage', { token: result.token, refresh: result.refresh }));
 		} catch (err: any) {
-			res.redirect(`${this.getFrontendUrl()}/mypage?error=${encodeURIComponent(err.message)}`);
+			res.redirect(this.authRedirectUrl(isApp, '/mypage', { error: err.message }));
 		}
 	}
 }
