@@ -15,6 +15,7 @@ import { ReviewModule } from './review/review.module';
 import { MessageModule } from './message/message.module';
 import { CouponModule } from './coupon/coupon.module';
 import { AiRoomModule } from './ai-room/ai-room.module';
+import { AppStatModule } from './app-stat/app-stat.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AiRoomModule } from './ai-room/ai-room.module';
     ReviewModule,
     MessageModule,
     AiRoomModule,
+    AppStatModule,
   ],
 })
 export class ComponentsModule { }
