@@ -11,9 +11,16 @@ import { lookupMember } from '../../libs/config';
 import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
-import { OrderItemInput } from '../../libs/dto/order/order.input';
+import { ConfirmTossPaymentInput, OrderItemInput } from '../../libs/dto/order/order.input';
+import { PaymentMethod, PaymentStatus } from '../../libs/enums/payment.enum';
+import { TossPaymentService } from './toss-payment.service';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { PriceSource, effectivePrice } from '../../libs/pricing';
+
+/** Narxlar USD'da saqlanadi; Toss faqat KRW qabul qiladi */
+const TOSS_CURRENCY = 'KRW';
+const DEFAULT_KRW_PER_USD = 1350;
+const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
 type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
 
@@ -25,6 +32,7 @@ export class OrderService {
 		private readonly telegramNotify: TelegramNotifyService,
 		private readonly mailNotify: MailNotifyService,
 		private readonly couponService: CouponService,
+		private readonly tossPayment: TossPaymentService,
 	) {}
 
 	public async createOrder(memberId: ObjectId, input: CreateOrderInput): Promise<Order> {
@@ -45,13 +53,19 @@ export class OrderService {
 			input.orderTotal = Math.max(0, input.orderTotal - orderDiscount);
 		}
 
+		// Toss: buyurtma to'lanmagan holda yaratiladi, to'lov confirmTossPayment'da tasdiqlanadi
+		const paymentMethod = input.paymentMethod ?? PaymentMethod.CARD;
+		const isToss = paymentMethod === PaymentMethod.TOSS;
+		const payment = {
+			paymentMethod,
+			paymentStatus: isToss ? PaymentStatus.UNPAID : PaymentStatus.PAID,
+			paymentCurrency: isToss ? TOSS_CURRENCY : undefined,
+			paymentAmount: isToss ? Math.round(input.orderTotal * krwPerUsd()) : undefined,
+		};
+
 		try {
-			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode });
-			this.scheduleAutoProgression(order._id as ObjectId);
-			// Telegram xabarlar (non-blocking)
-			this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, order.orderTotal);
-			this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, order.orderTotal);
-			this.telegramNotify.notifyAdminNewOrder(orderId, order.orderTotal, order.orderItems?.length ?? 0);
+			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode, ...payment });
+			if (!isToss) this.onOrderPaid(order);
 			return order;
 		} catch (err) {
 			Logger.error('OrderService.createOrder error:', err.message);
@@ -60,6 +74,53 @@ export class OrderService {
 	}
 
 	// Demo: auto-progress order status for portfolio showcase
+	/**
+	 * Toss successUrl'dan kelgan to'lovni tasdiqlaydi. Summa DB'dagi buyurtma bilan solishtiriladi —
+	 * client URL'dagi amount'ni o'zgartirsa ham Toss'ga so'rov yuborilmaydi.
+	 */
+	public async confirmTossPayment(memberId: ObjectId, input: ConfirmTossPaymentInput): Promise<Order> {
+		const { paymentKey, orderId, amount } = input;
+		const order = await this.orderModel
+			.findOne({ orderId, memberId, paymentMethod: PaymentMethod.TOSS })
+			.lean<Order & { paymentKey?: string }>()
+			.exec();
+		if (!order) throw new BadRequestException(Message.NO_DATA_FOUND);
+		// Sahifa yangilansa qayta tasdiqlash so'ralmaydi
+		if (order.paymentStatus === PaymentStatus.PAID) {
+			if (order.paymentKey !== paymentKey) throw new BadRequestException(Message.PAYMENT_FAILED);
+			return order;
+		}
+		if (order.paymentAmount !== amount) throw new BadRequestException(Message.PAYMENT_AMOUNT_MISMATCH);
+
+		await this.tossPayment.confirm(paymentKey, orderId, amount);
+
+		const paid = await this.orderModel
+			.findOneAndUpdate(
+				{ _id: order._id, paymentStatus: PaymentStatus.UNPAID },
+				{ paymentStatus: PaymentStatus.PAID, paymentKey, paidAt: new Date() },
+				{ new: true },
+			)
+			.exec();
+		// Parallel so'rov allaqachon PAID qilgan bo'lsa — o'sha holatni qaytaramiz
+		if (!paid) {
+			const current = await this.orderModel.findById(order._id).exec();
+			if (!current) throw new BadRequestException(Message.NO_DATA_FOUND);
+			return current;
+		}
+		this.onOrderPaid(paid);
+		return paid;
+	}
+
+	/** To'lov tasdiqlangach: xabarlar va demo status progression */
+	private onOrderPaid(order: Order): void {
+		const { memberId, orderId, orderTotal } = order;
+		this.scheduleAutoProgression(order._id as ObjectId);
+		// Telegram/email xabarlar (non-blocking)
+		this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
+		this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
+		this.telegramNotify.notifyAdminNewOrder(orderId, orderTotal, order.orderItems?.length ?? 0);
+	}
+
 	/** Har pozitsiyani DB'dagi mahsulot bo'yicha qayta narxlaydi; sotuvda bo'lmasa rad etadi */
 	private async priceOrderItems(items: OrderItemInput[]): Promise<OrderItemInput[]> {
 		const ids = items.map((item) => item.propertyId);

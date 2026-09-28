@@ -9,6 +9,8 @@ export enum Message {
     UPLOAD_FAILED = 'Upload failed!',
     BAD_REQUEST = 'Bad Request',
     PRODUCT_NOT_AVAILABLE = 'Some products in your cart are no longer available',
+    PAYMENT_FAILED = 'Payment could not be confirmed',
+    PAYMENT_AMOUNT_MISMATCH = 'Payment amount does not match the order',
 
     USED_MEMBER_NICK_OR_PHONE = 'Already used member nick or phone!',
     NO_MEMBER_NICK = 'No member with that member nick!',

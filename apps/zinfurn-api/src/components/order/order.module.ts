@@ -10,6 +10,7 @@ import { OrderResolver } from './order.resolver';
 import { OrderService } from './order.service';
 import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
+import { TossPaymentService } from './toss-payment.service';
 
 @Module({
 	imports: [
@@ -22,7 +23,7 @@ import { MailNotifyService } from './mail-notify.service';
 		MemberModule,
 		CouponModule,
 	],
-	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService],
+	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService, TossPaymentService],
 	exports: [OrderService],
 })
 export class OrderModule {}

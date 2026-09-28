@@ -1,6 +1,7 @@
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
 import { OrderStatus } from '../../enums/order.enum';
+import { PaymentMethod, PaymentStatus } from '../../enums/payment.enum';
 import { Member, TotalCounter } from '../member/member';
 
 @ObjectType()
@@ -29,8 +30,8 @@ export class DeliveryInfo {
 	@Field(() => String)
 	address: string;
 
-	@Field(() => String)
-	city: string;
+	@Field(() => String, { nullable: true })
+	city?: string;
 
 	@Field(() => String)
 	phone: string;
@@ -67,6 +68,22 @@ export class Order {
 
 	@Field(() => DeliveryInfo)
 	deliveryInfo: DeliveryInfo;
+
+	@Field(() => PaymentMethod, { nullable: true })
+	paymentMethod?: PaymentMethod;
+
+	@Field(() => PaymentStatus, { nullable: true })
+	paymentStatus?: PaymentStatus;
+
+	/** To'lov provayderiga yuboriladigan summa (paymentCurrency'da) */
+	@Field(() => Int, { nullable: true })
+	paymentAmount?: number;
+
+	@Field(() => String, { nullable: true })
+	paymentCurrency?: string;
+
+	@Field(() => Date, { nullable: true })
+	paidAt?: Date;
 
 	@Field(() => Date, { nullable: true })
 	confirmedAt?: Date;

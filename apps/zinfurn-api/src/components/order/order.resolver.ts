@@ -8,7 +8,7 @@ import { ObjectId } from 'mongoose';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 import { MemberType } from '../../libs/enums/member.enum';
 import { Order, Orders } from '../../libs/dto/order/order';
-import { CreateOrderInput, OrdersInquiry } from '../../libs/dto/order/order.input';
+import { ConfirmTossPaymentInput, CreateOrderInput, OrdersInquiry } from '../../libs/dto/order/order.input';
 import { OrderUpdate } from '../../libs/dto/order/order.update';
 import { OrderService } from './order.service';
 
@@ -23,6 +23,15 @@ export class OrderResolver {
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Order> {
 		return this.orderService.createOrder(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Order)
+	public async confirmTossPayment(
+		@Args('input') input: ConfirmTossPaymentInput,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Order> {
+		return this.orderService.confirmTossPayment(memberId, input);
 	}
 
 	@UseGuards(AuthGuard)

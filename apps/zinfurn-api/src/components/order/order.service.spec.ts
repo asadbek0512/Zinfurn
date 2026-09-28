@@ -4,6 +4,8 @@ import { OrderService } from './order.service';
 import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
+import { TossPaymentService } from './toss-payment.service';
+import { PaymentMethod, PaymentStatus } from '../../libs/enums/payment.enum';
 import { Order } from '../../libs/dto/order/order';
 import { CreateOrderInput } from '../../libs/dto/order/order.input';
 import { effectivePrice } from '../../libs/pricing';
@@ -29,13 +31,19 @@ describe('OrderService.createOrder', () => {
 		propertyIsOnSale: true,
 	};
 
-	const makeService = (properties: object[], discountAmount = 0) => {
+	const makeService = (properties: object[], discountAmount = 0, storedOrder: object | null = null) => {
 		const create = jest.fn(async (doc: object) => ({ _id: 'o1', ...doc }));
-		const orderModel = { create } as unknown as Model<Order>;
+		const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...storedOrder, ...update }) }));
+		const orderModel = {
+			create,
+			findOne: jest.fn(() => ({ lean: () => ({ exec: async () => storedOrder }) })),
+			findOneAndUpdate,
+		} as unknown as Model<Order>;
 		const propertyModel = {
 			find: jest.fn(() => ({ select: () => ({ lean: () => ({ exec: async () => properties }) }) })),
 		} as unknown as Model<unknown>;
 		const notify = { notifyCustomer: jest.fn(), notifyAdminNewOrder: jest.fn() };
+		const tossConfirm = jest.fn(async () => ({ status: 'DONE' }));
 		const redeemCoupon = jest.fn(async (couponCode: string) => ({ couponCode, discountAmount }));
 		const service = new OrderService(
 			orderModel,
@@ -43,10 +51,11 @@ describe('OrderService.createOrder', () => {
 			notify as unknown as TelegramNotifyService,
 			notify as unknown as MailNotifyService,
 			{ redeemCoupon } as unknown as CouponService,
+			{ confirm: tossConfirm } as unknown as TossPaymentService,
 		);
 		// auto-progression taymerlari testda ishga tushmasin
 		jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
-		return { service, create, redeemCoupon };
+		return { service, create, redeemCoupon, notify, tossConfirm, findOneAndUpdate };
 	};
 
 	const makeInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput =>
@@ -79,6 +88,47 @@ describe('OrderService.createOrder', () => {
 		const order = await service.createOrder(MEMBER_ID, makeInput({ couponCode: 'SALE' }));
 		expect(redeemCoupon).toHaveBeenCalledWith('SALE', 1080000);
 		expect(order.orderTotal).toBe(1030000);
+	});
+
+	describe('Toss', () => {
+		const KRW_PER_USD = 1350;
+		const unpaid = { _id: 'o1', orderId: 'ZIN-1', memberId: MEMBER_ID, orderTotal: 100, paymentMethod: PaymentMethod.TOSS, paymentStatus: PaymentStatus.UNPAID, paymentAmount: 100 * KRW_PER_USD };
+		const confirmInput = { paymentKey: 'pk_1', orderId: 'ZIN-1', amount: 100 * KRW_PER_USD };
+
+		it('Toss buyurtma UNPAID va KRW summasi bilan yaratiladi, xabar yuborilmaydi', async () => {
+			const { service, notify } = makeService([sofa, chair]);
+			const order = await service.createOrder(MEMBER_ID, makeInput({ paymentMethod: PaymentMethod.TOSS }));
+			expect(order).toMatchObject({ paymentStatus: PaymentStatus.UNPAID, paymentCurrency: 'KRW', paymentAmount: 1080000 * KRW_PER_USD });
+			expect(notify.notifyCustomer).not.toHaveBeenCalled();
+		});
+
+		it('summa buyurtmadagidan farq qilsa Toss\'ga so\'rov yuborilmaydi', async () => {
+			const { service, tossConfirm } = makeService([], 0, unpaid);
+			await expect(service.confirmTossPayment(MEMBER_ID, { ...confirmInput, amount: 100 })).rejects.toBeInstanceOf(BadRequestException);
+			expect(tossConfirm).not.toHaveBeenCalled();
+		});
+
+		it('to\'g\'ri summa — Toss tasdiqlaydi, buyurtma PAID bo\'ladi', async () => {
+			const { service, tossConfirm, findOneAndUpdate, notify } = makeService([], 0, unpaid);
+			const order = await service.confirmTossPayment(MEMBER_ID, confirmInput);
+			expect(tossConfirm).toHaveBeenCalledWith('pk_1', 'ZIN-1', 100 * KRW_PER_USD);
+			expect(findOneAndUpdate.mock.calls[0][0]).toMatchObject({ paymentStatus: PaymentStatus.UNPAID });
+			expect(order.paymentStatus).toBe(PaymentStatus.PAID);
+			expect(notify.notifyAdminNewOrder).toHaveBeenCalled();
+		});
+
+		it('allaqachon to\'langan buyurtma qayta tasdiqlanmaydi', async () => {
+			const paid = { ...unpaid, paymentStatus: PaymentStatus.PAID, paymentKey: 'pk_1' };
+			const { service, tossConfirm } = makeService([], 0, paid);
+			const order = await service.confirmTossPayment(MEMBER_ID, confirmInput);
+			expect(order.paymentStatus).toBe(PaymentStatus.PAID);
+			expect(tossConfirm).not.toHaveBeenCalled();
+		});
+
+		it('boshqa odamning buyurtmasi topilmaydi', async () => {
+			const { service } = makeService([], 0, null);
+			await expect(service.confirmTossPayment(MEMBER_ID, confirmInput)).rejects.toBeInstanceOf(BadRequestException);
+		});
 	});
 
 	describe('effectivePrice', () => {

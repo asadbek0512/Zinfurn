@@ -1,10 +1,14 @@
 import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { ArrayMaxSize, ArrayNotEmpty, IsIn, IsInt, IsNotEmpty, IsOptional, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, IsEnum, IsIn, IsInt, IsString, Length, IsNotEmpty, IsOptional, Max, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaymentMethod } from '../../enums/payment.enum';
 
 /** Bitta pozitsiya uchun maksimal miqdor va bitta buyurtmadagi maksimal pozitsiyalar */
 export const MAX_ITEM_QUANTITY = 99;
 export const MAX_ORDER_ITEMS = 50;
+/** Toss hujjatidagi maksimal uzunliklar */
+const TOSS_PAYMENT_KEY_MAX = 200;
+const TOSS_ORDER_ID_MAX = 64;
 import { ObjectId } from 'mongoose';
 import { OrderStatus } from '../../enums/order.enum';
 import { Direction } from '../../enums/common_enum';
@@ -44,9 +48,9 @@ export class DeliveryInfoInput {
 	@Field(() => String)
 	address: string;
 
-	@IsNotEmpty()
-	@Field(() => String)
-	city: string;
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	city?: string;
 
 	@IsNotEmpty()
 	@Field(() => String)
@@ -78,7 +82,30 @@ export class CreateOrderInput {
 	@Field(() => DeliveryInfoInput)
 	deliveryInfo: DeliveryInfoInput;
 
+	@IsOptional()
+	@IsEnum(PaymentMethod)
+	@Field(() => PaymentMethod, { nullable: true })
+	paymentMethod?: PaymentMethod;
+
 	memberId?: ObjectId;
+}
+
+@InputType()
+export class ConfirmTossPaymentInput {
+	@IsString()
+	@Length(1, TOSS_PAYMENT_KEY_MAX)
+	@Field(() => String)
+	paymentKey: string;
+
+	@IsString()
+	@Length(1, TOSS_ORDER_ID_MAX)
+	@Field(() => String)
+	orderId: string;
+
+	@IsInt()
+	@Min(1)
+	@Field(() => Int)
+	amount: number;
 }
 
 @InputType()

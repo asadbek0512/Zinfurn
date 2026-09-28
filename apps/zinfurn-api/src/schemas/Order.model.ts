@@ -1,5 +1,6 @@
 import { Schema } from 'mongoose';
 import { OrderStatus } from '../libs/enums/order.enum';
+import { PaymentMethod, PaymentStatus } from '../libs/enums/payment.enum';
 
 const OrderItemSchema = new Schema(
 	{
@@ -16,7 +17,7 @@ const DeliveryInfoSchema = new Schema(
 	{
 		fullName: { type: String, required: true },
 		address: { type: String, required: true },
-		city: { type: String, required: true },
+		city: { type: String },
 		phone: { type: String, required: true },
 		note: { type: String },
 	},
@@ -33,6 +34,12 @@ const OrderSchema = new Schema(
 		orderCouponCode: { type: String },
 		orderDiscount: { type: Number, default: 0 },
 		deliveryInfo: { type: DeliveryInfoSchema, required: true },
+		paymentMethod: { type: String, enum: PaymentMethod, default: PaymentMethod.CARD },
+		paymentStatus: { type: String, enum: PaymentStatus, default: PaymentStatus.PAID },
+		paymentAmount: { type: Number },
+		paymentCurrency: { type: String },
+		paymentKey: { type: String },
+		paidAt: { type: Date },
 		confirmedAt: { type: Date },
 		cancelledAt: { type: Date },
 		returnRequestedAt: { type: Date },
