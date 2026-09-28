@@ -11,6 +11,11 @@ import { lookupMember } from '../../libs/config';
 import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
+import { OrderItemInput } from '../../libs/dto/order/order.input';
+import { PropertyStatus } from '../../libs/enums/property.enum';
+import { PriceSource, effectivePrice } from '../../libs/pricing';
+
+type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
 
 @Injectable()
 export class OrderService {
@@ -25,6 +30,10 @@ export class OrderService {
 	public async createOrder(memberId: ObjectId, input: CreateOrderInput): Promise<Order> {
 		input.memberId = memberId;
 		const orderId = `ZIN-${Date.now()}`;
+
+		// Narx va summa FAQAT serverda hisoblanadi — client yuborgan price/total'ga ishonmaymiz
+		input.orderItems = await this.priceOrderItems(input.orderItems);
+		input.orderTotal = input.orderItems.reduce((sum, item) => sum + item.propertyPrice * item.quantity, 0);
 
 		// Kupon: server o'zi tekshiradi va chegirmani o'zi hisoblaydi (clientga ishonmaymiz)
 		let orderDiscount = 0;
@@ -51,6 +60,29 @@ export class OrderService {
 	}
 
 	// Demo: auto-progress order status for portfolio showcase
+	/** Har pozitsiyani DB'dagi mahsulot bo'yicha qayta narxlaydi; sotuvda bo'lmasa rad etadi */
+	private async priceOrderItems(items: OrderItemInput[]): Promise<OrderItemInput[]> {
+		const ids = items.map((item) => item.propertyId);
+		const properties = await this.propertyModel
+			.find({ _id: { $in: ids }, propertyStatus: PropertyStatus.ACTIVE })
+			.select('propertyTitle propertyImages propertyPrice propertySalePrice propertyIsOnSale propertySaleStartsAt propertySaleExpiresAt')
+			.lean<OrderableProperty[]>()
+			.exec();
+		const byId = new Map(properties.map((property) => [String(property._id), property]));
+
+		return items.map((item) => {
+			const property = byId.get(String(item.propertyId));
+			if (!property) throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
+			return {
+				propertyId: item.propertyId,
+				propertyTitle: property.propertyTitle,
+				propertyImage: property.propertyImages?.[0] ?? item.propertyImage,
+				propertyPrice: effectivePrice(property),
+				quantity: item.quantity,
+			};
+		});
+	}
+
 	private scheduleAutoProgression(orderId: ObjectId): void {
 		// Faqat kutilgan oldingi statusdan o'tkazadi — manual status (masalan erta
 		// DELIVERED/CONFIRMED yoki CANCELLED) taymer tomonidan ORQAGA qaytarilmaydi.

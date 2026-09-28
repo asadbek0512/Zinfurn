@@ -1,5 +1,10 @@
 import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, IsIn, IsInt, IsNotEmpty, IsOptional, Max, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+/** Bitta pozitsiya uchun maksimal miqdor va bitta buyurtmadagi maksimal pozitsiyalar */
+export const MAX_ITEM_QUANTITY = 99;
+export const MAX_ORDER_ITEMS = 50;
 import { ObjectId } from 'mongoose';
 import { OrderStatus } from '../../enums/order.enum';
 import { Direction } from '../../enums/common_enum';
@@ -22,7 +27,9 @@ export class OrderItemInput {
 	@Field(() => Float)
 	propertyPrice: number;
 
-	@IsNotEmpty()
+	@IsInt()
+	@Min(1)
+	@Max(MAX_ITEM_QUANTITY)
 	@Field(() => Int)
 	quantity: number;
 }
@@ -52,7 +59,10 @@ export class DeliveryInfoInput {
 
 @InputType()
 export class CreateOrderInput {
-	@IsNotEmpty()
+	@ArrayNotEmpty()
+	@ArrayMaxSize(MAX_ORDER_ITEMS)
+	@ValidateNested({ each: true })
+	@Type(() => OrderItemInput)
 	@Field(() => [OrderItemInput])
 	orderItems: OrderItemInput[];
 

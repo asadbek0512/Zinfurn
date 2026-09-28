@@ -8,6 +8,7 @@ export enum Message {
     REMOVE_FAILED = 'Remove failed!',
     UPLOAD_FAILED = 'Upload failed!',
     BAD_REQUEST = 'Bad Request',
+    PRODUCT_NOT_AVAILABLE = 'Some products in your cart are no longer available',
 
     USED_MEMBER_NICK_OR_PHONE = 'Already used member nick or phone!',
     NO_MEMBER_NICK = 'No member with that member nick!',
