@@ -46,7 +46,7 @@ const REPLY_MAX_MS = 20_000;
 const LINE_GAP_MIN_MS = 8_000;
 const LINE_GAP_MAX_MS = 25_000;
 /** Groq bepul limitini tejash: soatiga ko'pi bilan shuncha AI xabar */
-const MAX_AI_MESSAGES_PER_HOUR = 30;
+const MAX_AI_MESSAGES_PER_HOUR = 15;
 const HOUR_MS = 60 * 60_000;
 /** Model'ga beriladigan oxirgi xabarlar soni */
 const HISTORY_SIZE = 12;
