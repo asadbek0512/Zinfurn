@@ -12,6 +12,7 @@ export interface AiMember {
 export interface ChatLine {
 	text: string;
 	memberData: { _id?: unknown; memberNick?: string; isAi?: boolean } | null;
+	createdAt?: string;
 }
 
 export interface AiChatHooks {
@@ -39,6 +40,11 @@ const GROQ_TIMEOUT_MS = 20_000;
 /** Chat jim turganda yangi suhbat boshlanish oralig'i */
 const AMBIENT_MIN_MS = 3 * 60_000;
 const AMBIENT_MAX_MS = 10 * 60_000;
+/** Foydalanuvchi kirganda chat jim bo'lsa — suhbat tezroq boshlanadi */
+const KICKSTART_MIN_MS = 20_000;
+const KICKSTART_MAX_MS = 40_000;
+/** Oxirgi xabar shundan eski bo'lsa chat "jim" hisoblanadi */
+const IDLE_CHAT_MS = 5 * 60_000;
 /** Real foydalanuvchiga javob kechikishi (odamga o'xshab "yozayotgandek") */
 const REPLY_MIN_MS = 5_000;
 const REPLY_MAX_MS = 20_000;
@@ -120,6 +126,15 @@ export class AiChatBotService implements OnModuleDestroy {
 		if (this.ambientTimer) clearTimeout(this.ambientTimer);
 	}
 
+	/** Yangi foydalanuvchi ulanganda: chat jim bo'lsa, suhbatni tez boshlaymiz */
+	public onClientJoined(): void {
+		if (!this.hooks || this.busy) return;
+		const last = this.hooks.history().slice(-1)[0];
+		const lastAt = last?.createdAt ? new Date(last.createdAt).getTime() : 0;
+		if (Date.now() - lastAt < IDLE_CHAT_MS) return;
+		this.scheduleAmbient(randomBetween(KICKSTART_MIN_MS, KICKSTART_MAX_MS));
+	}
+
 	/** Real foydalanuvchi yozganda chaqiriladi */
 	public onUserMessage(text: string, memberNick: string): void {
 		if (!this.hooks || this.busy || !text.trim()) return;
@@ -129,11 +144,11 @@ export class AiChatBotService implements OnModuleDestroy {
 		});
 	}
 
-	private scheduleAmbient(): void {
+	private scheduleAmbient(delayMs = randomBetween(AMBIENT_MIN_MS, AMBIENT_MAX_MS)): void {
 		if (this.ambientTimer) clearTimeout(this.ambientTimer);
 		this.ambientTimer = setTimeout(() => {
 			void this.runAmbient().finally(() => this.scheduleAmbient());
-		}, randomBetween(AMBIENT_MIN_MS, AMBIENT_MAX_MS));
+		}, delayMs);
 	}
 
 	private async runAmbient(): Promise<void> {

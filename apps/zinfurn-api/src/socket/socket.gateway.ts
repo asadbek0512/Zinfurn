@@ -99,6 +99,7 @@ export class SocketGateway implements OnGatewayInit {
 		};
 		this.emitMessage(infoMsg);
 		client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+		this.aiChatBot.onClientJoined();
 
 		client.on('message', async (data: any) => {
 			try {
