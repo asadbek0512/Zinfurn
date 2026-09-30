@@ -122,18 +122,19 @@ const TOPICS = [
 	'dining table size for a family of four',
 ];
 
-const LANGUAGES = ['Uzbek (Latin script)', 'Uzbek (Latin script)', 'Russian', 'English'];
+/** Chat faqat ingliz tilida */
+const CHAT_LANGUAGE = 'English';
 
 const SYSTEM_RULES = `You write chat messages for the public chat of Zinfurn, a furniture marketplace.
 Write exactly like real people texting in a messenger:
-- very short and simple, usually 3-12 words; some replies are just 1-3 words ("ha rost", "zo'r 👍", "voy qayerdan?")
+- very short and simple, usually 3-12 words; some replies are just 1-3 words ("so true", "love it 👍", "wait where from?")
 - everyday spoken language, not written/formal; lowercase is fine, usually no period at the end
 - people react to each other: agree, disagree, joke, ask back, sometimes call each other by name
 - every message must make sense after the previous one; never repeat the same phrase twice
 - no lists, no advice-column tone, no technical specs, codes or measurements
 - emojis only sometimes, not in every message
 Also: no markdown, no links, no prices, no personal data, never claim to be human,
-stay on furniture, interior and home topics. Reply ONLY with JSON.`;
+stay on furniture, interior and home topics. Always write in English. Reply ONLY with JSON.`;
 
 const randomBetween = (min: number, max: number): number => min + Math.floor(Math.random() * (max - min));
 const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
@@ -199,7 +200,7 @@ export class AiChatBotService implements OnModuleDestroy {
 				.slice(0, randomBetween(MIN_TOPIC_PERSONAS, MAX_TOPIC_PERSONAS + 1));
 			const prompt = `Write a casual group chat of 3-${MAX_LINES_PER_TOPIC} messages between these people:
 ${people.map((p) => `- ${p.member.memberNick}: ${p.style}`).join('\n')}
-Topic: ${pick(TOPICS)}. Language: ${pick(LANGUAGES)}.
+Topic: ${pick(TOPICS)}. Language: ${CHAT_LANGUAGE}.
 Messages must answer each other. Set "replyTo" to the index (0-based) of the earlier message it answers, or null.
 Recent chat for context:
 ${this.formatHistory()}
@@ -218,7 +219,7 @@ JSON format: {"messages":[{"persona":"<name>","text":"<message>","replyTo":<inde
 		await sleep(randomBetween(REPLY_MIN_MS, REPLY_MAX_MS));
 		const personaList = PERSONAS.map((p) => `- ${p.member.memberNick}: ${p.style}`).join('\n');
 		const prompt = `A real user "${memberNick}" wrote in the chat. Pick the ONE most suitable persona to answer helpfully,
-in the same language the user wrote in. If the user asks whether you are a bot, answer honestly that you are an AI assistant.
+in ${CHAT_LANGUAGE} only (even if the user writes in another language). If the user asks whether you are a bot, answer honestly that you are an AI assistant.
 Personas:
 ${personaList}
 Recent chat:
