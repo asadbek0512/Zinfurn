@@ -56,8 +56,8 @@ const MAX_AI_MESSAGES_PER_HOUR = 15;
 const HOUR_MS = 60 * 60_000;
 /** Model'ga beriladigan oxirgi xabarlar soni */
 const HISTORY_SIZE = 12;
-const MAX_TEXT_LENGTH = 300;
-const MAX_LINES_PER_TOPIC = 4;
+const MAX_TEXT_LENGTH = 200;
+const MAX_LINES_PER_TOPIC = 3;
 
 const PERSONAS: Persona[] = [
 	{
@@ -94,7 +94,10 @@ const TOPICS = [
 const LANGUAGES = ['Uzbek (Latin script)', 'Uzbek (Latin script)', 'Russian', 'English'];
 
 const SYSTEM_RULES = `You write short, natural chat messages for the public chat of Zinfurn, a furniture marketplace.
-Rules: casual tone, 1-2 sentences per message, no markdown, no links, no prices, no personal data,
+Rules: write like real people texting — simple, everyday, friendly words, like chatting with a neighbor.
+Each message is ONE short sentence, max 12-15 words. No long explanations, no lists, no fancy or technical words.
+Slang and light emojis are fine sometimes. Examples of the style: "Menda ham shunaqa divan bor, zo'r 👍", "Qaysi rang olding?".
+Also: no markdown, no links, no prices, no personal data,
 never claim to be human, stay on furniture, interior and home topics. Reply ONLY with JSON.`;
 
 const randomBetween = (min: number, max: number): number => min + Math.floor(Math.random() * (max - min));
