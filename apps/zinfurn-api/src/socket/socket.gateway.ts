@@ -6,11 +6,15 @@ import { AuthService } from '../components/auth/auth.service';
 import { Member } from '../libs/dto/member/member';
 import * as url from 'url';
 import { NotificationService } from '../components/notification/notification.service';
+import { AiChatBotService, AiMember } from './ai-chat-bot.service';
+
+/** Xotirada saqlanadigan oxirgi chat xabarlari soni */
+const MAX_CHAT_HISTORY = 50;
 
 interface MessagePayload {
 	event: string;
 	text: string;
-	memberData: Member | null;
+	memberData: Member | AiMember | null;
 	replyTo?: {
 		text: string;
 		memberNick: string;
@@ -46,6 +50,7 @@ export class SocketGateway implements OnGatewayInit {
 		private authService: AuthService,
 		@Inject(forwardRef(() => NotificationService))
 		private notificationService: NotificationService,
+		private aiChatBot: AiChatBotService,
 	) {}
 
 	@WebSocketServer()
@@ -53,6 +58,18 @@ export class SocketGateway implements OnGatewayInit {
 
 	public afterInit(server: Server) {
 		this.logger.verbose(`WebSocket Server Initialized total: [${this.summaryClient}]`);
+		this.aiChatBot.start({
+			emit: (member, text, replyTo) =>
+				this.pushMessage({ event: 'message', text, memberData: member, replyTo, createdAt: new Date().toISOString() }),
+			history: () => this.messagesList,
+			onlineCount: () => this.summaryClient,
+		});
+	}
+
+	private pushMessage(message: MessagePayload): void {
+		this.messagesList.push(message);
+		if (this.messagesList.length > MAX_CHAT_HISTORY) this.messagesList = this.messagesList.slice(-MAX_CHAT_HISTORY);
+		this.emitMessage(message);
 	}
 
 	private async retrieveAuth(req: any): Promise<Member | null> {
@@ -106,10 +123,8 @@ export class SocketGateway implements OnGatewayInit {
 						createdAt: new Date().toISOString(),
 					};
 
-					this.messagesList.push(newMessage);
-					if (this.messagesList.length > 50) this.messagesList = this.messagesList.slice(-50);
-
-					this.emitMessage(newMessage);
+					this.pushMessage(newMessage);
+					this.aiChatBot.onUserMessage(String(messageText), authMember?.memberNick ?? 'Guest');
 				} else if (parsed.event === 'getMessages') {
 					client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
 				} else if (parsed.event === 'get_notifications') {
