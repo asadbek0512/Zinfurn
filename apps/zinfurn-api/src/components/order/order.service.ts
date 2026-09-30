@@ -13,19 +13,26 @@ import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
 import { ConfirmTossPaymentInput, OrderItemInput } from '../../libs/dto/order/order.input';
 import { PaymentMethod, PaymentStatus } from '../../libs/enums/payment.enum';
-import { TossPaymentService } from './toss-payment.service';
+import { TOSS_DONE_STATUS, TossPaymentService } from './toss-payment.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { PriceSource, effectivePrice } from '../../libs/pricing';
 
 /** Narxlar USD'da saqlanadi; Toss faqat KRW qabul qiladi */
 const TOSS_CURRENCY = 'KRW';
 const DEFAULT_KRW_PER_USD = 1350;
+/** Shu vaqtdan keyin to'lanmagan Toss buyurtmasi bekor qilinadi */
+const TOSS_UNPAID_TTL_MS = 30 * 60 * 1000;
+/** Bitta cron ishga tushishida ko'rib chiqiladigan buyurtmalar soni */
+const TOSS_EXPIRE_BATCH = 100;
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
 type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
 
 @Injectable()
 export class OrderService {
+	private readonly logger = new Logger(OrderService.name);
+
 	constructor(
 		@InjectModel('Order') private readonly orderModel: Model<Order>,
 		@InjectModel('Property') private readonly propertyModel: Model<any>,
@@ -94,20 +101,61 @@ export class OrderService {
 
 		await this.tossPayment.confirm(paymentKey, orderId, amount);
 
-		const paid = await this.orderModel
-			.findOneAndUpdate(
-				{ _id: order._id, paymentStatus: PaymentStatus.UNPAID },
-				{ paymentStatus: PaymentStatus.PAID, paymentKey, paidAt: new Date() },
-				{ new: true },
-			)
-			.exec();
+		const paid = await this.markTossPaid(order._id as ObjectId, paymentKey);
 		// Parallel so'rov allaqachon PAID qilgan bo'lsa — o'sha holatni qaytaramiz
 		if (!paid) {
 			const current = await this.orderModel.findById(order._id).exec();
 			if (!current) throw new BadRequestException(Message.NO_DATA_FOUND);
 			return current;
 		}
-		this.onOrderPaid(paid);
+		return paid;
+	}
+
+	/**
+	 * Eski UNPAID Toss buyurtmalari: avval Toss'dan holatini so'raymiz (tab yopilib confirm
+	 * chaqirilmagan bo'lsa ham pul yechilgan bo'lishi mumkin), aks holda bekor qilib kuponni qaytaramiz.
+	 */
+	@Cron(CronExpression.EVERY_5_MINUTES)
+	public async expireUnpaidTossOrders(): Promise<void> {
+		const cutoff = new Date(Date.now() - TOSS_UNPAID_TTL_MS);
+		const stale = await this.orderModel
+			.find({
+				paymentMethod: PaymentMethod.TOSS,
+				paymentStatus: PaymentStatus.UNPAID,
+				orderStatus: { $ne: OrderStatus.CANCELLED },
+				createdAt: { $lt: cutoff },
+			})
+			.limit(TOSS_EXPIRE_BATCH)
+			.lean<Order[]>()
+			.exec();
+
+		for (const order of stale) {
+			const toss = await this.tossPayment.findByOrderId(order.orderId);
+			if (toss?.status === TOSS_DONE_STATUS && toss.totalAmount === order.paymentAmount) {
+				await this.markTossPaid(order._id as ObjectId, toss.paymentKey);
+				this.logger.log(`Toss order reconciled as paid: ${order.orderId}`);
+				continue;
+			}
+			const cancelled = await this.orderModel
+				.findOneAndUpdate(
+					{ _id: order._id, paymentStatus: PaymentStatus.UNPAID, orderStatus: { $ne: OrderStatus.CANCELLED } },
+					{ orderStatus: OrderStatus.CANCELLED },
+				)
+				.exec();
+			if (cancelled?.orderCouponCode) await this.couponService.releaseCoupon(cancelled.orderCouponCode);
+		}
+	}
+
+	/** UNPAID → PAID atomar o'tkazish; faqat birinchi muvaffaqiyatli chaqiruv onOrderPaid'ni ishga tushiradi */
+	private async markTossPaid(id: ObjectId, paymentKey: string): Promise<Order | null> {
+		const paid = await this.orderModel
+			.findOneAndUpdate(
+				{ _id: id, paymentStatus: PaymentStatus.UNPAID },
+				{ paymentStatus: PaymentStatus.PAID, paymentKey, paidAt: new Date() },
+				{ new: true },
+			)
+			.exec();
+		if (paid) this.onOrderPaid(paid);
 		return paid;
 	}
 

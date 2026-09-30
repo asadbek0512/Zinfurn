@@ -1,3 +1,4 @@
+import { OrderStatus } from '../../libs/enums/order.enum';
 import { BadRequestException } from '@nestjs/common';
 import { Model, ObjectId } from 'mongoose';
 import { OrderService } from './order.service';
@@ -128,6 +129,52 @@ describe('OrderService.createOrder', () => {
 		it('boshqa odamning buyurtmasi topilmaydi', async () => {
 			const { service } = makeService([], 0, null);
 			await expect(service.confirmTossPayment(MEMBER_ID, confirmInput)).rejects.toBeInstanceOf(BadRequestException);
+		});
+	});
+
+	describe('expireUnpaidTossOrders', () => {
+		const stale = { _id: 'o9', orderId: 'ZIN-9', memberId: MEMBER_ID, orderTotal: 10, paymentAmount: 13500, orderCouponCode: 'SALE10' };
+
+		const makeExpiry = (tossResult: object | null) => {
+			const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...stale, ...update }) }));
+			const orderModel = {
+				find: jest.fn(() => ({ limit: () => ({ lean: () => ({ exec: async () => [stale] }) }) })),
+				findOneAndUpdate,
+			} as unknown as Model<Order>;
+			const notify = { notifyCustomer: jest.fn(), notifyAdminNewOrder: jest.fn() };
+			const releaseCoupon = jest.fn(async () => undefined);
+			const service = new OrderService(
+				orderModel,
+				{} as Model<unknown>,
+				notify as unknown as TelegramNotifyService,
+				notify as unknown as MailNotifyService,
+				{ releaseCoupon } as unknown as CouponService,
+				{ findByOrderId: jest.fn(async () => tossResult) } as unknown as TossPaymentService,
+			);
+			jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
+			return { service, findOneAndUpdate, releaseCoupon, notify };
+		};
+
+		it("Toss'da to'lov yo'q — bekor qilinadi va kupon qaytariladi", async () => {
+			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry(null);
+			await service.expireUnpaidTossOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.CANCELLED });
+			expect(releaseCoupon).toHaveBeenCalledWith('SALE10');
+			expect(notify.notifyAdminNewOrder).not.toHaveBeenCalled();
+		});
+
+		it("Toss'da DONE — PAID qilinadi, bekor qilinmaydi", async () => {
+			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry({ status: 'DONE', totalAmount: 13500, paymentKey: 'pk_9' });
+			await service.expireUnpaidTossOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ paymentStatus: PaymentStatus.PAID, paymentKey: 'pk_9' });
+			expect(releaseCoupon).not.toHaveBeenCalled();
+			expect(notify.notifyAdminNewOrder).toHaveBeenCalled();
+		});
+
+		it("Toss summasi mos kelmasa — PAID qilinmaydi", async () => {
+			const { service, findOneAndUpdate } = makeExpiry({ status: 'DONE', totalAmount: 1, paymentKey: 'pk_9' });
+			await service.expireUnpaidTossOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.CANCELLED });
 		});
 	});
 

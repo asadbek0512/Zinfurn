@@ -105,4 +105,4 @@ See `.env.example`. Key variables:
 
 ## Deployment
 
-VPS: Docker container behind Nginx with SSL. Port 3007. Deployed via `deploy.sh` or GitHub Actions SSH deploy.
+VPS: Docker container behind Nginx with SSL. Port 3007. Deploy = push to `main`; a server cron on 2-server pulls and rebuilds. Env: `.env` on the server (`TOSS_SECRET_KEY`, `KRW_PER_USD`).

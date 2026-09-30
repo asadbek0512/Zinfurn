@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Message } from '../../libs/enums/common_enum';
 
-const TOSS_CONFIRM_URL = 'https://api.tosspayments.com/v1/payments/confirm';
-const TOSS_DONE_STATUS = 'DONE';
+const TOSS_API_URL = 'https://api.tosspayments.com/v1/payments';
+const TOSS_CONFIRM_URL = `${TOSS_API_URL}/confirm`;
+export const TOSS_DONE_STATUS = 'DONE';
 /** Toss tasdiqlash so'rovi uchun kutish chegarasi */
 const TOSS_TIMEOUT_MS = 10000;
 
@@ -26,6 +27,26 @@ interface TossErrorBody {
 export class TossPaymentService {
 	private readonly logger = new Logger(TossPaymentService.name);
 
+	/**
+	 * orderId bo'yicha Toss'dagi to'lov holatini oladi (reconciliation uchun).
+	 * To'lov yo'q yoki xato bo'lsa null qaytaradi.
+	 */
+	public async findByOrderId(orderId: string): Promise<TossConfirmResult | null> {
+		const secretKey = process.env.TOSS_SECRET_KEY;
+		if (!secretKey) return null;
+		try {
+			const response = await fetch(`${TOSS_API_URL}/orders/${encodeURIComponent(orderId)}`, {
+				headers: { Authorization: this.authHeader(secretKey) },
+				signal: AbortSignal.timeout(TOSS_TIMEOUT_MS),
+			});
+			if (!response.ok) return null;
+			return (await response.json()) as TossConfirmResult;
+		} catch (err) {
+			this.logger.warn(`Toss lookup failed for ${orderId}: ${(err as Error).message}`);
+			return null;
+		}
+	}
+
 	public async confirm(paymentKey: string, orderId: string, amount: number): Promise<TossConfirmResult> {
 		const secretKey = process.env.TOSS_SECRET_KEY;
 		if (!secretKey) {
@@ -36,7 +57,7 @@ export class TossPaymentService {
 		const response = await fetch(TOSS_CONFIRM_URL, {
 			method: 'POST',
 			headers: {
-				Authorization: `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
+				Authorization: this.authHeader(secretKey),
 				'Content-Type': 'application/json',
 				// Bir xil orderId qayta yuborilsa Toss ikkinchi marta yechmaydi
 				'Idempotency-Key': orderId,
@@ -58,5 +79,9 @@ export class TossPaymentService {
 			throw new BadRequestException(Message.PAYMENT_FAILED);
 		}
 		return result;
+	}
+
+	private authHeader(secretKey: string): string {
+		return `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`;
 	}
 }

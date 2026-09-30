@@ -66,6 +66,11 @@ export class CouponService {
 		return { discountAmount: check.discountAmount, couponCode: check.couponCode as string };
 	}
 
+	/** Bekor qilingan buyurtmaning kuponini qaytaradi (usedCount--, 0 dan pastga tushmaydi) */
+	public async releaseCoupon(code: string): Promise<void> {
+		await this.couponModel.updateOne({ couponCode: code, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } }).exec();
+	}
+
 	private calcDiscount(coupon: Coupon, orderTotal: number): number {
 		if (coupon.couponType === CouponType.PERCENT) {
 			return Math.round((orderTotal * Math.min(coupon.couponValue, 100)) / 100);
