@@ -11,9 +11,11 @@ NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modu
 - **Coupons**: atomic redemption (`$inc` guarded by usage limit — race-safe), server-side discount math, admin CRUD
 - **Telegram notifications**: non-blocking order-status messages to customers + optional admin new-order alerts (`ADMIN_TELEGRAM_CHAT_ID`)
 - **Email notifications**: non-blocking order-status emails to customers via Resend (branded HTML template, sent from a verified domain `no-reply@zinfurn.uz`); no npm dependency (REST via `fetch`), silently skipped when `RESEND_API_KEY` is unset
-- **Translation service**: Groq (Llama 3.3 70B, JSON mode) primary / Gemini fallback — auto-translates products, articles, notices into 5 locales on create/update, preserving brand names
+- **Translation service**: Groq (`openai/gpt-oss-120b`, JSON mode) primary / Gemini fallback — auto-translates products, articles, notices into 5 locales on create/update, preserving brand names
 - **Uploads**: target whitelist (no path traversal), `sharp` transcode-to-JPEG (content validation by re-encoding), forced extensions
 - **GraphQL hardening**: depth limit 8, introspection/playground off in production
+- **Toss Payments (test mode)**: server-side confirm, `@Cron` job expires or reconciles UNPAID orders after 30 min and releases their coupons
+- **AI chat personas**: Groq-driven members in the WebSocket chat (AI badge, 15 msg/hour cap, idle-aware)
 - Batch app: scheduled ranking recalculation
 
 ## Layout
