@@ -5,7 +5,7 @@ import { Member, Members } from '../../libs/dto/member/member';
 import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry, TechnicianInquiry } from '../../libs/dto/member/member.input';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Direction, Message } from '../../libs/enums/common_enum';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, SessionClient } from '../auth/auth.service';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
@@ -29,11 +29,11 @@ export class MemberService {
         private likeService: LikeService,
     ) { }
 
-    public async signup(input: MemberInput): Promise<Member> {
+    public async signup(input: MemberInput, client: SessionClient = 'web'): Promise<Member> {
         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {
             const result = await this.memberModel.create(input);
-            const pair = await this.authService.createTokenPair(result);
+            const pair = await this.authService.createTokenPair(result, undefined, client);
             result.accessToken = pair.token;
             result.refreshToken = pair.refresh;
             return result;
@@ -43,7 +43,7 @@ export class MemberService {
         }
     }
 
-    public async login(input: LoginInput): Promise<Member> {
+    public async login(input: LoginInput, client: SessionClient = 'web'): Promise<Member> {
         const { memberNick, memberPassword,memberEmail  } = input;
         const response: Member | null = await this.memberModel
         .findOne({
@@ -63,7 +63,7 @@ export class MemberService {
 
         const isMatch = await this.authService.comparePasswords(input.memberPassword, response.memberPassword || '') /// ??????
         if (!isMatch) throw new InternalServerErrorException(Message.WRONG_PASSWORD);
-        const pair = await this.authService.createTokenPair(response);
+        const pair = await this.authService.createTokenPair(response, undefined, client);
         response.accessToken = pair.token;
         response.refreshToken = pair.refresh;
 
@@ -89,7 +89,17 @@ export class MemberService {
         return member;
     }
 
-    public async updateMember(memberId: ObjectId, input: MemberUpdate, sessionStartedAt?: number): Promise<Member> {
+    public async updateMember(
+        memberId: ObjectId,
+        input: MemberUpdate,
+        sessionStartedAt?: number,
+        client: SessionClient = 'web',
+    ): Promise<Member> {
+        if (input.memberPassword) {
+            input.memberPassword = await this.authService.hashPassword(input.memberPassword);
+            // Parol almashdi — boshqa qurilmalardagi app sessiyalari bekor
+            await this.authService.revokeAllSessions(String(memberId));
+        }
         const result: Member | null = await this.memberModel   /// ??? | null qoyib ketildi
             .findOneAndUpdate(
                 {
@@ -102,7 +112,7 @@ export class MemberService {
             .exec()
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
-        const pair = await this.authService.createTokenPair(result, sessionStartedAt);
+        const pair = await this.authService.createTokenPair(result, sessionStartedAt, client);
         result.accessToken = pair.token;
         result.refreshToken = pair.refresh;
         return result;

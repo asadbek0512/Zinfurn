@@ -13,6 +13,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes, validModelMimeTypes, GLB_MAGIC, MAX_MODEL_BYTES } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
+import { clientFromRequest } from '../auth/auth.service';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { createWriteStream, mkdirSync, openSync, readSync, closeSync, statSync, unlinkSync } from 'fs';
 // sharp 0.35 CJS eksporti — callable funksiya (module.exports = sharp).
@@ -30,7 +31,7 @@ export class MemberResolver {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Mutation(() => Member)
     public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
-        const member = await this.memberService.signup(input);
+        const member = await this.memberService.signup(input, clientFromRequest(ctx.req));
         this.setAuthCookie(ctx.res, member.accessToken as string);
         return member;
     }
@@ -38,7 +39,7 @@ export class MemberResolver {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Mutation(() => Member)
     public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
-        const member = await this.memberService.login(input);
+        const member = await this.memberService.login(input, clientFromRequest(ctx.req));
         this.setAuthCookie(ctx.res, member.accessToken as string);
         return member;
     }
@@ -89,7 +90,7 @@ export class MemberResolver {
         delete input._id;
         // Profil yangilanishi yangi token beradi, lekin sessiya boshlanish vaqti (sid) saqlanadi —
         // aks holda profilni tahrirlash sessiya muddatini cheksiz uzaytirardi.
-        return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid);
+        return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid, (authMember as any).client);
     }
 
     @UseGuards(WithoutGuard)

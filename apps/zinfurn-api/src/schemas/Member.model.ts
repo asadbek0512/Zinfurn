@@ -44,6 +44,13 @@ const MemberSchema = new Schema(
 			required: false,
 		},
 
+		/** Faol app sessiyalari: har biri joriy refresh `jti` bilan (bir martalik rotation). */
+		memberSessions: {
+			type: [{ _id: false, sid: Number, jti: String, prevJti: String, rotatedAt: Date, expiresAt: Date }],
+			select: false,
+			default: [],
+		},
+
 		memberFullName: {
 			type: String,
 		},

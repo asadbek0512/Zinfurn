@@ -2,18 +2,35 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { Member } from '../../libs/dto/member/member';
 import { T } from '../../libs/types/common';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 import { MemberAuthType, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 
-/** Sessiyaning MUTLAQ umri — login paytidan boshlab. Refresh rotation buni uzaytira olmaydi. */
+/** Web sessiyaning MUTLAQ umri — login paytidan boshlab. Refresh rotation buni uzaytira olmaydi. */
 const SESSION_MAX_AGE_SEC = Number(process.env.SESSION_MAX_AGE_SEC) || 10 * 60 * 60; // 10 soat
 /** Access token umri — sessiya qoldig'idan oshmaydi. */
 const ACCESS_TOKEN_TTL_SEC = Number(process.env.ACCESS_TOKEN_TTL_SEC) || 60 * 60; // 1 soat
+/** App sessiyasi sirpanuvchi: har refresh'da shuncha muddatga uzayadi (ishlatilmasa tugaydi). */
+const APP_SESSION_IDLE_SEC = Number(process.env.APP_SESSION_IDLE_SEC) || 30 * 24 * 60 * 60; // 30 kun
+/** App sessiyasining mutlaq chegarasi — faol ishlatilsa ham shundan keyin qayta login. */
+const APP_SESSION_MAX_AGE_SEC = Number(process.env.APP_SESSION_MAX_AGE_SEC) || 90 * 24 * 60 * 60; // 90 kun
+/** Bitta member uchun saqlanadigan app sessiyalar (qurilmalar) soni. */
+const MAX_APP_SESSIONS = 10;
+/** Rotation javobi yetib bormasa (tarmoq/parallel so'rov) — oldingi refresh shuncha vaqt qabul qilinadi. */
+const REFRESH_REUSE_GRACE_SEC = 60;
+/** Capacitor app WebView User-Agent'iga qo'shadigan belgi (zinfurn-app/capacitor.config.ts). */
+const APP_UA_TAG = 'ZinfurnApp/';
+
+export type SessionClient = 'web' | 'app';
 
 const nowSec = (): number => Math.floor(Date.now() / 1000);
+
+/** So'rov mobil app'dan kelganmi — WebView User-Agent orqali. */
+export const clientFromRequest = (req: any): SessionClient =>
+	String(req?.headers?.['user-agent'] ?? '').includes(APP_UA_TAG) ? 'app' : 'web';
 
 @Injectable()
 export class AuthService {
@@ -22,9 +39,18 @@ export class AuthService {
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 	) {}
 
-	/** Sessiya tugashiga qolgan sekundlar. 0 yoki manfiy — sessiya o'lgan. */
-	private sessionRemaining(sessionStartedAt: number): number {
-		return sessionStartedAt + SESSION_MAX_AGE_SEC - nowSec();
+	/** Mutlaq chegara: web — login + 10 soat, app — login + 90 kun. */
+	private sessionHardLimit(sessionStartedAt: number, client: SessionClient): number {
+		return sessionStartedAt + (client === 'app' ? APP_SESSION_MAX_AGE_SEC : SESSION_MAX_AGE_SEC);
+	}
+
+	/**
+	 * Sessiya tugashiga qolgan sekundlar. 0 yoki manfiy — sessiya o'lgan.
+	 * App uchun hozirdan 30 kun (idle), lekin mutlaq chegaradan oshmaydi.
+	 */
+	private sessionRemaining(sessionStartedAt: number, client: SessionClient = 'web'): number {
+		const hardLeft = this.sessionHardLimit(sessionStartedAt, client) - nowSec();
+		return client === 'app' ? Math.min(APP_SESSION_IDLE_SEC, hardLeft) : hardLeft;
 	}
 
 	public async hashPassword(memberPassword: string): Promise<string> {
@@ -40,10 +66,10 @@ export class AuthService {
 	 * Access token. `sessionStartedAt` berilmasa — yangi sessiya boshlanadi.
 	 * Muddati sessiya qoldig'idan oshmaydi: sessiya tugagach access ham darrov o'ladi.
 	 */
-	public async createToken(member: Member, sessionStartedAt?: number): Promise<string> {
+	public async createToken(member: Member, sessionStartedAt?: number, client: SessionClient = 'web'): Promise<string> {
 		const doc = member['_doc'] ? member['_doc'] : member;
 		const sid = sessionStartedAt ?? nowSec();
-		const remaining = this.sessionRemaining(sid);
+		const remaining = this.sessionRemaining(sid, client);
 		if (remaining <= 0) throw new Error('Session expired');
 
 		const payload: T = {
@@ -67,7 +93,8 @@ export class AuthService {
 		};
 		payload.tokenType = 'access';
 		payload.sid = sid;
-		payload.sessionExpiresAt = sid + SESSION_MAX_AGE_SEC;
+		payload.client = client;
+		payload.sessionExpiresAt = nowSec() + remaining;
 
 		return await this.jwtService.signAsync(payload, {
 			expiresIn: Math.min(ACCESS_TOKEN_TTL_SEC, remaining),
@@ -76,28 +103,57 @@ export class AuthService {
 
 	/**
 	 * Refresh token — minimal payload. Access sifatida ishlatib BO'LMAYDI (verifyToken rad etadi).
-	 * Muddati sessiya qoldig'iga teng, shuning uchun rotation sessiyani uzaytira olmaydi.
+	 * Web: muddati sessiya qoldig'iga teng (rotation uzaytira olmaydi).
+	 * App: har rotation'da 30 kunga uzayadi, `jti` bazadagi sessiya bilan solishtiriladi (bir martalik).
 	 */
-	public async createRefreshToken(member: Member, sessionStartedAt?: number): Promise<string> {
+	public async createRefreshToken(
+		member: Member,
+		sessionStartedAt?: number,
+		client: SessionClient = 'web',
+		jti?: string,
+	): Promise<string> {
 		const doc = member['_doc'] ? member['_doc'] : member;
 		const sid = sessionStartedAt ?? nowSec();
-		const remaining = this.sessionRemaining(sid);
+		const remaining = this.sessionRemaining(sid, client);
 		if (remaining <= 0) throw new Error('Session expired');
 
-		return await this.jwtService.signAsync(
-			{ _id: doc._id, tokenType: 'refresh', sid },
-			{ expiresIn: remaining },
-		);
+		const payload: T = { _id: doc._id, tokenType: 'refresh', sid, client };
+		if (jti) payload.jti = jti;
+		return await this.jwtService.signAsync(payload, { expiresIn: remaining });
 	}
 
 	/**
 	 * Access + refresh juftligi — login/signup/OAuth/linking hammasi shu orqali.
 	 * `sessionStartedAt` berilsa mavjud sessiya davom etadi, aks holda yangisi boshlanadi.
+	 * App sessiyasi bazaga (memberSessions) yoziladi — joriy refresh `jti` si bilan.
+	 * `prevJti` — rotation'da almashtirilgan token (qisqa grace uchun saqlanadi).
 	 */
-	public async createTokenPair(member: Member, sessionStartedAt?: number): Promise<{ token: string; refresh: string }> {
+	public async createTokenPair(
+		member: Member,
+		sessionStartedAt?: number,
+		client: SessionClient = 'web',
+		prevJti?: string,
+	): Promise<{ token: string; refresh: string }> {
 		const sid = sessionStartedAt ?? nowSec();
-		const token = await this.createToken(member, sid);
-		const refresh = await this.createRefreshToken(member, sid);
+		const token = await this.createToken(member, sid, client);
+		if (client !== 'app') {
+			return { token, refresh: await this.createRefreshToken(member, sid, client) };
+		}
+
+		const doc = member['_doc'] ? member['_doc'] : member;
+		const jti = randomUUID();
+		const expiresAt = new Date((nowSec() + this.sessionRemaining(sid, client)) * 1000);
+		// Shu sessiyaning eski yozuvi va muddati o'tganlar tozalanadi, keyin joriy jti yoziladi
+		await this.memberModel
+			.updateOne({ _id: doc._id }, { $pull: { memberSessions: { $or: [{ sid }, { expiresAt: { $lt: new Date() } }] } } } as T)
+			.exec();
+		await this.memberModel
+			.updateOne(
+				{ _id: doc._id },
+				{ $push: { memberSessions: { $each: [{ sid, jti, prevJti, rotatedAt: new Date(), expiresAt }], $slice: -MAX_APP_SESSIONS } } } as T,
+			)
+			.exec();
+		const refresh = await this.createRefreshToken(member, sid, client, jti);
 		return { token, refresh };
 	}
 
@@ -119,25 +175,74 @@ export class AuthService {
 		}
 		if (payload?.tokenType !== 'refresh') throw new Error('Invalid refresh token');
 
-		// Sessiyaning mutlaq umri: rotation yangi refresh bersa ham `sid` o'zgarmaydi,
-		// shuning uchun login paytidan SESSION_MAX_AGE_SEC o'tgach sessiya butunlay tugaydi.
+		// `sid` rotation'da o'zgarmaydi — mutlaq chegara (web 10 soat, app 90 kun) shundan hisoblanadi.
 		const sid: number = typeof payload.sid === 'number' ? payload.sid : 0;
-		if (this.sessionRemaining(sid) <= 0) throw new Error('Session expired');
+		const client: SessionClient = payload.client === 'app' ? 'app' : 'web';
+		if (this.sessionRemaining(sid, client) <= 0) throw new Error('Session expired');
 
-		const member = await this.memberModel.findById(ShapeIntoMongoObjectId(payload._id)).exec();
+		const memberId = ShapeIntoMongoObjectId(payload._id);
+		if (client === 'app') {
+			// Bir martalik: joriy jti (yoki grace ichida oldingisi) qabul qilinadi.
+			// Logout/parol almashsa sessiya o'chgan bo'ladi.
+			const graceFrom = new Date((nowSec() - REFRESH_REUSE_GRACE_SEC) * 1000);
+			const current = await this.memberModel
+				.exists({
+					_id: memberId,
+					memberSessions: {
+						$elemMatch: {
+							sid,
+							$or: [{ jti: payload.jti }, { prevJti: payload.jti, rotatedAt: { $gt: graceFrom } }],
+						},
+					},
+				} as T)
+				.exec();
+			if (!current) {
+				// Eski (allaqachon ishlatilgan) token qayta kelsa — o'g'irlangan bo'lishi mumkin, sessiyani yopamiz
+				await this.revokeSession(payload._id, sid);
+				throw new Error('Session revoked');
+			}
+		}
+
+		const member = await this.memberModel.findById(memberId).exec();
 		if (!member || member.memberStatus !== MemberStatus.ACTIVE) throw new Error('Member is not active');
 
-		const pair = await this.createTokenPair(member, sid);
+		const pair = await this.createTokenPair(member, sid, client, payload.jti);
 		return { member, ...pair };
 	}
 
-	public async googleLogin(googleUser: any): Promise<{ token: string; refresh: string }> {
+	/** Bitta app sessiyasini o'chirish (logout). */
+	private async revokeSession(memberId: string, sid: number): Promise<void> {
+		await this.memberModel
+			.updateOne({ _id: ShapeIntoMongoObjectId(memberId) }, { $pull: { memberSessions: { sid } } } as T)
+			.exec();
+	}
+
+	/** Logout: refresh token egasining shu sessiyasini bekor qiladi (muddati o'tgan token ham qabul). */
+	public async logoutSession(refreshToken: string): Promise<void> {
+		let payload: T;
+		try {
+			payload = await this.jwtService.verifyAsync(refreshToken, { ignoreExpiration: true });
+		} catch {
+			return;
+		}
+		if (payload?.tokenType !== 'refresh' || typeof payload.sid !== 'number') return;
+		await this.revokeSession(payload._id, payload.sid);
+	}
+
+	/** Parol almashganda barcha app sessiyalarini bekor qilish. */
+	public async revokeAllSessions(memberId: string): Promise<void> {
+		await this.memberModel
+			.updateOne({ _id: ShapeIntoMongoObjectId(memberId) }, { $set: { memberSessions: [] } } as T)
+			.exec();
+	}
+
+	public async googleLogin(googleUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
 		const { email, firstName, lastName, picture, sub } = googleUser;
 
 		// 1. Google ID bilan qidir
 		let member = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
 		if (member) {
-			return await this.createTokenPair(member);
+			return await this.createTokenPair(member, undefined, client);
 		}
 
 		// 2. Email bilan qidir — Telegram bilan kirgan user bo'lishi mumkin
@@ -148,7 +253,7 @@ export class AuthService {
 					.findOneAndUpdate({ _id: member._id }, { memberGoogleId: sub }, { new: true })
 					.exec();
 			}
-			return await this.createTokenPair(member!);
+			return await this.createTokenPair(member!, undefined, client);
 		}
 
 		// 3. Yangi user yaratamiz
@@ -163,10 +268,10 @@ export class AuthService {
 			memberGoogleId: sub,
 		});
 
-		return await this.createTokenPair(member);
+		return await this.createTokenPair(member, undefined, client);
 	}
 
-	public async telegramLogin(telegramUser: any): Promise<{ token: string; refresh: string }> {
+	public async telegramLogin(telegramUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
 		const { id, first_name, last_name, username, photo_url } = telegramUser;
 
 		let member = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -182,10 +287,10 @@ export class AuthService {
 			});
 		}
 
-		return await this.createTokenPair(member);
+		return await this.createTokenPair(member, undefined, client);
 	}
 
-	public async linkTelegram(memberId: string, telegramUser: any): Promise<{ token: string; refresh: string }> {
+	public async linkTelegram(memberId: string, telegramUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
 		const { id } = telegramUser;
 
 		const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -195,17 +300,17 @@ export class AuthService {
 			.findOneAndUpdate({ _id: memberId }, { memberTelegramId: String(id) }, { new: true })
 			.exec();
 
-		return await this.createTokenPair(member!);
+		return await this.createTokenPair(member!, undefined, client);
 	}
 
-	public async linkGoogle(memberId: string, googleUser: any): Promise<{ token: string; refresh: string }> {
+	public async linkGoogle(memberId: string, googleUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
 		const { email, sub } = googleUser;
 
 		// 1. Bu Google ID allaqachon bog'langanmi
 		const existingGoogle = await this.memberModel.findOne({ memberGoogleId: sub }).exec();
 		if (existingGoogle) {
 			if (existingGoogle._id.toString() === memberId) {
-				return await this.createTokenPair(existingGoogle);
+				return await this.createTokenPair(existingGoogle, undefined, client);
 			}
 			throw new Error('This Google account is already linked to another account!');
 		}
@@ -224,6 +329,6 @@ export class AuthService {
 
 		if (!updatedMember) throw new Error('Failed to update member!');
 
-		return await this.createTokenPair(updatedMember);
+		return await this.createTokenPair(updatedMember, undefined, client);
 	}
 }

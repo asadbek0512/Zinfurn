@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Req, Res, UseGuards, Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
+import { AuthService, clientFromRequest } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
 
 @Controller('auth')
@@ -62,7 +62,8 @@ export class AuthController {
 	}
 
 	@Post('logout')
-	async logout(@Res() res: any) {
+	async logout(@Body() body: any, @Res() res: any) {
+		if (typeof body?.refreshToken === 'string') await this.authService.logoutSession(body.refreshToken);
 		res.cookie('accessToken', '', { httpOnly: true, maxAge: 0 });
 		return res.json({ success: true });
 	}
@@ -96,7 +97,7 @@ export class AuthController {
 
 			if (memberId) {
 				// Account linking
-				const result = await this.authService.linkGoogle(memberId, user);
+				const result = await this.authService.linkGoogle(memberId, user, isApp ? 'app' : 'web');
 				res.cookie('linkMemberId', '', { maxAge: 0 });
 				this.setAuthCookie(res, result.token);
 				return res.redirect(
@@ -104,7 +105,7 @@ export class AuthController {
 				);
 			} else {
 				// Normal login
-				const result = await this.authService.googleLogin(user);
+				const result = await this.authService.googleLogin(user, isApp ? 'app' : 'web');
 				this.setAuthCookie(res, result.token);
 				return res.redirect(this.authRedirectUrl(isApp, '/', { token: result.token, refresh: result.refresh }));
 			}
@@ -117,25 +118,25 @@ export class AuthController {
 
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('telegram')
-	async telegramAuth(@Body() telegramData: any, @Res() res: any) {
+	async telegramAuth(@Body() telegramData: any, @Req() req: any, @Res() res: any) {
 		const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
 		if (!isValid) {
 			return res.status(401).json({ message: 'Invalid Telegram auth data' });
 		}
-		const result = await this.authService.telegramLogin(telegramData);
+		const result = await this.authService.telegramLogin(telegramData, clientFromRequest(req));
 		this.setAuthCookie(res, result.token);
 		return res.json({ token: result.token, refresh: result.refresh });
 	}
 
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('link/telegram')
-	async linkTelegram(@Body() body: any, @Res() res: any) {
+	async linkTelegram(@Body() body: any, @Req() req: any, @Res() res: any) {
 		const { memberId, ...telegramData } = body;
 		const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
 		if (!isValid) {
 			return res.status(401).json({ message: 'Invalid Telegram auth data' });
 		}
-		const result = await this.authService.linkTelegram(memberId, telegramData);
+		const result = await this.authService.linkTelegram(memberId, telegramData, clientFromRequest(req));
 		this.setAuthCookie(res, result.token);
 		return res.json({ token: result.token, refresh: result.refresh });
 	}
@@ -175,7 +176,7 @@ export class AuthController {
 			if (!memberId) {
 				return res.redirect(this.authRedirectUrl(isApp, '/mypage', { error: 'No memberId found' }));
 			}
-			const result = await this.authService.linkGoogle(memberId, req.user);
+			const result = await this.authService.linkGoogle(memberId, req.user, isApp ? 'app' : 'web');
 			res.redirect(this.authRedirectUrl(isApp, '/mypage', { token: result.token, refresh: result.refresh }));
 		} catch (err: any) {
 			res.redirect(this.authRedirectUrl(isApp, '/mypage', { error: err.message }));

@@ -7,7 +7,7 @@ NestJS monorepo API server for the Zinfurn furniture marketplace — GraphQL, We
 - Framework: NestJS 10 + TypeScript
 - Database: MongoDB + Mongoose ODM
 - API: GraphQL (Apollo Server, code-first) + WebSocket gateway
-- Auth: JWT (1h access + 10h absolute session) + Google OAuth + Telegram OAuth
+- Auth: JWT (1h access; web 10h absolute, app 30d sliding / 90d max) + Google OAuth + Telegram OAuth
 - Monorepo: 2 apps managed via `nest-cli.json`
 - Deploy: Docker + VPS
 
@@ -72,9 +72,9 @@ Current user: `@AuthMember('_id')` decorator on resolver methods.
 
 ## Auth Flow
 
-1. Login/signup returns access token (1h) + refresh token, both JWT; session is capped at 10h absolute (SESSION_MAX_AGE_SEC)
+1. Login/signup returns access token (1h) + refresh token, both JWT. Web session: 10h absolute (SESSION_MAX_AGE_SEC). App (UA `ZinfurnApp/`, OAuth `oauthClient=app`): 30d sliding idle, 90d absolute (APP_SESSION_IDLE_SEC / APP_SESSION_MAX_AGE_SEC)
 2. Access token carries full profile, signed with `SECRET_TOKEN`
-3. Refresh token stores bcrypt hash in DB — single-use rotation
+3. App refresh tokens are single-use: current `jti` stored in `member.memberSessions` (60s grace for the previous one); logout removes the session, password change clears all
 4. Google OAuth: callback at `auth.controller.ts` → `/auth/google/callback`
 5. Telegram OAuth: callback at `auth.controller.ts` → `/auth/telegram/callback`
 
