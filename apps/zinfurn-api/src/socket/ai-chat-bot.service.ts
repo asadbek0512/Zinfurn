@@ -31,6 +31,8 @@ interface Persona {
 interface GeneratedLine {
 	persona: string;
 	text: string;
+	/** Ambient suhbatda qaysi oldingi xabarga javob ekanligi (indeks) */
+	replyTo?: number | null;
 }
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -57,24 +59,53 @@ const HOUR_MS = 60 * 60_000;
 /** Model'ga beriladigan oxirgi xabarlar soni */
 const HISTORY_SIZE = 12;
 const MAX_TEXT_LENGTH = 200;
-const MAX_LINES_PER_TOPIC = 3;
+const MAX_LINES_PER_TOPIC = 5;
+/** Ambient suhbatda qatnashadigan persona soni (2 yoki 3) */
+const MIN_TOPIC_PERSONAS = 2;
+const MAX_TOPIC_PERSONAS = 3;
+/** Oldingi xabarga ketma-ket javobda iqtibos ko'rsatish ehtimoli */
+const QUOTE_PREVIOUS_PROBABILITY = 0.35;
+
+/** Tabiiy ko'rinishdagi illustratsiya avatarlar (DiceBear) — robot ikonka o'rniga */
+const AVATAR_BASE = 'https://api.dicebear.com/9.x/avataaars/svg?eyes=default&eyebrows=default&mouth=smile&skinColor=edb98a';
+const avatar = (params: string): string => `${AVATAR_BASE}&${params}`;
 
 const PERSONAS: Persona[] = [
 	{
-		member: { _id: 'ai-malika', memberNick: 'Malika', memberImage: '', isAi: true },
-		style: 'interior designer, warm and practical, loves Scandinavian and minimal styles, gives concrete tips on colors and layout',
+		member: {
+			_id: 'ai-malika',
+			memberNick: 'Malika',
+			memberImage: avatar('top=longButNotTooLong&hairColor=2c1b18&facialHairProbability=0&accessoriesProbability=0&clothing=blazerAndShirt&backgroundColor=f3e3d3'),
+			isAi: true,
+		},
+		style: 'likes interior design, calm and friendly, shares quick practical tips from her own home',
 	},
 	{
-		member: { _id: 'ai-jasur', memberNick: 'Jasur', memberImage: '', isAi: true },
-		style: 'furniture craftsman with 15 years of experience, talks about wood types, joints, care and repair, a bit humorous',
+		member: {
+			_id: 'ai-jasur',
+			memberNick: 'Jasur',
+			memberImage: avatar('top=shortFlat&hairColor=2c1b18&facialHair=beardLight&facialHairColor=2c1b18&facialHairProbability=100&accessoriesProbability=0&clothing=shirtCrewNeck&clothesColor=5199e4&backgroundColor=e6f0e0'),
+			isAi: true,
+		},
+		style: 'works with wood and repairs furniture, jokes a lot, short blunt replies',
 	},
 	{
-		member: { _id: 'ai-dilnoza', memberNick: 'Dilnoza', memberImage: '', isAi: true },
-		style: 'young customer furnishing her first apartment in Seoul on a budget, asks questions and shares finds',
+		member: {
+			_id: 'ai-dilnoza',
+			memberNick: 'Dilnoza',
+			memberImage: avatar('top=straight01&hairColor=4a312c&facialHairProbability=0&accessoriesProbability=0&clothing=hoodie&clothesColor=ff488e&backgroundColor=e3ecf3'),
+			isAi: true,
+		},
+		style: 'student living in Seoul, furnishing her room on a small budget, curious and cheerful',
 	},
 	{
-		member: { _id: 'ai-timur', memberNick: 'Timur', memberImage: '', isAi: true },
-		style: 'office manager who buys furniture for a small company, cares about ergonomics, durability and delivery',
+		member: {
+			_id: 'ai-timur',
+			memberNick: 'Timur',
+			memberImage: avatar('top=shortWaved&hairColor=4a312c&facialHairProbability=0&accessories=prescription02&accessoriesProbability=100&clothing=blazerAndSweater&backgroundColor=ece6f3'),
+			isAi: true,
+		},
+		style: 'works in an office, practical, cares about comfort and quality, a bit skeptical',
 	},
 ];
 
@@ -93,12 +124,16 @@ const TOPICS = [
 
 const LANGUAGES = ['Uzbek (Latin script)', 'Uzbek (Latin script)', 'Russian', 'English'];
 
-const SYSTEM_RULES = `You write short, natural chat messages for the public chat of Zinfurn, a furniture marketplace.
-Rules: write like real people texting — simple, everyday, friendly words, like chatting with a neighbor.
-Each message is ONE short sentence, max 12-15 words. No long explanations, no lists, no fancy or technical words.
-Slang and light emojis are fine sometimes. Examples of the style: "Menda ham shunaqa divan bor, zo'r 👍", "Qaysi rang olding?".
-Also: no markdown, no links, no prices, no personal data,
-never claim to be human, stay on furniture, interior and home topics. Reply ONLY with JSON.`;
+const SYSTEM_RULES = `You write chat messages for the public chat of Zinfurn, a furniture marketplace.
+Write exactly like real people texting in a messenger:
+- very short and simple, usually 3-12 words; some replies are just 1-3 words ("ha rost", "zo'r 👍", "voy qayerdan?")
+- everyday spoken language, not written/formal; lowercase is fine, usually no period at the end
+- people react to each other: agree, disagree, joke, ask back, sometimes call each other by name
+- every message must make sense after the previous one; never repeat the same phrase twice
+- no lists, no advice-column tone, no technical specs, codes or measurements
+- emojis only sometimes, not in every message
+Also: no markdown, no links, no prices, no personal data, never claim to be human,
+stay on furniture, interior and home topics. Reply ONLY with JSON.`;
 
 const randomBetween = (min: number, max: number): number => min + Math.floor(Math.random() * (max - min));
 const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
@@ -159,17 +194,19 @@ export class AiChatBotService implements OnModuleDestroy {
 		if (!this.hooks || this.busy || this.hooks.onlineCount() === 0) return;
 		this.busy = true;
 		try {
-			const [first, second] = [...PERSONAS].sort(() => Math.random() - 0.5);
-			const prompt = `Write a short chat exchange (2-${MAX_LINES_PER_TOPIC} messages) between these people:
-- ${first.member.memberNick}: ${first.style}
-- ${second.member.memberNick}: ${second.style}
+			const people = [...PERSONAS]
+				.sort(() => Math.random() - 0.5)
+				.slice(0, randomBetween(MIN_TOPIC_PERSONAS, MAX_TOPIC_PERSONAS + 1));
+			const prompt = `Write a casual group chat of 3-${MAX_LINES_PER_TOPIC} messages between these people:
+${people.map((p) => `- ${p.member.memberNick}: ${p.style}`).join('\n')}
 Topic: ${pick(TOPICS)}. Language: ${pick(LANGUAGES)}.
+Messages must answer each other. Set "replyTo" to the index (0-based) of the earlier message it answers, or null.
 Recent chat for context:
 ${this.formatHistory()}
-JSON format: {"messages":[{"persona":"<name>","text":"<message>"}]}`;
-			const lines = await this.generate(prompt);
-			for (const line of lines.slice(0, MAX_LINES_PER_TOPIC)) {
-				if (!this.emitLine(line)) break;
+JSON format: {"messages":[{"persona":"<name>","text":"<message>","replyTo":<index or null>}]}`;
+			const lines = (await this.generate(prompt)).slice(0, MAX_LINES_PER_TOPIC);
+			for (let i = 0; i < lines.length; i++) {
+				if (!this.emitLine(lines[i], this.quoteFor(lines, i))) break;
 				await sleep(randomBetween(LINE_GAP_MIN_MS, LINE_GAP_MAX_MS));
 			}
 		} finally {
@@ -189,6 +226,19 @@ ${this.formatHistory()}
 JSON format: {"messages":[{"persona":"<name>","text":"<reply>"}]}`;
 		const [line] = await this.generate(prompt);
 		if (line) this.emitLine(line, { text: text.slice(0, MAX_TEXT_LENGTH), memberNick });
+	}
+
+	/**
+	 * Messenjerdagidek: ketma-ket javobda iqtibos ko'pincha qo'yilmaydi,
+	 * eski xabarga javobda esa har doim qo'yiladi.
+	 */
+	private quoteFor(lines: GeneratedLine[], index: number): { text: string; memberNick: string } | undefined {
+		const targetIndex = lines[index].replyTo;
+		if (typeof targetIndex !== 'number' || !Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= index) return undefined;
+		const isPrevious = targetIndex === index - 1;
+		if (isPrevious && Math.random() >= QUOTE_PREVIOUS_PROBABILITY) return undefined;
+		const target = lines[targetIndex];
+		return { text: String(target.text).slice(0, MAX_TEXT_LENGTH), memberNick: String(target.persona) };
 	}
 
 	private emitLine(line: GeneratedLine, replyTo?: { text: string; memberNick: string }): boolean {
