@@ -132,6 +132,13 @@ const MemberSchema = new Schema(
 			index: { unique: true, sparse: true },
 		},
 
+		// Foydalanuvchi bloklagan a'zolar — ularning kontenti va xabarlari unga ko'rinmaydi (App Store 1.2 UGC)
+		memberBlocked: {
+			type: [Schema.Types.ObjectId],
+			select: false,
+			default: [],
+		},
+
 		deletedAt: {
 			type: Date,
 		},

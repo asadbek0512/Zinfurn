@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { BoardArticleModule } from './board-article/board-article.module';
 import { CommentModule } from './comment/comment.module';
 import { FollowModule } from './follow/follow.module';
+import { ReportModule } from './report/report.module';
 import { LikeModule } from './like/like.module';
 import { ViewModule } from './view/view.module';
 import { RepairPropertyModule } from './repair-property/repair-property.module';
@@ -27,6 +28,7 @@ import { AppStatModule } from './app-stat/app-stat.module';
     LikeModule,
     ViewModule,
     FollowModule,
+    ReportModule,
     RepairPropertyModule,
     NotificationModule,
     NoticeModule,

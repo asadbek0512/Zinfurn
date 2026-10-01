@@ -99,6 +99,18 @@ export class MemberResolver {
         return await this.memberService.deleteMyAccount(memberId);
     }
 
+    @UseGuards(AuthGuard)
+    @Mutation(() => Boolean)
+    public async blockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+        return await this.memberService.blockMember(memberId, ShapeIntoMongoObjectId(input));
+    }
+
+    @UseGuards(AuthGuard)
+    @Mutation(() => Boolean)
+    public async unblockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+        return await this.memberService.unblockMember(memberId, ShapeIntoMongoObjectId(input));
+    }
+
     @UseGuards(WithoutGuard)
     @Query(() => Member)
     public async getMember(

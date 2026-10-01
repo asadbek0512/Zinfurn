@@ -59,3 +59,38 @@ describe('MemberService.deleteMyAccount', () => {
 		expect(propertyUpdate).not.toHaveBeenCalled();
 	});
 });
+
+/** App Store 1.2 (UGC): foydalanuvchi boshqa a'zoni bloklay olishi shart */
+describe('MemberService.blockMember', () => {
+	const ME = '650000000000000000000001' as unknown as ObjectId;
+	const TARGET = '650000000000000000000002' as unknown as ObjectId;
+
+	const makeService = (targetExists: boolean) => {
+		const memberUpdate = jest.fn(() => ({ exec: async () => ({}) }));
+		const followDelete = jest.fn(() => ({ exec: async () => ({}) }));
+		const service = new MemberService(
+			{ updateOne: memberUpdate, exists: () => ({ exec: async () => (targetExists ? { _id: TARGET } : null) }) } as unknown as Model<Member>,
+			{ deleteOne: followDelete } as unknown as Model<never>,
+			{} as Model<unknown>,
+			{} as Model<unknown>,
+			{} as AuthService,
+			{} as ViewService,
+			{} as LikeService,
+		);
+		return { service, memberUpdate, followDelete };
+	};
+
+	it("bloklangan a'zo ro'yxatga qo'shiladi va obuna uziladi", async () => {
+		const { service, memberUpdate, followDelete } = makeService(true);
+		await expect(service.blockMember(ME, TARGET)).resolves.toBe(true);
+		expect(memberUpdate).toHaveBeenCalledWith({ _id: ME }, { $addToSet: { memberBlocked: TARGET } });
+		expect(followDelete).toHaveBeenCalledWith({ followingId: TARGET, followerId: ME });
+	});
+
+	it("o'zini bloklash va mavjud bo'lmagan a'zoni bloklash rad etiladi", async () => {
+		const { service, memberUpdate } = makeService(false);
+		await expect(service.blockMember(ME, ME)).rejects.toBeInstanceOf(BadRequestException);
+		await expect(service.blockMember(ME, TARGET)).rejects.toBeInstanceOf(BadRequestException);
+		expect(memberUpdate).not.toHaveBeenCalled();
+	});
+});

@@ -17,6 +17,17 @@ export class MessageService {
 		private readonly notificationService: NotificationService,
 	) {}
 
+	/** Qabul qiluvchi yuboruvchini bloklagan bo'lsa xabar yetkazilmaydi */
+	private async assertNotBlocked(senderId: ObjectId, receiverId: unknown): Promise<void> {
+		const blocked = await this.memberModel.exists({ _id: receiverId, memberBlocked: senderId }).exec();
+		if (blocked) throw new BadRequestException(Msg.NOT_ALLOWED_REQUEST);
+	}
+
+	private async getBlockedIds(memberId: ObjectId): Promise<Types.ObjectId[]> {
+		const me = await this.memberModel.findById(memberId).select('+memberBlocked').lean().exec();
+		return (me as { memberBlocked?: Types.ObjectId[] } | null)?.memberBlocked ?? [];
+	}
+
 	private convId(propertyId: string, a: string, b: string): string {
 		return [String(a), String(b)].sort().join('_') + '_' + String(propertyId);
 	}
@@ -27,6 +38,7 @@ export class MessageService {
 
 		const receiverId = property.memberId;
 		if (String(receiverId) === String(senderId)) throw new BadRequestException('You cannot message your own listing');
+		await this.assertNotBlocked(senderId, receiverId);
 
 		const conversationId = this.convId(String(input.propertyId), String(senderId), String(receiverId));
 		const message = await this.messageModel.create({
@@ -50,6 +62,7 @@ export class MessageService {
 			throw new BadRequestException('Not a participant of this conversation');
 		}
 		const receiverId = me === String(last.senderId) ? last.receiverId : last.senderId;
+		await this.assertNotBlocked(senderId, receiverId);
 
 		const message = await this.messageModel.create({
 			conversationId: input.conversationId,
@@ -69,6 +82,7 @@ export class MessageService {
 		const tech = await this.memberModel.findById(input.technicianId);
 		if (!tech) throw new BadRequestException(Msg.NO_DATA_FOUND);
 		if (String(tech._id) === String(senderId)) throw new BadRequestException('You cannot request your own service');
+		await this.assertNotBlocked(senderId, tech._id);
 
 		const conversationId = [String(senderId), String(tech._id)].sort().join('_') + '_repair';
 		const parts: string[] = [input.message.trim()];
@@ -107,8 +121,15 @@ export class MessageService {
 
 	public async getMyConversations(memberId: ObjectId): Promise<Conversation[]> {
 		const me = new Types.ObjectId(String(memberId));
+		const blocked = await this.getBlockedIds(memberId);
 		const result = await this.messageModel.aggregate([
-			{ $match: { $or: [{ senderId: me }, { receiverId: me }] } },
+			{
+				$match: {
+					$or: [{ senderId: me }, { receiverId: me }],
+					// Bloklangan a'zo bilan suhbatlar ro'yxatdan yashiriladi
+					...(blocked.length ? { senderId: { $nin: blocked }, receiverId: { $nin: blocked } } : {}),
+				},
+			},
 			{ $sort: { createdAt: -1 } },
 			{
 				$group: {

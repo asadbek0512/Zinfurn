@@ -22,6 +22,8 @@ export enum Message {
     NOT_ALLOWED_REQUEST = 'Not Allowed Request!',
     PROVIDE_ALLOWED_FORMAT = 'Please provide jpg, jpeg or png images!',
     SELF_SUBSCRIPTION_DENIED = 'Self subscription is denied!',
+    SELF_BLOCK_DENIED = 'You cannot block yourself!',
+    ALREADY_REPORTED = 'You have already reported this content!',
     DAILY_AI_LIMIT_REACHED = 'Daily AI request limit reached, please try again tomorrow!',
 }
 

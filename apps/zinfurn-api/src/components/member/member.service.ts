@@ -36,6 +36,30 @@ export class MemberService {
         private likeService: LikeService,
     ) { }
 
+    /** Bloklangan a'zolar ro'yxati — ro'yxat query'larida ularning kontentini yashirish uchun */
+    public async getBlockedMemberIds(memberId?: ObjectId): Promise<ObjectId[]> {
+        if (!memberId) return [];
+        const me = await this.memberModel.findById(memberId).select('+memberBlocked').lean().exec();
+        return (me as { memberBlocked?: ObjectId[] } | null)?.memberBlocked ?? [];
+    }
+
+    public async blockMember(memberId: ObjectId, targetId: ObjectId): Promise<boolean> {
+        if (String(memberId) === String(targetId)) throw new BadRequestException(Message.SELF_BLOCK_DENIED);
+        const target = await this.memberModel.exists({ _id: targetId }).exec();
+        if (!target) throw new BadRequestException(Message.NO_DATA_FOUND);
+        await Promise.all([
+            this.memberModel.updateOne({ _id: memberId }, { $addToSet: { memberBlocked: targetId } }).exec(),
+            // Bloklagandan keyin obuna ham uziladi — feed'da qayta chiqmasligi uchun
+            this.followModel.deleteOne({ followingId: targetId, followerId: memberId }).exec(),
+        ]);
+        return true;
+    }
+
+    public async unblockMember(memberId: ObjectId, targetId: ObjectId): Promise<boolean> {
+        await this.memberModel.updateOne({ _id: memberId }, { $pull: { memberBlocked: targetId } }).exec();
+        return true;
+    }
+
     public async signup(input: MemberInput, client: SessionClient = 'web'): Promise<Member> {
         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {

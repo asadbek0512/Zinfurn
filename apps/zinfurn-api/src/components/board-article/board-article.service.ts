@@ -123,6 +123,9 @@ export class BoardArticleService {
         if (text) match.articleTitle = buildSearchRegex(text);
         if (input.search?.memberId) {
             match.memberId = ShapeIntoMongoObjectId(input.search.memberId);
+        } else {
+            const blocked = await this.memberService.getBlockedMemberIds(memberId);
+            if (blocked.length) match.memberId = { $nin: blocked };
         }
 
 
