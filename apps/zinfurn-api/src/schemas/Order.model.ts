@@ -45,6 +45,8 @@ const OrderSchema = new Schema(
 		returnRequestedAt: { type: Date },
 		returnReason: { type: String },
 		returnedAt: { type: Date },
+		/** Demo: keyingi status qadami vaqti (cron o'qiydi, restart'da yo'qolmaydi) */
+		orderAutoProgressAt: { type: Date, index: true },
 	},
 	{ timestamps: true, collection: 'orders' },
 );

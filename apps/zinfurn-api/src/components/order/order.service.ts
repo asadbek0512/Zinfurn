@@ -25,6 +25,14 @@ const DEFAULT_KRW_PER_USD = 1350;
 const TOSS_UNPAID_TTL_MS = 30 * 60 * 1000;
 /** Bitta cron ishga tushishida ko'rib chiqiladigan buyurtmalar soni */
 const TOSS_EXPIRE_BATCH = 100;
+/** Demo status progression: har status keyingisiga shuncha vaqtdan keyin o'tadi */
+const DEMO_PROGRESSION: Partial<Record<OrderStatus, { next: OrderStatus; afterMs: number }>> = {
+	[OrderStatus.PENDING]: { next: OrderStatus.PROCESSING, afterMs: 15_000 },
+	[OrderStatus.PROCESSING]: { next: OrderStatus.SHIPPED, afterMs: 20_000 },
+	[OrderStatus.SHIPPED]: { next: OrderStatus.DELIVERED, afterMs: 25_000 },
+};
+/** Bitta cron ishga tushishida suriladigan demo buyurtmalar soni */
+const DEMO_PROGRESS_BATCH = 50;
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
 type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
@@ -80,7 +88,6 @@ export class OrderService {
 		}
 	}
 
-	// Demo: auto-progress order status for portfolio showcase
 	/**
 	 * Toss successUrl'dan kelgan to'lovni tasdiqlaydi. Summa DB'dagi buyurtma bilan solishtiriladi —
 	 * client URL'dagi amount'ni o'zgartirsa ham Toss'ga so'rov yuborilmaydi.
@@ -192,28 +199,47 @@ export class OrderService {
 		});
 	}
 
+	/** Demo progression'ni boshlaydi — taymer emas, DB'dagi vaqt; cron uni suradi */
 	private scheduleAutoProgression(orderId: ObjectId): void {
-		// Faqat kutilgan oldingi statusdan o'tkazadi — manual status (masalan erta
-		// DELIVERED/CONFIRMED yoki CANCELLED) taymer tomonidan ORQAGA qaytarilmaydi.
-		const advance = (from: OrderStatus, to: OrderStatus, delayMs: number) => {
-			setTimeout(async () => {
-				try {
-					const doc = await this.orderModel.findOneAndUpdate(
-						{ _id: orderId, orderStatus: from },
-						{ orderStatus: to },
-						{ new: true },
-					);
-					if (doc) {
-						this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, to);
-						this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, to);
-					}
-				} catch {}
-			}, delayMs);
-		};
+		const firstStep = DEMO_PROGRESSION[OrderStatus.PENDING]!;
+		this.orderModel
+			.updateOne({ _id: orderId }, { orderAutoProgressAt: new Date(Date.now() + firstStep.afterMs) })
+			.exec()
+			.catch((err: Error) => this.logger.warn(`Demo progression not scheduled: ${err.message}`));
+	}
 
-		advance(OrderStatus.PENDING,    OrderStatus.PROCESSING, 15_000);   // 15s
-		advance(OrderStatus.PROCESSING, OrderStatus.SHIPPED,    35_000);   // 35s
-		advance(OrderStatus.SHIPPED,    OrderStatus.DELIVERED,  60_000);   // 60s
+	/**
+	 * Vaqti kelgan demo buyurtmalarni keyingi statusga o'tkazadi. Faqat kutilgan statusdan
+	 * o'tkazadi — manual status (CANCELLED, erta DELIVERED) orqaga qaytarilmaydi.
+	 */
+	@Cron(CronExpression.EVERY_10_SECONDS)
+	public async advanceDemoOrders(): Promise<void> {
+		const due = await this.orderModel
+			.find({ orderAutoProgressAt: { $lte: new Date() } })
+			.select('_id orderStatus')
+			.limit(DEMO_PROGRESS_BATCH)
+			.lean<{ _id: ObjectId; orderStatus: OrderStatus }[]>()
+			.exec();
+
+		for (const { _id, orderStatus } of due) {
+			const step = DEMO_PROGRESSION[orderStatus];
+			if (!step) {
+				// Progression tugagan yoki status qo'lda o'zgargan — kuzatuvdan chiqariladi
+				await this.orderModel.updateOne({ _id }, { $unset: { orderAutoProgressAt: 1 } }).exec();
+				continue;
+			}
+			const following = DEMO_PROGRESSION[step.next];
+			const update: T = following
+				? { orderStatus: step.next, orderAutoProgressAt: new Date(Date.now() + following.afterMs) }
+				: { orderStatus: step.next, $unset: { orderAutoProgressAt: 1 } };
+			const doc = await this.orderModel
+				.findOneAndUpdate({ _id, orderStatus }, update, { new: true })
+				.exec();
+			if (doc) {
+				this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
+				this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
+			}
+		}
 	}
 
 	public async getMyOrders(memberId: ObjectId, input: OrdersInquiry): Promise<Orders> {

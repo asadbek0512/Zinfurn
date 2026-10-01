@@ -178,6 +178,57 @@ describe('OrderService.createOrder', () => {
 		});
 	});
 
+	describe('advanceDemoOrders (demo status progression)', () => {
+		const makeProgress = (due: object[], updated: object | null = { memberId: 'm1', orderId: 'ZIN-1' }) => {
+			const findOneAndUpdate = jest.fn((_filter: object, _update: object) => ({ exec: async () => updated }));
+			const updateOne = jest.fn((_filter: object, _update: object) => ({ exec: async () => undefined }));
+			const orderModel = {
+				find: jest.fn(() => ({ select: () => ({ limit: () => ({ lean: () => ({ exec: async () => due }) }) }) })),
+				findOneAndUpdate,
+				updateOne,
+			} as unknown as Model<Order>;
+			const notify = { notifyCustomer: jest.fn(), notifyAdminNewOrder: jest.fn() };
+			const service = new OrderService(
+				orderModel,
+				{} as Model<unknown>,
+				notify as unknown as TelegramNotifyService,
+				notify as unknown as MailNotifyService,
+				{} as CouponService,
+				{} as TossPaymentService,
+			);
+			return { service, findOneAndUpdate, updateOne, notify };
+		};
+
+		it('PENDING → PROCESSING, keyingi qadam vaqti belgilanadi', async () => {
+			const { service, findOneAndUpdate, notify } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.PENDING }]);
+			await service.advanceDemoOrders();
+			const [filter, update] = findOneAndUpdate.mock.calls[0] as unknown as [object, { orderStatus: OrderStatus; orderAutoProgressAt: Date }];
+			expect(filter).toEqual({ _id: 'o1', orderStatus: OrderStatus.PENDING });
+			expect(update.orderStatus).toBe(OrderStatus.PROCESSING);
+			expect(update.orderAutoProgressAt.getTime()).toBeGreaterThan(Date.now());
+			expect(notify.notifyCustomer).toHaveBeenCalledWith('m1', 'ZIN-1', OrderStatus.PROCESSING);
+		});
+
+		it('SHIPPED → DELIVERED, kuzatuv tugaydi', async () => {
+			const { service, findOneAndUpdate } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.SHIPPED }]);
+			await service.advanceDemoOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.DELIVERED, $unset: { orderAutoProgressAt: 1 } });
+		});
+
+		it("qo'lda CANCELLED qilingan buyurtma surilmaydi, faqat kuzatuvdan chiqariladi", async () => {
+			const { service, findOneAndUpdate, updateOne } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.CANCELLED }]);
+			await service.advanceDemoOrders();
+			expect(findOneAndUpdate).not.toHaveBeenCalled();
+			expect(updateOne).toHaveBeenCalledWith({ _id: 'o1' }, { $unset: { orderAutoProgressAt: 1 } });
+		});
+
+		it("status parallel o'zgargan bo'lsa (atomik filter mos kelmadi) xabar yuborilmaydi", async () => {
+			const { service, notify } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.PENDING }], null);
+			await service.advanceDemoOrders();
+			expect(notify.notifyCustomer).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('effectivePrice', () => {
 		const now = Date.now();
 
