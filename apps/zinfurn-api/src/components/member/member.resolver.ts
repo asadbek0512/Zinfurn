@@ -93,6 +93,12 @@ export class MemberResolver {
         return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid, (authMember as any).client);
     }
 
+    @UseGuards(AuthGuard)
+    @Mutation(() => Boolean)
+    public async deleteMyAccount(@AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+        return await this.memberService.deleteMyAccount(memberId);
+    }
+
     @UseGuards(WithoutGuard)
     @Query(() => Member)
     public async getMember(

@@ -15,6 +15,11 @@ import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
 import { buildSearchRegex, lookupAuthMemberLiked } from '../../libs/config';
+import { PropertyStatus } from '../../libs/enums/property.enum';
+import { RepairPropertyStatus } from '../../libs/enums/repairProperty.enum';
+
+// O'chirilgan akkaunt nick'i — unique index band bo'lib qolmasin, nick boshqalarga bo'shaydi
+const DELETED_NICK_PREFIX = 'deleted_';
 
 @Injectable()
 export class MemberService {
@@ -24,6 +29,8 @@ export class MemberService {
     constructor(
         @InjectModel('Member') private readonly memberModel: Model<Member>,
         @InjectModel('Follow') private readonly followModel: Model<Follower | Following>,
+        @InjectModel('Property') private readonly propertyModel: Model<unknown>,
+        @InjectModel('RepairProperty') private readonly repairPropertyModel: Model<unknown>,
         private authService: AuthService,
         private viewService: ViewService,
         private likeService: LikeService,
@@ -81,6 +88,47 @@ export class MemberService {
             Logger.warn(`Refresh token rejected: ${err.message}`);
             throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
         }
+    }
+
+    /**
+     * Akkauntni o'chirish (App Store / Google Play talabi): shaxsiy ma'lumotlar tozalanadi,
+     * login identifikatorlari bo'shatiladi, barcha sessiyalar yopiladi, e'lonlar yashiriladi.
+     * Buyurtmalar hisob-kitob uchun saqlanadi — ular endi anonim akkauntga bog'langan.
+     */
+    public async deleteMyAccount(memberId: ObjectId): Promise<boolean> {
+        const deletedAt = new Date();
+        const result = await this.memberModel
+            .updateOne(
+                { _id: memberId, memberStatus: { $ne: MemberStatus.DELETE } },
+                {
+                    $set: {
+                        memberStatus: MemberStatus.DELETE,
+                        memberNick: `${DELETED_NICK_PREFIX}${memberId}`,
+                        memberFullName: '',
+                        memberAddress: '',
+                        memberDesc: '',
+                        memberImage: '',
+                        memberSessions: [],
+                        deletedAt,
+                    },
+                    $unset: { memberPhone: 1, memberEmail: 1, memberPassword: 1, memberTelegramId: 1, memberGoogleId: 1 },
+                } as T,
+            )
+            .exec();
+        if (!result.modifiedCount) throw new BadRequestException(Message.NO_DATA_FOUND);
+
+        await Promise.all([
+            this.propertyModel
+                .updateMany({ memberId, propertyStatus: { $ne: PropertyStatus.DELETE } }, { propertyStatus: PropertyStatus.DELETE, deletedAt })
+                .exec(),
+            this.repairPropertyModel
+                .updateMany(
+                    { memberId, repairPropertyStatus: { $ne: RepairPropertyStatus.DELETE } },
+                    { repairPropertyStatus: RepairPropertyStatus.DELETE, deletedAt },
+                )
+                .exec(),
+        ]);
+        return true;
     }
 
     public async getMyProfile(memberId: ObjectId): Promise<Member> {
