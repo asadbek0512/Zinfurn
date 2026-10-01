@@ -23,6 +23,8 @@ export class ReviewService {
 			_id: input.orderId,
 			memberId,
 			orderStatus: OrderStatus.CONFIRMED,
+			// Faqat shu buyurtmada sotib olingan mahsulotga sharh yoziladi
+			'orderItems.propertyId': input.propertyId,
 		});
 		if (!order) throw new BadRequestException('Order must be confirmed before writing a review');
 

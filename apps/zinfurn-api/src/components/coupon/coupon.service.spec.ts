@@ -5,92 +5,96 @@ import { Coupon } from '../../libs/dto/coupon/coupon';
 import { CouponStatus, CouponType } from '../../libs/enums/coupon.enum';
 
 /**
- * Kupon testlari — chegirma pul bilan bog'liq, shuning uchun:
- *  - foiz/summa hisobi, 100% va buyurtmadan katta summa chegaralari
- *  - muddat, limit, minimal summa, faol emas holatlari
- *  - redeem: atomar limit guard yutqazsa xato
+ * Kupon testlari — chegirma faqat serverda hisoblanadi:
+ *  - foiz/fiks chegirma, 100% va summa chegarasi
+ *  - muddati, limiti, statusi, minimal summa tekshiruvi
+ *  - atomar redeem (limit talashuvi) va release
  */
 describe('CouponService', () => {
 	const DAY_MS = 24 * 60 * 60 * 1000;
-
-	const makeCoupon = (overrides: Partial<Coupon> = {}): Partial<Coupon> => ({
+	const baseCoupon = {
 		couponCode: 'SALE10',
 		couponType: CouponType.PERCENT,
 		couponValue: 10,
 		couponStatus: CouponStatus.ACTIVE,
-		minOrderAmount: 0,
 		maxUses: 0,
 		usedCount: 0,
-		...overrides,
-	});
-
-	const makeService = (coupon: Partial<Coupon> | null, redeemed: Partial<Coupon> | null = coupon) => {
-		const findOneAndUpdate = jest.fn(() => ({ exec: async () => redeemed }));
-		const model = {
-			findOne: jest.fn(() => ({ exec: async () => coupon })),
-			findOneAndUpdate,
-		} as unknown as Model<Coupon>;
-		return { service: new CouponService(model), findOneAndUpdate };
+		minOrderAmount: 0,
 	};
 
-	it('foizli kupon: 10% chegirma to\'g\'ri hisoblanadi', async () => {
-		const { service } = makeService(makeCoupon());
-		const result = await service.validateCoupon('sale10', 200000);
-		expect(result.valid).toBe(true);
-		expect(result.discountAmount).toBe(20000);
-		expect(result.finalTotal).toBe(180000);
+	const makeService = (coupon: object | null, redeemed: object | null = coupon) => {
+		const findOne = jest.fn((_filter: object) => ({ exec: async () => coupon }));
+		const findOneAndUpdate = jest.fn((_filter: object, _update: object) => ({ exec: async () => redeemed }));
+		const updateOne = jest.fn((_filter: object, _update: object) => ({ exec: async () => undefined }));
+		const model = { findOne, findOneAndUpdate, updateOne } as unknown as Model<Coupon>;
+		return { service: new CouponService(model), findOne, findOneAndUpdate, updateOne };
+	};
+
+	it('foizli kupon: chegirma va yakuniy summa', async () => {
+		const { service } = makeService(baseCoupon);
+		const result = await service.validateCoupon('SALE10', 200);
+		expect(result).toMatchObject({ valid: true, discountAmount: 20, finalTotal: 180, couponCode: 'SALE10' });
 	});
 
-	it('foiz 100 dan oshsa ham chegirma buyurtma summasidan oshmaydi', async () => {
-		const { service } = makeService(makeCoupon({ couponValue: 150 }));
-		const result = await service.validateCoupon('SALE10', 50000);
-		expect(result.discountAmount).toBe(50000);
+	it("kod bo'shliq va kichik harf bilan kelsa ham normallashtiriladi", async () => {
+		const { service, findOne } = makeService(baseCoupon);
+		await service.validateCoupon('  sale10 ', 100);
+		expect(findOne.mock.calls[0][0]).toEqual({ couponCode: 'SALE10' });
+	});
+
+	it('foiz 100 dan oshmaydi', async () => {
+		const { service } = makeService({ ...baseCoupon, couponValue: 150 });
+		const result = await service.validateCoupon('SALE10', 80);
+		expect(result.discountAmount).toBe(80);
 		expect(result.finalTotal).toBe(0);
 	});
 
-	it('summali kupon buyurtmadan katta bo\'lsa — yakuniy summa manfiy bo\'lmaydi', async () => {
-		const { service } = makeService(makeCoupon({ couponType: CouponType.FIXED, couponValue: 90000 }));
-		const result = await service.validateCoupon('SALE10', 30000);
-		expect(result.discountAmount).toBe(30000);
+	it('fiks kupon buyurtma summasidan oshmaydi', async () => {
+		const { service } = makeService({ ...baseCoupon, couponType: CouponType.FIXED, couponValue: 500 });
+		const result = await service.validateCoupon('SALE10', 120);
+		expect(result.discountAmount).toBe(120);
 		expect(result.finalTotal).toBe(0);
 	});
 
-	it('topilmagan / faol emas / muddati o\'tgan / limiti tugagan kupon rad etiladi', async () => {
-		const cases: (Partial<Coupon> | null)[] = [
-			null,
-			makeCoupon({ couponStatus: CouponStatus.PAUSED }),
-			makeCoupon({ validUntil: new Date(Date.now() - DAY_MS) }),
-			makeCoupon({ maxUses: 5, usedCount: 5 }),
-		];
-		for (const coupon of cases) {
-			const { service } = makeService(coupon);
-			const result = await service.validateCoupon('SALE10', 100000);
-			expect(result.valid).toBe(false);
-			expect(result.discountAmount).toBe(0);
-			expect(result.finalTotal).toBe(100000);
-		}
-	});
-
-	it('minimal buyurtma summasidan kam bo\'lsa rad etiladi', async () => {
-		const { service } = makeService(makeCoupon({ minOrderAmount: 100000 }));
-		const result = await service.validateCoupon('SALE10', 99999);
+	it.each([
+		['topilmadi', null],
+		['faol emas', { ...baseCoupon, couponStatus: CouponStatus.PAUSED }],
+		['muddati tugagan', { ...baseCoupon, validUntil: new Date(Date.now() - DAY_MS) }],
+		['limiti tugagan', { ...baseCoupon, maxUses: 5, usedCount: 5 }],
+		['minimal buyurtma', { ...baseCoupon, minOrderAmount: 1000 }],
+	])('yaroqsiz kupon: %s', async (reason, coupon) => {
+		const { service } = makeService(coupon);
+		const result = await service.validateCoupon('SALE10', 100);
 		expect(result.valid).toBe(false);
+		expect(result.message).toContain(reason);
+		expect(result.discountAmount).toBe(0);
+		expect(result.finalTotal).toBe(100);
 	});
 
-	it('redeem: kod normalizatsiya qilinadi (trim + uppercase)', async () => {
-		const { service } = makeService(makeCoupon());
-		const result = await service.redeemCoupon('  sale10 ', 100000);
-		expect(result).toEqual({ discountAmount: 10000, couponCode: 'SALE10' });
+	it('redeem: atomar limit sharti bilan usedCount++', async () => {
+		const { service, findOneAndUpdate } = makeService(baseCoupon);
+		const result = await service.redeemCoupon('SALE10', 200);
+		expect(result).toEqual({ discountAmount: 20, couponCode: 'SALE10' });
+		const [filter, update] = findOneAndUpdate.mock.calls[0];
+		expect(filter).toMatchObject({ couponCode: 'SALE10', couponStatus: CouponStatus.ACTIVE });
+		expect(filter).toHaveProperty('$or');
+		expect(update).toEqual({ $inc: { usedCount: 1 } });
 	});
 
-	it('redeem: parallel so\'rov oxirgi foydalanishni olib qo\'ysa BadRequest', async () => {
-		const { service } = makeService(makeCoupon({ maxUses: 1 }), null);
-		await expect(service.redeemCoupon('SALE10', 100000)).rejects.toBeInstanceOf(BadRequestException);
+	it("redeem: oxirgi foydalanishni boshqa buyurtma yutib olsa rad etiladi", async () => {
+		const { service } = makeService({ ...baseCoupon, maxUses: 1 }, null);
+		await expect(service.redeemCoupon('SALE10', 200)).rejects.toThrow('limiti tugagan');
 	});
 
-	it('redeem: yaroqsiz kupon usedCount\'ni oshirmaydi', async () => {
-		const { service, findOneAndUpdate } = makeService(makeCoupon({ couponStatus: CouponStatus.PAUSED }));
-		await expect(service.redeemCoupon('SALE10', 100000)).rejects.toBeInstanceOf(BadRequestException);
+	it("redeem: yaroqsiz kupon DB'ni o'zgartirmaydi", async () => {
+		const { service, findOneAndUpdate } = makeService(null);
+		await expect(service.redeemCoupon('NOPE', 200)).rejects.toBeInstanceOf(BadRequestException);
 		expect(findOneAndUpdate).not.toHaveBeenCalled();
+	});
+
+	it('release: usedCount faqat 0 dan katta bo\'lsa kamayadi', async () => {
+		const { service, updateOne } = makeService(baseCoupon);
+		await service.releaseCoupon('SALE10');
+		expect(updateOne).toHaveBeenCalledWith({ couponCode: 'SALE10', usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
 	});
 });

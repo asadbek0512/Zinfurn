@@ -6,7 +6,7 @@ NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modu
 
 ## Highlights
 
-- **Auth**: JWT pair (1h access + 30d refresh with rotation, `tokenType`-separated), Google OAuth, Telegram OAuth + account linking; `AuthGuard` / `RolesGuard` / `WithoutGuard` + `@AuthMember` decorator
+- **Auth**: JWT pair (1h access + single-use refresh with server-side session tracking and revocation, `tokenType`-separated), Google OAuth, Telegram OAuth + account linking; `AuthGuard` / `RolesGuard` / `WithoutGuard` + `@AuthMember` decorator
 - **Rate limiting**: `@nestjs/throttler` with a GraphQL-aware guard (login/signup 5/min, refresh 20/min, global 300/min), `trust proxy` for real client IPs behind nginx
 - **Coupons**: atomic redemption (`$inc` guarded by usage limit — race-safe), server-side discount math, admin CRUD
 - **Telegram notifications**: non-blocking order-status messages to customers + optional admin new-order alerts (`ADMIN_TELEGRAM_CHAT_ID`)
@@ -44,9 +44,8 @@ npm test                   # unit tests (auth token system)
 
 ## Known Limitations
 
-- Refresh tokens are stateless (no server-side revocation store); rotation only
 - Rate-limit counters are in-memory — single-instance assumption (Redis needed to scale out)
-- Demo order auto-progression uses in-process timers (showcase feature, not production ops)
-- Test coverage focused on the auth/token system; other modules rely on typed DTO contracts
+- Demo order auto-progression is a showcase feature (DB-scheduled, advanced by a cron), not production ops
+- Unit tests cover auth/sessions, orders, Toss reconciliation, coupons and reviews; other modules rely on typed DTO contracts
 
 Deployed via Docker on a VPS behind nginx/SSL; a cron watches `main` and redeploys within a minute of a push (a committed pre-push hook build-gates every push).
