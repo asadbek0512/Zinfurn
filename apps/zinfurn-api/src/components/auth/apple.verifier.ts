@@ -56,7 +56,12 @@ export class AppleVerifier {
 		if (parts?.length !== 3) throw new UnauthorizedException('Invalid Apple token');
 		const [headerPart, payloadPart, signature] = parts;
 
-		const header = decodePart<{ kid: string; alg: string }>(headerPart);
+		let header: { kid: string; alg: string };
+		try {
+			header = decodePart(headerPart);
+		} catch {
+			throw new UnauthorizedException('Invalid Apple token');
+		}
 		if (header.alg !== 'RS256') throw new UnauthorizedException('Invalid Apple token');
 		const jwk = await this.getKey(header.kid);
 		if (!jwk) throw new UnauthorizedException('Invalid Apple token');

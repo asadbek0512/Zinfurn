@@ -3,7 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService, clientFromRequest } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
-import { AppleVerifier } from './apple.verifier';
+import { AppleIdentity, AppleVerifier } from './apple.verifier';
 
 interface AppleAuthBody {
 	identityToken: string;
@@ -129,7 +129,12 @@ export class AuthController {
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('apple')
 	async appleAuth(@Body() body: AppleAuthBody, @Req() req: any, @Res() res: any) {
-		const identity = await this.appleVerifier.verify(body?.identityToken);
+		let identity: AppleIdentity;
+		try {
+			identity = await this.appleVerifier.verify(body?.identityToken);
+		} catch {
+			return res.status(401).json({ message: 'Invalid Apple auth data' });
+		}
 		const fullName = [body.givenName, body.familyName].filter(Boolean).join(' ');
 		const result = await this.authService.appleLogin(identity, fullName, clientFromRequest(req));
 		this.setAuthCookie(res, result.token);
