@@ -97,7 +97,7 @@ export class MemberService {
     ): Promise<Member> {
         if (input.memberPassword) {
             input.memberPassword = await this.authService.hashPassword(input.memberPassword);
-            // Parol almashdi — boshqa qurilmalardagi app sessiyalari bekor
+            // Parol almashdi — boshqa qurilmalardagi sessiyalar bekor
             await this.authService.revokeAllSessions(String(memberId));
         }
         const result: Member | null = await this.memberModel   /// ??? | null qoyib ketildi
@@ -251,6 +251,10 @@ export class MemberService {
     public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
         const result: Member | null = await this.memberModel.findOneAndUpdate({ _id: input._id }, input, { new: true }).exec();
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+        // Bloklangan/o'chirilgan member'ning barcha sessiyalari darrov bekor
+        if (input.memberStatus && input.memberStatus !== MemberStatus.ACTIVE) {
+            await this.authService.revokeAllSessions(String(result._id));
+        }
         return result;
     }
 

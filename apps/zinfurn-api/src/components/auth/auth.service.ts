@@ -17,8 +17,8 @@ const ACCESS_TOKEN_TTL_SEC = Number(process.env.ACCESS_TOKEN_TTL_SEC) || 60 * 60
 const APP_SESSION_IDLE_SEC = Number(process.env.APP_SESSION_IDLE_SEC) || 30 * 24 * 60 * 60; // 30 kun
 /** App sessiyasining mutlaq chegarasi — faol ishlatilsa ham shundan keyin qayta login. */
 const APP_SESSION_MAX_AGE_SEC = Number(process.env.APP_SESSION_MAX_AGE_SEC) || 90 * 24 * 60 * 60; // 90 kun
-/** Bitta member uchun saqlanadigan app sessiyalar (qurilmalar) soni. */
-const MAX_APP_SESSIONS = 10;
+/** Bitta member uchun saqlanadigan sessiyalar (web + app qurilmalar) soni. */
+const MAX_SESSIONS = 20;
 /** Rotation javobi yetib bormasa (tarmoq/parallel so'rov) — oldingi refresh shuncha vaqt qabul qilinadi. */
 const REFRESH_REUSE_GRACE_SEC = 60;
 /** Capacitor app WebView User-Agent'iga qo'shadigan belgi (zinfurn-app/capacitor.config.ts). */
@@ -104,7 +104,8 @@ export class AuthService {
 	/**
 	 * Refresh token — minimal payload. Access sifatida ishlatib BO'LMAYDI (verifyToken rad etadi).
 	 * Web: muddati sessiya qoldig'iga teng (rotation uzaytira olmaydi).
-	 * App: har rotation'da 30 kunga uzayadi, `jti` bazadagi sessiya bilan solishtiriladi (bir martalik).
+	 * App: har rotation'da 30 kunga uzayadi.
+	 * Ikkalasida ham `jti` bazadagi sessiya bilan solishtiriladi (bir martalik, logout'da bekor bo'ladi).
 	 */
 	public async createRefreshToken(
 		member: Member,
@@ -125,7 +126,7 @@ export class AuthService {
 	/**
 	 * Access + refresh juftligi — login/signup/OAuth/linking hammasi shu orqali.
 	 * `sessionStartedAt` berilsa mavjud sessiya davom etadi, aks holda yangisi boshlanadi.
-	 * App sessiyasi bazaga (memberSessions) yoziladi — joriy refresh `jti` si bilan.
+	 * Sessiya bazaga (memberSessions) yoziladi — joriy refresh `jti` si bilan (web va app).
 	 * `prevJti` — rotation'da almashtirilgan token (qisqa grace uchun saqlanadi).
 	 */
 	public async createTokenPair(
@@ -136,10 +137,6 @@ export class AuthService {
 	): Promise<{ token: string; refresh: string }> {
 		const sid = sessionStartedAt ?? nowSec();
 		const token = await this.createToken(member, sid, client);
-		if (client !== 'app') {
-			return { token, refresh: await this.createRefreshToken(member, sid, client) };
-		}
-
 		const doc = member['_doc'] ? member['_doc'] : member;
 		const jti = randomUUID();
 		const expiresAt = new Date((nowSec() + this.sessionRemaining(sid, client)) * 1000);
@@ -150,7 +147,7 @@ export class AuthService {
 		await this.memberModel
 			.updateOne(
 				{ _id: doc._id },
-				{ $push: { memberSessions: { $each: [{ sid, jti, prevJti, rotatedAt: new Date(), expiresAt }], $slice: -MAX_APP_SESSIONS } } } as T,
+				{ $push: { memberSessions: { $each: [{ sid, jti, prevJti, rotatedAt: new Date(), expiresAt }], $slice: -MAX_SESSIONS } } } as T,
 			)
 			.exec();
 		const refresh = await this.createRefreshToken(member, sid, client, jti);
@@ -181,7 +178,8 @@ export class AuthService {
 		if (this.sessionRemaining(sid, client) <= 0) throw new Error('Session expired');
 
 		const memberId = ShapeIntoMongoObjectId(payload._id);
-		if (client === 'app') {
+		// jti'siz web refresh — server-side sessiyadan oldingi (legacy) token; 10 soat ichida o'zi tugaydi.
+		if (client === 'app' || payload.jti) {
 			// Bir martalik: joriy jti (yoki grace ichida oldingisi) qabul qilinadi.
 			// Logout/parol almashsa sessiya o'chgan bo'ladi.
 			const graceFrom = new Date((nowSec() - REFRESH_REUSE_GRACE_SEC) * 1000);
@@ -210,7 +208,7 @@ export class AuthService {
 		return { member, ...pair };
 	}
 
-	/** Bitta app sessiyasini o'chirish (logout). */
+	/** Bitta sessiyani o'chirish (logout). */
 	private async revokeSession(memberId: string, sid: number): Promise<void> {
 		await this.memberModel
 			.updateOne({ _id: ShapeIntoMongoObjectId(memberId) }, { $pull: { memberSessions: { sid } } } as T)
@@ -229,7 +227,7 @@ export class AuthService {
 		await this.revokeSession(payload._id, payload.sid);
 	}
 
-	/** Parol almashganda barcha app sessiyalarini bekor qilish. */
+	/** Parol almashganda yoki member bloklanganda barcha sessiyalarni bekor qilish. */
 	public async revokeAllSessions(memberId: string): Promise<void> {
 		await this.memberModel
 			.updateOne({ _id: ShapeIntoMongoObjectId(memberId) }, { $set: { memberSessions: [] } } as T)

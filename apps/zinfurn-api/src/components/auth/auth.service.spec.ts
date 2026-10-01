@@ -75,6 +75,7 @@ describe('AuthService (token pair)', () => {
 	it('refreshTokens: yaroqli refresh evaziga yangi juftlik', async () => {
 		const memberModel = {
 			findById: () => ({ exec: async () => fakeMember }),
+			updateOne: () => ({ exec: async () => undefined }),
 		};
 		const service = makeService(memberModel);
 		const refresh = await service.createRefreshToken(fakeMember);
@@ -85,7 +86,10 @@ describe('AuthService (token pair)', () => {
 	});
 
 	it('refreshTokens: rotation sessiyani UZAYTIRMAYDI — sid saqlanadi, muddat qisqaradi', async () => {
-		const memberModel = { findById: () => ({ exec: async () => fakeMember }) };
+		const memberModel = {
+			findById: () => ({ exec: async () => fakeMember }),
+			updateOne: () => ({ exec: async () => undefined }),
+		};
 		const service = makeService(memberModel);
 
 		// Sessiya 6 soat oldin boshlangan — 4 soat qoldi
@@ -227,6 +231,33 @@ describe('AuthService (token pair)', () => {
 			await expect(service.refreshTokens(a.refresh)).rejects.toThrow('Session revoked');
 			await service.revokeAllSessions(fakeMember._id);
 			await expect(service.refreshTokens(b.refresh)).rejects.toThrow('Session revoked');
+		});
+
+		it('web: refresh jti bilan bazaga yoziladi, logout\'dan keyin RAD etiladi', async () => {
+			const model = makeAppModel();
+			const service = makeService(model);
+			const { refresh } = await service.createTokenPair(fakeMember);
+			expect((jwt.decode(refresh) as any).jti).toBeTruthy();
+			expect(model.sessions).toHaveLength(1);
+			await service.logoutSession(refresh);
+			await expect(service.refreshTokens(refresh)).rejects.toThrow('Session revoked');
+		});
+
+		it('web: member bloklanganda (revokeAllSessions) refresh RAD etiladi', async () => {
+			const model = makeAppModel();
+			const service = makeService(model);
+			const { refresh } = await service.createTokenPair(fakeMember);
+			await service.revokeAllSessions(fakeMember._id);
+			await expect(service.refreshTokens(refresh)).rejects.toThrow('Session revoked');
+		});
+
+		it('web: rotation 10 soatlik mutlaq chegarani saqlaydi', async () => {
+			const service = makeService(makeAppModel());
+			const sid = nowSec() - 6 * 60 * 60;
+			const { refresh } = await service.createTokenPair(fakeMember, sid);
+			const r: any = jwt.decode((await service.refreshTokens(refresh)).refresh);
+			expect(r.sid).toBe(sid);
+			expect(r.exp - r.iat).toBeLessThanOrEqual(4 * 60 * 60);
 		});
 	});
 });
