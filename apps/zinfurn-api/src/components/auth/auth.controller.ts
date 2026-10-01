@@ -153,6 +153,24 @@ export class AuthController {
 		return res.json({ token: result.token, refresh: result.refresh });
 	}
 
+	// Mobil app: Telegram oauth tizim brauzerida ochiladi (WebView'da "Cancel" window.close()
+	// ishlamay foydalanuvchi tiqilib qolardi). Sayt bridge sahifasi natijani query qilib shu
+	// yerga yuboradi, biz esa app'ga deep link bilan qaytaramiz.
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
+	@Get('app/telegram')
+	async appTelegramAuth(@Req() req: any, @Res() res: any) {
+		try {
+			if (!this.telegramStrategy.verifyTelegramAuth({ ...req.query })) {
+				return res.redirect(this.authRedirectUrl(true, '/', { error: 'Invalid Telegram auth data' }));
+			}
+			const result = await this.authService.telegramLogin({ ...req.query }, 'app');
+			return res.redirect(this.authRedirectUrl(true, '/', { token: result.token, refresh: result.refresh }));
+		} catch (err: any) {
+			Logger.error('Telegram app login error:', err);
+			return res.redirect(this.authRedirectUrl(true, '/', { error: 'Telegram login failed' }));
+		}
+	}
+
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('link/telegram')
 	async linkTelegram(@Body() body: any, @Req() req: any, @Res() res: any) {
