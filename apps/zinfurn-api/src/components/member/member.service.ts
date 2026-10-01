@@ -17,6 +17,7 @@ import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
 import { buildSearchRegex, lookupAuthMemberLiked } from '../../libs/config';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { RepairPropertyStatus } from '../../libs/enums/repairProperty.enum';
+import { PushService } from '../push/push.service';
 
 // O'chirilgan akkaunt nick'i — unique index band bo'lib qolmasin, nick boshqalarga bo'shaydi
 const DELETED_NICK_PREFIX = 'deleted_';
@@ -34,6 +35,7 @@ export class MemberService {
         private authService: AuthService,
         private viewService: ViewService,
         private likeService: LikeService,
+        private pushService: PushService,
     ) { }
 
     /** Bloklangan a'zolar ro'yxati — ro'yxat query'larida ularning kontentini yashirish uchun */
@@ -142,6 +144,7 @@ export class MemberService {
         if (!result.modifiedCount) throw new BadRequestException(Message.NO_DATA_FOUND);
 
         await Promise.all([
+            this.pushService.removeMemberDevices(memberId),
             this.propertyModel
                 .updateMany({ memberId, propertyStatus: { $ne: PropertyStatus.DELETE } }, { propertyStatus: PropertyStatus.DELETE, deletedAt })
                 .exec(),

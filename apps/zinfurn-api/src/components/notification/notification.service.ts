@@ -5,6 +5,11 @@ import { NotificationInput } from '../../libs/dto/notification/notification.inpu
 import { Notification } from '../../libs/dto/notification/notification';
 import { NotificationStatus } from '../../libs/enums/notification.enum';
 import { SocketGateway } from '../../socket/socket.gateway';
+import { PushService } from '../push/push.service';
+
+/** Push bosilganda app ichida ochiladigan sahifa */
+const notificationUrl = (input: NotificationInput): string | undefined =>
+	input.articleId ? `/community/detail?id=${input.articleId}` : undefined;
 
 @Injectable()
 export class NotificationService {
@@ -13,6 +18,7 @@ export class NotificationService {
 		private readonly notificationModel: Model<Notification>,
 		@Inject(forwardRef(() => SocketGateway))
 		private readonly socketGateway: SocketGateway,
+		private readonly pushService: PushService,
 	) {}
 
 	async createNotification(input: NotificationInput): Promise<Notification> {
@@ -30,6 +36,12 @@ export class NotificationService {
 			status: notification.notificationStatus,
 			createdAt: notification.createdAt,
 			conversationId: (notification as any).conversationId,
+		});
+
+		this.pushService.sendToMember(notification.receiverId.toString(), {
+			title: notification.notificationTitle,
+			body: notification.notificationDesc ?? '',
+			url: notificationUrl(input),
 		});
 
 		return notification;

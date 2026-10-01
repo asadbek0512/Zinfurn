@@ -17,6 +17,7 @@ import { TOSS_DONE_STATUS, TossPaymentService } from './toss-payment.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { PriceSource, effectivePrice } from '../../libs/pricing';
+import { PushService } from '../push/push.service';
 
 /** Narxlar USD'da saqlanadi; Toss faqat KRW qabul qiladi */
 const TOSS_CURRENCY = 'KRW';
@@ -33,6 +34,15 @@ const DEMO_PROGRESSION: Partial<Record<OrderStatus, { next: OrderStatus; afterMs
 };
 /** Bitta cron ishga tushishida suriladigan demo buyurtmalar soni */
 const DEMO_PROGRESS_BATCH = 50;
+const ORDERS_URL = '/mypage?category=myOrders';
+const ORDER_STATUS_PUSH: Partial<Record<OrderStatus, string>> = {
+	[OrderStatus.PENDING]: 'Buyurtmangiz qabul qilindi',
+	[OrderStatus.PROCESSING]: 'Buyurtmangiz tayyorlanmoqda',
+	[OrderStatus.SHIPPED]: "Buyurtmangiz yo'lga chiqdi 🚚",
+	[OrderStatus.DELIVERED]: 'Buyurtmangiz yetkazildi ✅',
+	[OrderStatus.CANCELLED]: 'Buyurtma bekor qilindi',
+	[OrderStatus.RETURNED]: 'Qaytarish qabul qilindi',
+};
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
 type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
@@ -48,6 +58,7 @@ export class OrderService {
 		private readonly mailNotify: MailNotifyService,
 		private readonly couponService: CouponService,
 		private readonly tossPayment: TossPaymentService,
+		private readonly pushService: PushService,
 	) {}
 
 	public async createOrder(memberId: ObjectId, input: CreateOrderInput): Promise<Order> {
@@ -173,6 +184,7 @@ export class OrderService {
 		// Telegram/email xabarlar (non-blocking)
 		this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
 		this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
+		this.notifyPush(memberId, orderId, OrderStatus.PENDING);
 		this.telegramNotify.notifyAdminNewOrder(orderId, orderTotal, order.orderItems?.length ?? 0);
 	}
 
@@ -238,6 +250,7 @@ export class OrderService {
 			if (doc) {
 				this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
 				this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
+				this.notifyPush(doc.memberId, doc.orderId, step.next);
 			}
 		}
 	}
@@ -343,6 +356,14 @@ export class OrderService {
 		) as unknown as Order;
 	}
 
+	private notifyPush(memberId: ObjectId, orderCode: string, status: OrderStatus): void {
+		this.pushService.sendToMember(memberId, {
+			title: `Zinfurn — ${orderCode}`,
+			body: ORDER_STATUS_PUSH[status] ?? status,
+			url: ORDERS_URL,
+		});
+	}
+
 	/** ADMIN **/
 
 	public async updateOrderStatusByAdmin(input: OrderUpdate): Promise<Order> {
@@ -352,6 +373,7 @@ export class OrderService {
 		if (updated && input.orderStatus) {
 			this.telegramNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
 			this.mailNotify.notifyCustomer(updated.memberId, updated.orderId, input.orderStatus);
+			this.notifyPush(updated.memberId, updated.orderId, input.orderStatus);
 		}
 		return updated;
 	}

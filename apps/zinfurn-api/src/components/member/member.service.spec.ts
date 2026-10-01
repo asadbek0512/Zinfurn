@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Model, ObjectId } from 'mongoose';
+import { PushService } from '../push/push.service';
 import { MemberService } from './member.service';
 import { Member } from '../../libs/dto/member/member';
 import { MemberStatus } from '../../libs/enums/member.enum';
@@ -26,6 +27,7 @@ describe('MemberService.deleteMyAccount', () => {
 			{} as AuthService,
 			{} as ViewService,
 			{} as LikeService,
+			{ removeMemberDevices: async () => undefined } as unknown as PushService,
 		);
 		return { service, memberUpdate, propertyUpdate, repairUpdate };
 	};
@@ -76,6 +78,7 @@ describe('MemberService.blockMember', () => {
 			{} as AuthService,
 			{} as ViewService,
 			{} as LikeService,
+			{ removeMemberDevices: async () => undefined } as unknown as PushService,
 		);
 		return { service, memberUpdate, followDelete };
 	};
