@@ -135,7 +135,7 @@ export class MemberService {
                         memberSessions: [],
                         deletedAt,
                     },
-                    $unset: { memberPhone: 1, memberEmail: 1, memberPassword: 1, memberTelegramId: 1, memberGoogleId: 1 },
+                    $unset: { memberPhone: 1, memberEmail: 1, memberPassword: 1, memberTelegramId: 1, memberGoogleId: 1, memberAppleId: 1 },
                 } as T,
             )
             .exec();

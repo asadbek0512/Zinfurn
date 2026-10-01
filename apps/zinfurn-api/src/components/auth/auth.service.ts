@@ -8,6 +8,10 @@ import { Member } from '../../libs/dto/member/member';
 import { T } from '../../libs/types/common';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 import { MemberAuthType, MemberStatus, MemberType } from '../../libs/enums/member.enum';
+import { AppleIdentity } from './apple.verifier';
+
+const APPLE_NICK_PREFIX = 'apple_';
+const APPLE_NICK_ID_LENGTH = 6;
 
 /** Web sessiyaning MUTLAQ umri — login paytidan boshlab. Refresh rotation buni uzaytira olmaydi. */
 const SESSION_MAX_AGE_SEC = Number(process.env.SESSION_MAX_AGE_SEC) || 10 * 60 * 60; // 10 soat
@@ -266,6 +270,32 @@ export class AuthService {
 			memberGoogleId: sub,
 		});
 
+		return await this.createTokenPair(member, undefined, client);
+	}
+
+	public async appleLogin(
+		identity: AppleIdentity,
+		fullName: string,
+		client: SessionClient = 'web',
+	): Promise<{ token: string; refresh: string }> {
+		let member = await this.memberModel.findOne({ memberAppleId: identity.sub }).exec();
+		// Shu email bilan Google orqali kirgan akkaunt bo'lsa — unga bog'laymiz
+		if (!member && identity.email) {
+			member = await this.memberModel
+				.findOneAndUpdate({ memberEmail: identity.email, memberStatus: { $ne: MemberStatus.DELETE } }, { memberAppleId: identity.sub }, { new: true })
+				.exec();
+		}
+		if (!member) {
+			member = await this.memberModel.create({
+				memberNick: `${APPLE_NICK_PREFIX}${identity.sub.slice(-APPLE_NICK_ID_LENGTH)}_${Date.now()}`,
+				memberFullName: fullName,
+				memberEmail: identity.email,
+				memberAuthType: MemberAuthType.APPLE,
+				memberStatus: MemberStatus.ACTIVE,
+				memberType: MemberType.USER,
+				memberAppleId: identity.sub,
+			});
+		}
 		return await this.createTokenPair(member, undefined, client);
 	}
 

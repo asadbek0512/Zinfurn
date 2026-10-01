@@ -3,12 +3,20 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService, clientFromRequest } from './auth.service';
 import { TelegramStrategy } from './telegram.strategy';
+import { AppleVerifier } from './apple.verifier';
+
+interface AppleAuthBody {
+	identityToken: string;
+	givenName?: string;
+	familyName?: string;
+}
 
 @Controller('auth')
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly telegramStrategy: TelegramStrategy,
+		private readonly appleVerifier: AppleVerifier,
 	) {}
 
 	// FRONTEND_URL vergul bilan ajratilgan ro'yxat (CORS uchun) — redirect uchun bitta to'g'ri URL tanlaymiz
@@ -114,6 +122,18 @@ export class AuthController {
 			const isApp = this.parseCookies(req).oauthClient === 'app';
 			return res.redirect(this.authRedirectUrl(isApp, '/', { error: err.message }));
 		}
+	}
+
+	// Sign in with Apple (iOS app, native oqim): identity token Apple kalitlari bilan tekshiriladi.
+	// Ism faqat birinchi kirishda keladi — shuning uchun client yuboradi.
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
+	@Post('apple')
+	async appleAuth(@Body() body: AppleAuthBody, @Req() req: any, @Res() res: any) {
+		const identity = await this.appleVerifier.verify(body?.identityToken);
+		const fullName = [body.givenName, body.familyName].filter(Boolean).join(' ');
+		const result = await this.authService.appleLogin(identity, fullName, clientFromRequest(req));
+		this.setAuthCookie(res, result.token);
+		return res.json({ token: result.token, refresh: result.refresh });
 	}
 
 	@Throttle({ default: { limit: 10, ttl: 60000 } })

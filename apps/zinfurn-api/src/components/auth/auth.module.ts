@@ -7,6 +7,7 @@ import { GoogleStrategy } from './google.strategy';
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegramStrategy } from './telegram.strategy';
+import { AppleVerifier } from './apple.verifier';
 import MemberSchema from '../../schemas/Member.model';
 
 @Module({
@@ -19,7 +20,7 @@ import MemberSchema from '../../schemas/Member.model';
       signOptions: { expiresIn: '30d' },
     }),
   ],
-  providers: [AuthService, GoogleStrategy, TelegramStrategy],
+  providers: [AuthService, GoogleStrategy, TelegramStrategy, AppleVerifier],
   controllers: [AuthController],
   exports: [AuthService],
 })
