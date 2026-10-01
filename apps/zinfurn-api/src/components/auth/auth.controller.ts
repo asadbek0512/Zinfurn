@@ -101,7 +101,9 @@ export class AuthController {
 			const isApp = cookies.oauthClient === 'app';
 			if (isApp) res.cookie('oauthClient', '', { maxAge: 0 });
 
-			const memberId = cookies.linkMemberId || req.query?.state || user?.memberId;
+			// Ulash: state/cookie'da imzolangan link token bo'lishi shart (ochiq memberId qabul qilinmaydi)
+			const linkToken = cookies.linkMemberId || req.query?.state || user?.memberId;
+			const memberId = linkToken ? await this.authService.verifyLinkToken(linkToken) : null;
 
 			if (memberId) {
 				// Account linking
@@ -171,23 +173,75 @@ export class AuthController {
 		}
 	}
 
+	private async memberIdFromBearer(req: any): Promise<string> {
+		const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+		if (!token) throw new Error('Login required');
+		const member = await this.authService.verifyToken(token);
+		return String(member._id);
+	}
+
+	// Ulash oqimi tashqi sahifadan (Telegram/Google) o'tadi — memberId o'rniga imzolangan,
+	// 10 daqiqalik link token yuriladi. Avval memberId ochiq qabul qilinardi: begona odam o'z
+	// Telegram'ini istalgan akkauntga ulab, o'sha akkaunt token'ini olishi mumkin edi.
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
+	@Post('link-token')
+	async linkToken(@Req() req: any, @Res() res: any) {
+		try {
+			const memberId = await this.memberIdFromBearer(req);
+			return res.json({ linkToken: await this.authService.createLinkToken(memberId) });
+		} catch {
+			return res.status(401).json({ message: 'Login required' });
+		}
+	}
+
 	@Throttle({ default: { limit: 10, ttl: 60000 } })
 	@Post('link/telegram')
 	async linkTelegram(@Body() body: any, @Req() req: any, @Res() res: any) {
-		const { memberId, ...telegramData } = body;
-		const isValid = this.telegramStrategy.verifyTelegramAuth(telegramData);
-		if (!isValid) {
+		const { memberId: _ignored, ...telegramData } = body;
+		let memberId: string;
+		try {
+			memberId = await this.memberIdFromBearer(req);
+		} catch {
+			return res.status(401).json({ message: 'Login required' });
+		}
+		if (!this.telegramStrategy.verifyTelegramAuth(telegramData)) {
 			return res.status(401).json({ message: 'Invalid Telegram auth data' });
 		}
-		const result = await this.authService.linkTelegram(memberId, telegramData, clientFromRequest(req));
-		this.setAuthCookie(res, result.token);
-		return res.json({ token: result.token, refresh: result.refresh });
+		try {
+			const result = await this.authService.linkTelegram(memberId, telegramData, clientFromRequest(req));
+			this.setAuthCookie(res, result.token);
+			return res.json({ token: result.token, refresh: result.refresh });
+		} catch (err: any) {
+			return res.status(400).json({ message: err.message });
+		}
+	}
+
+	// Mobil app: Telegram ulash tizim brauzerida, natija deep link bilan /mypage'ga qaytadi
+	@Throttle({ default: { limit: 10, ttl: 60000 } })
+	@Get('app/link/telegram')
+	async appLinkTelegram(@Req() req: any, @Res() res: any) {
+		const { linkToken, ...telegramData } = req.query;
+		try {
+			const memberId = await this.authService.verifyLinkToken(linkToken);
+			if (!this.telegramStrategy.verifyTelegramAuth(telegramData)) {
+				return res.redirect(this.authRedirectUrl(true, '/mypage', { error: 'Invalid Telegram auth data' }));
+			}
+			const result = await this.authService.linkTelegram(memberId, telegramData, 'app');
+			return res.redirect(this.authRedirectUrl(true, '/mypage', { token: result.token, refresh: result.refresh }));
+		} catch (err: any) {
+			return res.redirect(this.authRedirectUrl(true, '/mypage', { error: err.message || 'Telegram link failed' }));
+		}
 	}
 
 	@Get('link/google')
 	async linkGoogle(@Req() req: any, @Res() res: any) {
-		// Store memberId in cookie BEFORE OAuth redirect
+		// state = link token (memberId emas) — callback'da qayta tekshiriladi
 		const memberId = req.query.state;
+		try {
+			await this.authService.verifyLinkToken(memberId);
+		} catch {
+			return res.redirect(this.authRedirectUrl(req.query.client === 'app', '/mypage', { error: 'Login required' }));
+		}
 		// App'dan kelgan bo'lsa — callback deep link orqali qaytsin
 		if (req.query.client === 'app') {
 			res.cookie('oauthClient', 'app', {
@@ -205,7 +259,7 @@ export class AuthController {
 		});
 
 		// Trigger Google OAuth
-		const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.GOOGLE_CALLBACK_URL}&response_type=code&scope=email%20profile&state=${memberId}`;
+		const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.GOOGLE_CALLBACK_URL}&response_type=code&scope=email%20profile&state=${encodeURIComponent(memberId)}`;
 		res.redirect(googleAuthUrl);
 	}
 
@@ -215,7 +269,7 @@ export class AuthController {
 		const isApp = this.parseCookies(req).oauthClient === 'app';
 		if (isApp) res.cookie('oauthClient', '', { maxAge: 0 });
 		try {
-			const memberId = req.user?.memberId;
+			const memberId = req.user?.memberId ? await this.authService.verifyLinkToken(req.user.memberId) : null;
 			if (!memberId) {
 				return res.redirect(this.authRedirectUrl(isApp, '/mypage', { error: 'No memberId found' }));
 			}

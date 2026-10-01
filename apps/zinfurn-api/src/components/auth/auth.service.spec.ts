@@ -55,7 +55,21 @@ describe('AuthService (token pair)', () => {
 	it('verifyToken refresh tokenni RAD ETADI', async () => {
 		const service = makeService();
 		const refresh = await service.createRefreshToken(fakeMember);
-		await expect(service.verifyToken(refresh)).rejects.toThrow('Refresh token cannot be used');
+		await expect(service.verifyToken(refresh)).rejects.toThrow('Only access tokens');
+	});
+
+	it('link token access sifatida ishlatilmaydi, faqat verifyLinkToken qabul qiladi', async () => {
+		const service = makeService();
+		const link = await service.createLinkToken(String(fakeMember._id));
+		await expect(service.verifyToken(link)).rejects.toThrow('Only access tokens');
+		await expect(service.verifyLinkToken(link)).resolves.toBe(String(fakeMember._id));
+	});
+
+	it('verifyLinkToken ochiq memberId va access tokenni RAD ETADI', async () => {
+		const service = makeService();
+		await expect(service.verifyLinkToken(String(fakeMember._id))).rejects.toThrow();
+		const access = await service.createToken(fakeMember);
+		await expect(service.verifyLinkToken(access)).rejects.toThrow('Invalid link token');
 	});
 
 	it('verifyToken access tokenni qabul qiladi', async () => {

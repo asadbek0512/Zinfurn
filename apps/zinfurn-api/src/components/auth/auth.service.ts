@@ -23,6 +23,9 @@ const APP_SESSION_IDLE_SEC = Number(process.env.APP_SESSION_IDLE_SEC) || 30 * 24
 const APP_SESSION_MAX_AGE_SEC = Number(process.env.APP_SESSION_MAX_AGE_SEC) || 90 * 24 * 60 * 60; // 90 kun
 /** Bitta member uchun saqlanadigan sessiyalar (web + app qurilmalar) soni. */
 const MAX_SESSIONS = 20;
+// Akkaunt ulash (Telegram/Google) uchun qisqa muddatli token — tashqi oauth oqimida memberId o'rniga yuriladi
+const LINK_TOKEN_TTL_SEC = 10 * 60;
+const LINK_TOKEN_TYPE = 'link';
 /** Rotation javobi yetib bormasa (tarmoq/parallel so'rov) — oldingi refresh shuncha vaqt qabul qilinadi. */
 const REFRESH_REUSE_GRACE_SEC = 60;
 /** Capacitor app WebView User-Agent'iga qo'shadigan belgi (zinfurn-app/capacitor.config.ts). */
@@ -161,9 +164,23 @@ export class AuthService {
 	public async verifyToken(token: string): Promise<Member> {
 		const member = await this.jwtService.verifyAsync(token);
 		// Refresh token access o'rnida ishlatilmasin
-		if (member?.tokenType === 'refresh') throw new Error('Refresh token cannot be used for authentication');
+		if (member?.tokenType === 'refresh' || member?.tokenType === LINK_TOKEN_TYPE) {
+			throw new Error('Only access tokens can be used for authentication');
+		}
 		member._id = ShapeIntoMongoObjectId(member._id);
 		return member;
+	}
+
+	public async createLinkToken(memberId: string): Promise<string> {
+		return await this.jwtService.signAsync({ _id: memberId, tokenType: LINK_TOKEN_TYPE }, { expiresIn: LINK_TOKEN_TTL_SEC });
+	}
+
+	/** Link token'dan memberId. Boshqa turdagi yoki muddati o'tgan token — xato */
+	public async verifyLinkToken(token: unknown): Promise<string> {
+		if (typeof token !== 'string' || !token) throw new Error('Link token is missing');
+		const payload = await this.jwtService.verifyAsync(token);
+		if (payload?.tokenType !== LINK_TOKEN_TYPE || !payload._id) throw new Error('Invalid link token');
+		return String(payload._id);
 	}
 
 	/** Refresh token evaziga yangi juftlik. Member holati bazadan qayta tekshiriladi (bloklanganlar chetlatiladi). */
