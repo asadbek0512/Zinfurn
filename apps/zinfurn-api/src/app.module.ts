@@ -1,4 +1,4 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module, Logger, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from "@nestjs/config";
@@ -14,6 +14,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { GqlThrottlerGuard } from './components/auth/guards/gql-throttler.guard';
 import * as depthLimit from 'graphql-depth-limit';
+import { SecurityModule } from './components/security/security.module';
+import { SecurityMiddleware } from './components/security/security.middleware';
 
 @Module({
   imports: [
@@ -43,11 +45,17 @@ import * as depthLimit from 'graphql-depth-limit';
         return graphQLFormattedError;
       },
     }),
+    SecurityModule, // global — hujum alert xizmati (Telegram + Email)
     ComponentsModule,// bu modul boshqa modullar bilan bog'lovchi ko'prik hisoblanadi.
     DatabaseModule, SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  // Har bir so'rovni hujum imzolariga qarab tekshiruvchi middleware (barcha route'lar)
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(SecurityMiddleware).forRoutes('*');
+  }
+}
 //loyihasining markaziy moduli hisblangan AppModule ni tashkil qilib, barcha kerakli qismlarni bir joyga birlashtiramiz.

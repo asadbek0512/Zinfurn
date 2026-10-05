@@ -1,6 +1,7 @@
 import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
+import { SecurityAlertService } from '../../security/security-alert.service';
 
 function parseCookieToken(cookieHeader: string | undefined): string | null {
 	if (!cookieHeader) return null;
@@ -13,7 +14,10 @@ function parseCookieToken(cookieHeader: string | undefined): string | null {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-	constructor(private authService: AuthService) { }
+	constructor(
+		private authService: AuthService,
+		private alert: SecurityAlertService,
+	) { }
 
 	async canActivate(context: ExecutionContext | any): Promise<boolean> {
 		Logger.log('--- @guard() Authentication [AuthGuard] ---');
@@ -27,7 +31,16 @@ export class AuthGuard implements CanActivate {
 			const rawToken = (bearerToken ? bearerToken.split(' ')[1] : null) || parseCookieToken(request.headers.cookie);
 
 			if (!rawToken) throw new BadRequestException(Message.TOKEN_NOT_EXIST);
-			const authMember = await this.authService.verifyToken(rawToken);
+			let authMember;
+			try {
+				authMember = await this.authService.verifyToken(rawToken);
+			} catch (err) {
+				// Yaroqsiz/soxta token — brute-force signali sifatida qayd qilinadi
+				const xff = request?.headers?.['x-forwarded-for'];
+				const ip = (typeof xff === 'string' && xff.split(',')[0].trim()) || request?.ip || 'unknown';
+				this.alert.noteAuthFailure(ip, 'yaroqsiz access token', request?.originalUrl || 'graphql', String(request?.headers?.['user-agent'] || ''));
+				throw err;
+			}
 			if (!authMember) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
 			request.body.authMember = authMember;

@@ -21,12 +21,16 @@ import { createWriteStream, mkdirSync, openSync, readSync, closeSync, statSync, 
 // `sharp_1.default` (undefined) beradi. require bilan to'g'ri callable olamiz.
 const sharp = require('sharp') as typeof import('sharp').default;
 import { Message } from '../../libs/enums/common_enum';
+import { SecurityAlertService, SecurityEventType } from '../security/security-alert.service';
 
 const ALLOWED_UPLOAD_TARGETS = ['member', 'property', 'article', 'repair', 'review'];
 
 @Resolver()
 export class MemberResolver {
-    constructor(private readonly memberService: MemberService) { }//dpendensiy injekshen
+    constructor(
+        private readonly memberService: MemberService,
+        private readonly alert: SecurityAlertService,
+    ) { }//dpendensiy injekshen
 
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Mutation(() => Member)
@@ -86,8 +90,24 @@ export class MemberResolver {
     public async updateMember(
         @Args('input') input: MemberUpdate,
         @AuthMember() authMember: Member,
+        @Context() ctx: any,
     ): Promise<Member> {
         delete input._id;
+        // Xavfsizlik: user o'z rol/holatini oshira olmasin — bu maydonlar faqat updateMemberByAdmin orqali.
+        if (input.memberType !== undefined || input.memberStatus !== undefined) {
+            const req = ctx?.req;
+            const xff = req?.headers?.['x-forwarded-for'];
+            this.alert.report({
+                type: SecurityEventType.PRIVILEGE_ESCALATION,
+                detail: `updateMember orqali memberType=${input.memberType} / memberStatus=${input.memberStatus} o'rnatishga urinish (bloklandi)`,
+                ip: (typeof xff === 'string' && xff.split(',')[0].trim()) || req?.ip || 'unknown',
+                path: req?.originalUrl || 'graphql',
+                userAgent: String(req?.headers?.['user-agent'] || ''),
+                memberId: String(authMember._id),
+            });
+        }
+        delete input.memberType;
+        delete input.memberStatus;
         // Profil yangilanishi yangi token beradi, lekin sessiya boshlanish vaqti (sid) saqlanadi —
         // aks holda profilni tahrirlash sessiya muddatini cheksiz uzaytirardi.
         return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid, (authMember as any).client);
