@@ -9,6 +9,16 @@ import * as express from 'express';
 import * as session from 'express-session';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { randomBytes } from 'crypto';
+import * as dns from 'dns';
+import * as net from 'net';
+
+// Docker container'da IPv6 egress yo'q — Node fetch() IPv6 manzilni birinchi sinab,
+// javob kelmasa (firewall DROP) 8s osilib ETIMEDOUT beradi. Bu Telegram/Resend
+// (alert + buyurtma xabarlari) yetib bormasligiga sabab bo'lardi. IPv4'ni majburlaymiz.
+if (typeof (net as any).setDefaultAutoSelectFamily === 'function') {
+  (net as any).setDefaultAutoSelectFamily(false);
+}
+dns.setDefaultResultOrder('ipv4first');
 
 // Process darajasida ushlanmagan xatolar — bo'lmasa jarayon jimgina qulab tushadi
 // (yoki hech narsa aytmay osilib qoladi) va sabab loglarda ko'rinmaydi.
