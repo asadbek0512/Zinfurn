@@ -8,6 +8,7 @@ import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
 import { LikeModule } from '../like/like.module';
 import { TranslationModule } from '../translation/translation.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TranslationModule } from '../translation/translation.module';
     MemberModule,
     LikeModule,
     TranslationModule,
+    NotificationModule,
   ],
   providers: [PropertyResolver, PropertyService],
   exports: [PropertyService],

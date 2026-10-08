@@ -8,8 +8,11 @@ import { SocketGateway } from '../../socket/socket.gateway';
 import { PushService } from '../push/push.service';
 
 /** Push bosilganda app ichida ochiladigan sahifa */
-const notificationUrl = (input: NotificationInput): string | undefined =>
-	input.articleId ? `/community/detail?id=${input.articleId}` : undefined;
+const notificationUrl = (input: NotificationInput): string | undefined => {
+	if (input.articleId) return `/community/detail?id=${input.articleId}`;
+	if (input.propertyId) return `/products/detail?id=${input.propertyId}`;
+	return undefined;
+};
 
 @Injectable()
 export class NotificationService {

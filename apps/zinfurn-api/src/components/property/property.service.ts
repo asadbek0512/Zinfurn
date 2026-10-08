@@ -22,6 +22,24 @@ import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { TranslationService } from '../translation/translation.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
+
+type PricedProperty = Pick<
+    Property,
+    'propertyPrice' | 'propertySalePrice' | 'propertyIsOnSale' | 'propertySaleStartsAt' | 'propertySaleExpiresAt'
+>;
+
+/** Mijoz hozir ko'radigan narx — saytdagi activeSalePrice bilan bir xil qoida */
+const effectivePrice = (p: PricedProperty, now = new Date()): number => {
+    const saleActive =
+        p.propertyIsOnSale &&
+        typeof p.propertySalePrice === 'number' &&
+        p.propertySalePrice < p.propertyPrice &&
+        (!p.propertySaleStartsAt || new Date(p.propertySaleStartsAt) <= now) &&
+        (!p.propertySaleExpiresAt || new Date(p.propertySaleExpiresAt) > now);
+    return saleActive ? (p.propertySalePrice as number) : p.propertyPrice;
+};
 
 @Injectable()
 export class PropertyService {
@@ -31,7 +49,50 @@ export class PropertyService {
         private viewService: ViewService,
         private likeService: LikeService,
         private translationService: TranslationService,
+        private notificationService: NotificationService,
     ) { }
+
+    /** Narx tushsa mahsulotni yoqtirganlarga bildirishnoma + push (xato bo'lsa update'ni buzmaydi) */
+    private async notifyPriceDrop(before: PricedProperty | null, after: Property): Promise<void> {
+        if (!before) return;
+        const oldPrice = effectivePrice(before);
+        const newPrice = effectivePrice(after);
+        if (newPrice >= oldPrice) return;
+        try {
+            const likerIds = await this.likeService.findLikerIds(LikeGroup.PROPERTY, after._id);
+            const ownerId = after.memberId.toString();
+            await Promise.all(
+                likerIds
+                    .filter((id) => id !== ownerId)
+                    .map((receiverId) =>
+                        this.notificationService.createNotification({
+                            notificationType: NotificationType.PRICE_DROP,
+                            notificationGroup: NotificationGroup.PROPERTY,
+                            notificationTitle: 'Price drop',
+                            notificationDesc: `"${after.propertyTitle}" is now $${newPrice} (was $${oldPrice})`,
+                            authorId: ownerId,
+                            receiverId,
+                            propertyId: after._id.toString(),
+                        }),
+                    ),
+            );
+        } catch (err) {
+            Logger.warn(`Price drop notification failed: ${err.message}`);
+        }
+    }
+
+    private findPricing(search: T): Promise<PricedProperty | null> {
+        return this.propertyModel
+            .findOne(search, {
+                propertyPrice: 1,
+                propertySalePrice: 1,
+                propertyIsOnSale: 1,
+                propertySaleStartsAt: 1,
+                propertySaleExpiresAt: 1,
+            })
+            .lean()
+            .exec();
+    }
 
     public async createProperty(input: PropertyInput): Promise<Property> {
         try {
@@ -115,12 +176,14 @@ export class PropertyService {
             }
         }
 
+        const before = await this.findPricing(search);
         const result = await this.propertyModel
             .findOneAndUpdate(search, input, {
                 new: true,
             })
             .exec();
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+        this.notifyPriceDrop(before, result);
 
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({
@@ -304,12 +367,14 @@ export class PropertyService {
         if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
         else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
 
+        const before = await this.findPricing(search);
         const result = await this.propertyModel
             .findOneAndUpdate(search, input, {
                 new: true,
             })
             .exec();
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+        this.notifyPriceDrop(before, result);
 
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({

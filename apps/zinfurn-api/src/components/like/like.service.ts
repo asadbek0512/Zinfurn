@@ -175,4 +175,10 @@ export class LikeService {
 		result.list = data[0].list.map((ele) => ele.favoriteRepairProperty);
 		return result;
 	}
+
+	/** Shu obyektni yoqtirgan a'zolar (narx tushganda xabar berish uchun) */
+	public async findLikerIds(likeGroup: LikeGroup, likeRefId: ObjectId): Promise<string[]> {
+		const likes = await this.likeModel.find({ likeGroup, likeRefId }, { memberId: 1 }).lean().exec();
+		return likes.map((like) => like.memberId.toString());
+	}
 }

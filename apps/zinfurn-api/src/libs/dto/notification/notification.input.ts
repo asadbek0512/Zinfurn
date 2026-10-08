@@ -43,4 +43,9 @@ export class NotificationInput {
 	@IsMongoId()
 	@IsOptional()
 	articleId?: string;
+
+	@Field(() => String, { nullable: true })
+	@IsMongoId()
+	@IsOptional()
+	propertyId?: string;
 }
