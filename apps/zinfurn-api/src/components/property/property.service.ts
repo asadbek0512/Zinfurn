@@ -236,7 +236,10 @@ export class PropertyService {
             options,
             text,
             propertyIsOnSale,
+            idList,
         } = input.search;
+
+        if (idList && idList.length) match._id = { $in: idList.map((id) => ShapeIntoMongoObjectId(id)) };
 
         // Flash Sale: sale oynasi ochilgan va muddati o'tmagan mahsulotlar.
         // propertySaleStartsAt yo'q bo'lsa — eski yozuv, darrov aktiv hisoblanadi.

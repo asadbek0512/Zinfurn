@@ -1,9 +1,11 @@
 import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, Length, MinLength, Min, IsInt, IsIn } from 'class-validator';
+import { IsNotEmpty, IsOptional, Length, MinLength, Min, IsInt, IsIn, IsMongoId, ArrayMaxSize } from 'class-validator';
 import { PropertyType, PropertyStatus, PropertyCategory, PropertyMaterial, PropertyColor, PropertyCondition } from '../../enums/property.enum';
 import { ObjectId } from 'mongoose';
 import { availableOptions, availablePropertySorts } from '../../config';
 import { Direction } from '../../enums/common_enum';
+
+const MAX_ID_LIST = 50;
 @InputType()
 export class PropertyInput {
     @IsNotEmpty()
@@ -46,6 +48,10 @@ export class PropertyInput {
     @IsOptional()
     @Field(() => Boolean, { nullable: true })
     propertyIsOnSale?: boolean;
+
+    @IsOptional()
+    @Field(() => Number, { nullable: true })
+    propertyStock?: number;
 
     @IsOptional()
     @Field(() => Date, { nullable: true })
@@ -172,6 +178,13 @@ export class PISearch {
   @IsOptional()
   @Field(() => String, { nullable: true })
   text?: string;
+
+  /** Aniq mahsulotlar (widget'dagi sevimlilar) */
+  @IsOptional()
+  @IsMongoId({ each: true })
+  @ArrayMaxSize(MAX_ID_LIST)
+  @Field(() => [String], { nullable: true })
+  idList?: string[];
 }
 
 @InputType()

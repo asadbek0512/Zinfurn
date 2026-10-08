@@ -66,6 +66,9 @@ export class Property {
     @Field(() => Boolean, { nullable: true })
     propertyIsOnSale?: boolean;
 
+    @Field(() => Number, { nullable: true })
+    propertyStock?: number;
+
     @Field(() => Date, { nullable: true })
     propertySaleStartsAt?: Date;
 

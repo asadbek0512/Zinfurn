@@ -51,6 +51,10 @@ export class PropertyUpdate {
   propertyIsOnSale?: boolean;
 
   @IsOptional()
+  @Field(() => Number, { nullable: true })
+  propertyStock?: number;
+
+  @IsOptional()
   @Field(() => Date, { nullable: true })
   propertySaleStartsAt?: Date;
 

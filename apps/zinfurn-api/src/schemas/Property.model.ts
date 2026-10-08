@@ -64,6 +64,11 @@ const PropertySchema = new Schema(
 			default: false,
 		},
 
+		// Zaxira miqdori. null/undefined = cheksiz (eski listinglar uchun), 0 = tugagan, past son = "oz qoldi"
+		propertyStock: {
+			type: Number,
+		},
+
 		// Sale oynasining boshlanishi — kelajakdagi sale'lar shu sana kelgunicha
 		// mijozga ko'rinmaydi (flash sale navbatma-navbat almashishi uchun)
 		propertySaleStartsAt: {

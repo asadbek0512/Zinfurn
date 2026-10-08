@@ -45,7 +45,7 @@ const ORDER_STATUS_PUSH: Partial<Record<OrderStatus, string>> = {
 };
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
-type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[] };
+type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[]; propertyStock?: number };
 
 @Injectable()
 export class OrderService {
@@ -186,6 +186,22 @@ export class OrderService {
 		this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
 		this.notifyPush(memberId, orderId, OrderStatus.PENDING);
 		this.telegramNotify.notifyAdminNewOrder(orderId, orderTotal, order.orderItems?.length ?? 0);
+		this.decrementStock(order).catch((e) => Logger.warn(`Stock kamaytirish xatosi: ${e?.message}`));
+	}
+
+	/** To'langan buyurtma pozitsiyalari bo'yicha zaxirani kamaytiradi. Faqat stock=son bo'lganlar (null=cheksiz). */
+	private async decrementStock(order: Order): Promise<void> {
+		const items = order.orderItems ?? [];
+		await Promise.all(
+			items.map((item) =>
+				this.propertyModel
+					.updateOne(
+						{ _id: item.propertyId, propertyStock: { $type: 'number' } },
+						{ $inc: { propertyStock: -item.quantity } },
+					)
+					.exec(),
+			),
+		);
 	}
 
 	/** Har pozitsiyani DB'dagi mahsulot bo'yicha qayta narxlaydi; sotuvda bo'lmasa rad etadi */
@@ -193,7 +209,7 @@ export class OrderService {
 		const ids = items.map((item) => item.propertyId);
 		const properties = await this.propertyModel
 			.find({ _id: { $in: ids }, propertyStatus: PropertyStatus.ACTIVE })
-			.select('propertyTitle propertyImages propertyPrice propertySalePrice propertyIsOnSale propertySaleStartsAt propertySaleExpiresAt')
+			.select('propertyTitle propertyImages propertyPrice propertySalePrice propertyIsOnSale propertySaleStartsAt propertySaleExpiresAt propertyStock')
 			.lean<OrderableProperty[]>()
 			.exec();
 		const byId = new Map(properties.map((property) => [String(property._id), property]));
@@ -201,6 +217,10 @@ export class OrderService {
 		return items.map((item) => {
 			const property = byId.get(String(item.propertyId));
 			if (!property) throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
+			// Zaxira cheklangan bo'lsa (son) va yetarli bo'lmasa — rad etamiz. null = cheksiz.
+			if (typeof property.propertyStock === 'number' && property.propertyStock < item.quantity) {
+				throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
+			}
 			return {
 				propertyId: item.propertyId,
 				propertyTitle: property.propertyTitle,
