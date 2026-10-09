@@ -57,6 +57,7 @@ export const buildPaymentUrl = (method: PaymentMethod, orderId: string, amountSu
 	if (isProviderConfigured(method)) {
 		return method === PaymentMethod.PAYME ? buildPaymeUrl(orderId, amountSum) : buildClickUrl(orderId, amountSum);
 	}
-	const query = new URLSearchParams({ orderId, provider: method.toLowerCase() });
+	// amount faqat ko'rsatish uchun — demo tasdiq summani tekshirmaydi, buyurtma serverda
+	const query = new URLSearchParams({ orderId, provider: method.toLowerCase(), amount: String(amountSum) });
 	return `${DEMO_PAYMENT_PATH}?${query.toString()}`;
 };
