@@ -6,6 +6,7 @@ import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
 import { CouponService } from '../coupon/coupon.service';
 import { TossPaymentService } from './toss-payment.service';
+import { PushService } from '../push/push.service';
 import { PaymentMethod, PaymentStatus } from '../../libs/enums/payment.enum';
 import { Order } from '../../libs/dto/order/order';
 import { CreateOrderInput } from '../../libs/dto/order/order.input';
@@ -53,6 +54,7 @@ describe('OrderService.createOrder', () => {
 			notify as unknown as MailNotifyService,
 			{ redeemCoupon } as unknown as CouponService,
 			{ confirm: tossConfirm } as unknown as TossPaymentService,
+			{ sendToMember: jest.fn(async () => undefined) } as unknown as PushService,
 		);
 		// auto-progression taymerlari testda ishga tushmasin
 		jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
@@ -132,8 +134,8 @@ describe('OrderService.createOrder', () => {
 		});
 	});
 
-	describe('expireUnpaidTossOrders', () => {
-		const stale = { _id: 'o9', orderId: 'ZIN-9', memberId: MEMBER_ID, orderTotal: 10, paymentAmount: 13500, orderCouponCode: 'SALE10' };
+	describe('expireUnpaidOnlineOrders', () => {
+		const stale = { _id: 'o9', orderId: 'ZIN-9', paymentMethod: PaymentMethod.TOSS, memberId: MEMBER_ID, orderTotal: 10, paymentAmount: 13500, orderCouponCode: 'SALE10' };
 
 		const makeExpiry = (tossResult: object | null) => {
 			const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...stale, ...update }) }));
@@ -150,6 +152,7 @@ describe('OrderService.createOrder', () => {
 				notify as unknown as MailNotifyService,
 				{ releaseCoupon } as unknown as CouponService,
 				{ findByOrderId: jest.fn(async () => tossResult) } as unknown as TossPaymentService,
+				{ sendToMember: jest.fn(async () => undefined) } as unknown as PushService,
 			);
 			jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
 			return { service, findOneAndUpdate, releaseCoupon, notify };
@@ -157,15 +160,15 @@ describe('OrderService.createOrder', () => {
 
 		it("Toss'da to'lov yo'q — bekor qilinadi va kupon qaytariladi", async () => {
 			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry(null);
-			await service.expireUnpaidTossOrders();
-			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.CANCELLED });
+			await service.expireUnpaidOnlineOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ orderStatus: OrderStatus.CANCELLED });
 			expect(releaseCoupon).toHaveBeenCalledWith('SALE10');
 			expect(notify.notifyAdminNewOrder).not.toHaveBeenCalled();
 		});
 
 		it("Toss'da DONE — PAID qilinadi, bekor qilinmaydi", async () => {
 			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry({ status: 'DONE', totalAmount: 13500, paymentKey: 'pk_9' });
-			await service.expireUnpaidTossOrders();
+			await service.expireUnpaidOnlineOrders();
 			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ paymentStatus: PaymentStatus.PAID, paymentKey: 'pk_9' });
 			expect(releaseCoupon).not.toHaveBeenCalled();
 			expect(notify.notifyAdminNewOrder).toHaveBeenCalled();
@@ -173,8 +176,8 @@ describe('OrderService.createOrder', () => {
 
 		it("Toss summasi mos kelmasa — PAID qilinmaydi", async () => {
 			const { service, findOneAndUpdate } = makeExpiry({ status: 'DONE', totalAmount: 1, paymentKey: 'pk_9' });
-			await service.expireUnpaidTossOrders();
-			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.CANCELLED });
+			await service.expireUnpaidOnlineOrders();
+			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ orderStatus: OrderStatus.CANCELLED });
 		});
 	});
 
@@ -195,6 +198,7 @@ describe('OrderService.createOrder', () => {
 				notify as unknown as MailNotifyService,
 				{} as CouponService,
 				{} as TossPaymentService,
+				{ sendToMember: jest.fn(async () => undefined) } as unknown as PushService,
 			);
 			return { service, findOneAndUpdate, updateOne, notify };
 		};

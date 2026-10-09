@@ -25,6 +25,11 @@ const CommentSchema = new Schema(
 			required: true,
 		},
 
+		commentReplyId: {
+			type: Schema.Types.ObjectId,
+			required: false,
+		},
+
 		memberId: {
 			type: Schema.Types.ObjectId,
 			required: true,

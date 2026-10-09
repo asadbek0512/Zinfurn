@@ -11,6 +11,9 @@ import { OrderService } from './order.service';
 import { TelegramNotifyService } from './telegram-notify.service';
 import { MailNotifyService } from './mail-notify.service';
 import { TossPaymentService } from './toss-payment.service';
+import { PaymeService } from './payme.service';
+import { ClickService } from './click.service';
+import { PaymentController } from './payment.controller';
 
 @Module({
 	imports: [
@@ -23,7 +26,8 @@ import { TossPaymentService } from './toss-payment.service';
 		MemberModule,
 		CouponModule,
 	],
-	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService, TossPaymentService],
+	controllers: [PaymentController],
+	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService, TossPaymentService, PaymeService, ClickService],
 	exports: [OrderService],
 })
 export class OrderModule {}

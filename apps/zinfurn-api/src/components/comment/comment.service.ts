@@ -71,6 +71,11 @@ export class CommentService {
 						modifier: 1,
 					});
 					break;
+				case CommentGroup.PROPERTY_QA:
+					// @ts-ignore
+					const property = await this.propertyService.getProperty(null, input.commentRefId);
+					ownerId = property.memberId.toString();
+					break;
 			}
 
 			// Send notification if we have an owner ID and it's not a self-comment
@@ -120,6 +125,12 @@ export class CommentService {
 			case CommentGroup.MEMBER:
 				notificationDesc = `${commenterName} commented on your profile`;
 				break;
+			case CommentGroup.PROPERTY:
+			case CommentGroup.PROPERTY_QA:
+				// @ts-ignore
+				const property = await this.propertyService.getProperty(null, refId as any);
+				notificationDesc = `${commenterName} asked a question about your product "${property.propertyTitle}"`;
+				break;
 		}
 
 		// Send notification
@@ -136,6 +147,7 @@ export class CommentService {
 	private mapCommentGroupToNotificationGroup(commentGroup: CommentGroup): NotificationGroup {
 		switch (commentGroup) {
 			case CommentGroup.PROPERTY:
+			case CommentGroup.PROPERTY_QA:
 				return NotificationGroup.PROPERTY;
 			case CommentGroup.REPAIR_PROPERTY:
 				return NotificationGroup.REPAIR_PROPERTY;
@@ -166,8 +178,9 @@ export class CommentService {
 	}
 
 	public async getComments(memberId: ObjectId, input: CommentsInquiry): Promise<Comments> {
-		const { commentRefId } = input.search;
+		const { commentRefId, commentGroup } = input.search;
 		const match: T = { commentRefId: commentRefId, commentStatus: CommentStatus.ACTIVE };
+		if (commentGroup) match.commentGroup = commentGroup;
 		const blocked = await this.memberService.getBlockedMemberIds(memberId);
 		if (blocked.length) match.memberId = { $nin: blocked };
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };

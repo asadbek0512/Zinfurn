@@ -20,6 +20,9 @@ export class Comment {
 	@Field(() => String)
 	commentRefId: ObjectId;
 
+	@Field(() => String, { nullable: true })
+	commentReplyId?: ObjectId;
+
 	@Field(() => String)
 	memberId: ObjectId;
 

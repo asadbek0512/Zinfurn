@@ -20,6 +20,10 @@ export class CommentInput {
 	@Field(() => String)
 	commentRefId: ObjectId;
 
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	commentReplyId?: ObjectId;
+
 	memberId?: ObjectId;
 }
 
@@ -28,6 +32,10 @@ class CISearch {
 	@IsNotEmpty()
 	@Field(() => String)
 	commentRefId: ObjectId;
+
+	@IsOptional()
+	@Field(() => CommentGroup, { nullable: true })
+	commentGroup?: CommentGroup;
 }
 
 @InputType()

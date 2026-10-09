@@ -34,6 +34,25 @@ export class OrderResolver {
 		return this.orderService.confirmTossPayment(memberId, input);
 	}
 
+	/** Payme/Click to'lov sahifasi havolasi (kalit yo'q bo'lsa demo sahifa) */
+	@UseGuards(AuthGuard)
+	@Mutation(() => String)
+	public async startPayment(
+		@Args('orderId') orderId: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<string> {
+		return this.orderService.getPaymentUrl(memberId, orderId);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Order)
+	public async confirmDemoPayment(
+		@Args('orderId') orderId: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Order> {
+		return this.orderService.confirmDemoPayment(memberId, orderId);
+	}
+
 	@UseGuards(AuthGuard)
 	@Query(() => Orders)
 	public async getMyOrders(

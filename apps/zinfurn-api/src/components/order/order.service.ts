@@ -18,11 +18,16 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { PriceSource, effectivePrice } from '../../libs/pricing';
 import { PushService } from '../push/push.service';
+import { UZS_CURRENCY, UZ_PROVIDERS, buildPaymentUrl, isProviderConfigured, uzsPerUsd } from './payment-gateway.config';
 
 /** Narxlar USD'da saqlanadi; Toss faqat KRW qabul qiladi */
 const TOSS_CURRENCY = 'KRW';
 const DEFAULT_KRW_PER_USD = 1350;
-/** Shu vaqtdan keyin to'lanmagan Toss buyurtmasi bekor qilinadi */
+/** To'lov provayder sahifasida amalga oshiriladigan usullar — buyurtma UNPAID yaratiladi */
+const ONLINE_METHODS: PaymentMethod[] = [PaymentMethod.TOSS, ...UZ_PROVIDERS];
+/** Payme tranzaksiyasi "yaratilgan" holati — Payme o'zi 12 soatda bekor qiladi, biz tegmaymiz */
+const PAYME_STATE_CREATED = 1;
+/** Shu vaqtdan keyin to'lanmagan onlayn buyurtma bekor qilinadi */
 const TOSS_UNPAID_TTL_MS = 30 * 60 * 1000;
 /** Bitta cron ishga tushishida ko'rib chiqiladigan buyurtmalar soni */
 const TOSS_EXPIRE_BATCH = 100;
@@ -79,19 +84,20 @@ export class OrderService {
 			input.orderTotal = Math.max(0, input.orderTotal - orderDiscount);
 		}
 
-		// Toss: buyurtma to'lanmagan holda yaratiladi, to'lov confirmTossPayment'da tasdiqlanadi
+		// Onlayn usullar: buyurtma to'lanmagan holda yaratiladi, PAID'ni provayder (yoki demo) tasdiqlaydi
 		const paymentMethod = input.paymentMethod ?? PaymentMethod.CARD;
 		const isToss = paymentMethod === PaymentMethod.TOSS;
+		const isOnline = ONLINE_METHODS.includes(paymentMethod);
 		const payment = {
 			paymentMethod,
-			paymentStatus: isToss ? PaymentStatus.UNPAID : PaymentStatus.PAID,
-			paymentCurrency: isToss ? TOSS_CURRENCY : undefined,
-			paymentAmount: isToss ? Math.round(input.orderTotal * krwPerUsd()) : undefined,
+			paymentStatus: isOnline ? PaymentStatus.UNPAID : PaymentStatus.PAID,
+			paymentCurrency: isToss ? TOSS_CURRENCY : isOnline ? UZS_CURRENCY : undefined,
+			paymentAmount: isOnline ? Math.round(input.orderTotal * (isToss ? krwPerUsd() : uzsPerUsd())) : undefined,
 		};
 
 		try {
 			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode, ...payment });
-			if (!isToss) this.onOrderPaid(order);
+			if (!isOnline) this.onOrderPaid(order);
 			return order;
 		} catch (err) {
 			Logger.error('OrderService.createOrder error:', err.message);
@@ -119,7 +125,7 @@ export class OrderService {
 
 		await this.tossPayment.confirm(paymentKey, orderId, amount);
 
-		const paid = await this.markTossPaid(order._id as ObjectId, paymentKey);
+		const paid = await this.markPaid(order._id as ObjectId, paymentKey);
 		// Parallel so'rov allaqachon PAID qilgan bo'lsa — o'sha holatni qaytaramiz
 		if (!paid) {
 			const current = await this.orderModel.findById(order._id).exec();
@@ -134,38 +140,82 @@ export class OrderService {
 	 * chaqirilmagan bo'lsa ham pul yechilgan bo'lishi mumkin), aks holda bekor qilib kuponni qaytaramiz.
 	 */
 	@Cron(CronExpression.EVERY_5_MINUTES)
-	public async expireUnpaidTossOrders(): Promise<void> {
+	public async expireUnpaidOnlineOrders(): Promise<void> {
 		const cutoff = new Date(Date.now() - TOSS_UNPAID_TTL_MS);
 		const stale = await this.orderModel
 			.find({
-				paymentMethod: PaymentMethod.TOSS,
+				paymentMethod: { $in: ONLINE_METHODS },
 				paymentStatus: PaymentStatus.UNPAID,
 				orderStatus: { $ne: OrderStatus.CANCELLED },
 				createdAt: { $lt: cutoff },
+				// Payme'da ochiq tranzaksiya bo'lsa uni Payme o'zi yakunlaydi yoki bekor qiladi
+				'paymeTxn.state': { $ne: PAYME_STATE_CREATED },
 			})
 			.limit(TOSS_EXPIRE_BATCH)
 			.lean<Order[]>()
 			.exec();
 
 		for (const order of stale) {
-			const toss = await this.tossPayment.findByOrderId(order.orderId);
-			if (toss?.status === TOSS_DONE_STATUS && toss.totalAmount === order.paymentAmount) {
-				await this.markTossPaid(order._id as ObjectId, toss.paymentKey);
-				this.logger.log(`Toss order reconciled as paid: ${order.orderId}`);
-				continue;
+			if (order.paymentMethod === PaymentMethod.TOSS) {
+				const toss = await this.tossPayment.findByOrderId(order.orderId);
+				if (toss?.status === TOSS_DONE_STATUS && toss.totalAmount === order.paymentAmount) {
+					await this.markPaid(order._id as ObjectId, toss.paymentKey);
+					this.logger.log(`Toss order reconciled as paid: ${order.orderId}`);
+					continue;
+				}
 			}
-			const cancelled = await this.orderModel
-				.findOneAndUpdate(
-					{ _id: order._id, paymentStatus: PaymentStatus.UNPAID, orderStatus: { $ne: OrderStatus.CANCELLED } },
-					{ orderStatus: OrderStatus.CANCELLED },
-				)
-				.exec();
-			if (cancelled?.orderCouponCode) await this.couponService.releaseCoupon(cancelled.orderCouponCode);
+			await this.cancelUnpaidOrder(order._id as ObjectId);
 		}
 	}
 
+	/** Payme/Click buyurtmasi uchun to'lov sahifasi havolasi (kalit yo'q bo'lsa demo sahifa) */
+	public async getPaymentUrl(memberId: ObjectId, orderId: string): Promise<string> {
+		const order = await this.findUnpaidUzOrder(memberId, orderId);
+		return buildPaymentUrl(order.paymentMethod as PaymentMethod, order.orderId, order.paymentAmount ?? 0);
+	}
+
+	/**
+	 * Demo to'lov: Payme/Click kalitlari yo'q paytda portfolio uchun oqimni yakunlaydi.
+	 * Kalit qo'yilgach o'chadi — aks holda to'lovsiz PAID qilish mumkin bo'lardi.
+	 */
+	public async confirmDemoPayment(memberId: ObjectId, orderId: string): Promise<Order> {
+		const order = await this.findUnpaidUzOrder(memberId, orderId);
+		if (isProviderConfigured(order.paymentMethod as PaymentMethod)) {
+			throw new BadRequestException(Message.DEMO_PAYMENT_DISABLED);
+		}
+		const paid = await this.markPaid(order._id as ObjectId, `DEMO-${order.paymentMethod}-${Date.now()}`);
+		if (!paid) throw new BadRequestException(Message.PAYMENT_FAILED);
+		return paid;
+	}
+
+	private async findUnpaidUzOrder(memberId: ObjectId, orderId: string): Promise<Order> {
+		const order = await this.orderModel
+			.findOne({
+				orderId,
+				memberId,
+				paymentMethod: { $in: UZ_PROVIDERS },
+				paymentStatus: PaymentStatus.UNPAID,
+				orderStatus: { $ne: OrderStatus.CANCELLED },
+			})
+			.lean<Order>()
+			.exec();
+		if (!order) throw new BadRequestException(Message.NO_DATA_FOUND);
+		return order;
+	}
+
+	/** To'lanmagan buyurtmani bekor qiladi va kuponni qaytaradi (Payme/Click bekor qilganda ham) */
+	public async cancelUnpaidOrder(id: ObjectId): Promise<void> {
+		const cancelled = await this.orderModel
+			.findOneAndUpdate(
+				{ _id: id, paymentStatus: PaymentStatus.UNPAID, orderStatus: { $ne: OrderStatus.CANCELLED } },
+				{ orderStatus: OrderStatus.CANCELLED, cancelledAt: new Date() },
+			)
+			.exec();
+		if (cancelled?.orderCouponCode) await this.couponService.releaseCoupon(cancelled.orderCouponCode);
+	}
+
 	/** UNPAID → PAID atomar o'tkazish; faqat birinchi muvaffaqiyatli chaqiruv onOrderPaid'ni ishga tushiradi */
-	private async markTossPaid(id: ObjectId, paymentKey: string): Promise<Order | null> {
+	public async markPaid(id: ObjectId, paymentKey: string): Promise<Order | null> {
 		const paid = await this.orderModel
 			.findOneAndUpdate(
 				{ _id: id, paymentStatus: PaymentStatus.UNPAID },

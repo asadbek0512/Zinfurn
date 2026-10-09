@@ -40,6 +40,31 @@ const OrderSchema = new Schema(
 		paymentCurrency: { type: String },
 		paymentKey: { type: String },
 		paidAt: { type: Date },
+		/** Payme tranzaksiyasi (Merchant API holatlari: 1 yaratilgan, 2 bajarilgan, -1/-2 bekor) */
+		paymeTxn: {
+			type: new Schema(
+				{
+					id: { type: String, required: true },
+					time: { type: Number, required: true },
+					createTime: { type: Number, required: true },
+					performTime: { type: Number, default: 0 },
+					cancelTime: { type: Number, default: 0 },
+					state: { type: Number, required: true },
+					reason: { type: Number, default: null },
+				},
+				{ _id: false },
+			),
+		},
+		/** Click tranzaksiyasi: prepare'da yoziladi, complete'da tekshiriladi */
+		clickTxn: {
+			type: new Schema(
+				{
+					transId: { type: String, required: true },
+					prepareId: { type: Number, required: true },
+				},
+				{ _id: false },
+			),
+		},
 		confirmedAt: { type: Date },
 		cancelledAt: { type: Date },
 		returnRequestedAt: { type: Date },
@@ -50,5 +75,8 @@ const OrderSchema = new Schema(
 	},
 	{ timestamps: true, collection: 'orders' },
 );
+
+OrderSchema.index({ 'paymeTxn.id': 1 }, { sparse: true });
+OrderSchema.index({ 'paymeTxn.createTime': 1 }, { sparse: true });
 
 export default OrderSchema;
