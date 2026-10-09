@@ -42,6 +42,30 @@ npm test                   # unit tests (auth token system)
 
 `.env` (see `.env.example`): `MONGO_DEV`, `SECRET_TOKEN`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID/SECRET`, `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`, optional `ADMIN_TELEGRAM_CHAT_ID`, `RESEND_API_KEY`, `MAIL_FROM`, `SESSION_SECRET`.
 
+## Roadmap
+
+Engineering plan to take the API from a single-instance showcase to a horizontally-scalable, production-hardened service. Ordered by impact.
+
+### 🔴 Production-readiness — first
+
+- **Real PSP integration.** Promote Payme/Click from demo to production: server-side confirm, idempotent webhook reconciliation, and refund endpoints — retiring the Toss sandbox path.
+- **httpOnly-cookie auth.** Move the JWT pair out of `localStorage` into httpOnly/SameSite cookies, with CSRF defense and a migration path that keeps WebSocket auth and both OAuth flows working (deliberately a standalone change).
+- **Redis-backed shared state.** Rate-limit counters, AI-chat state, and sessions are in-memory today (single-instance). Moving them to Redis is the prerequisite for running more than one API container.
+
+### 🟡 Scale & reliability
+
+- **Observability.** Structured JSON logging, Sentry error tracking, `/health` + metrics endpoints, and uptime/latency alerting.
+- **Background job queue (BullMQ).** Push emails, content translation, and 3D generation off the request path for faster responses and safe retries.
+- **Zero-downtime deploys.** Build-arg plumbing + container healthchecks / blue-green to remove the ~60s 502 window on runtime-build deploys.
+- **Index & query audit.** Profile hot aggregations (e.g. `getFavorites` / `getVisited` `$lookup`s) and add the missing `memberId` indexes on Like/View collections.
+
+### 🟢 Engineering excellence
+
+- **CI pipeline.** Lint + typecheck + test on every PR, plus a staging environment mirroring prod.
+- **Broader test coverage.** E2E suites for checkout, orders, and auth on top of the existing money-path unit tests; fill in per-module coverage.
+- **Finer-grained rate limiting.** Per-member (not only per-IP) limits and an audit log for admin actions.
+- **Catalog caching.** Redis cache layer for hot catalog/filter queries, with targeted invalidation on product writes.
+
 ## Known Limitations
 
 - Rate-limit counters are in-memory — single-instance assumption (Redis needed to scale out)
