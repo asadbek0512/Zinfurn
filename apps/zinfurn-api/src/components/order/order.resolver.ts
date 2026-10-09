@@ -11,6 +11,7 @@ import { Order, Orders } from '../../libs/dto/order/order';
 import { ConfirmTossPaymentInput, CreateOrderInput, OrdersInquiry } from '../../libs/dto/order/order.input';
 import { OrderUpdate } from '../../libs/dto/order/order.update';
 import { OrderService } from './order.service';
+import { SellerDashboard } from '../../libs/dto/order/seller-dashboard';
 
 @Resolver()
 export class OrderResolver {
@@ -97,6 +98,14 @@ export class OrderResolver {
 	): Promise<Order> {
 		input._id = ShapeIntoMongoObjectId(input._id);
 		return this.orderService.requestReturn(memberId, input);
+	}
+
+	/** AGENT — sotuvchi dashboard'i (o'z mahsulotlari bo'yicha statistika) */
+	@Roles(MemberType.AGENT, MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Query(() => SellerDashboard)
+	public async getSellerDashboard(@AuthMember('_id') memberId: ObjectId): Promise<SellerDashboard> {
+		return this.orderService.getSellerDashboard(memberId);
 	}
 
 	/** ADMIN **/

@@ -4,6 +4,7 @@ import { Model, ObjectId } from 'mongoose';
 import { Order, Orders } from '../../libs/dto/order/order';
 import { CreateOrderInput, OrdersInquiry } from '../../libs/dto/order/order.input';
 import { OrderUpdate } from '../../libs/dto/order/order.update';
+import { SellerDashboard, SellerTopProduct, SellerTrendPoint } from '../../libs/dto/order/seller-dashboard';
 import { OrderStatus } from '../../libs/enums/order.enum';
 import { Message, Direction } from '../../libs/enums/common_enum';
 import { T } from '../../libs/types/common';
@@ -474,5 +475,133 @@ export class OrderService {
 			.exec();
 
 		return result[0] as Orders;
+	}
+
+	/**
+	 * Agent/sotuvchi dashboard'i — faqat shu agentning mahsulotlari bo'yicha
+	 * sotuv statistikasi. Daromad PAID + bekor qilinmagan buyurtmalardan hisoblanadi.
+	 */
+	public async getSellerDashboard(agentId: ObjectId): Promise<SellerDashboard> {
+		// 1) Agent mahsulotlari — statuslar bo'yicha sanoq + views/likes yig'indisi
+		const props: any[] =
+			await this.propertyModel
+				.find(
+					{ memberId: agentId, propertyStatus: { $ne: PropertyStatus.DELETE } },
+					{ _id: 1, propertyStatus: 1, propertyViews: 1, propertyLikes: 1 },
+				)
+				.lean()
+				.exec();
+
+		const propIds = props.map((p) => p._id);
+		let activeListings = 0;
+		let soldListings = 0;
+		let totalViews = 0;
+		let totalLikes = 0;
+		for (const p of props) {
+			if (p.propertyStatus === PropertyStatus.ACTIVE) activeListings++;
+			if (p.propertyStatus === PropertyStatus.SOLD) soldListings++;
+			totalViews += p.propertyViews || 0;
+			totalLikes += p.propertyLikes || 0;
+		}
+
+		const empty: SellerDashboard = {
+			totalRevenue: 0,
+			totalOrders: 0,
+			itemsSold: 0,
+			activeListings,
+			soldListings,
+			totalListings: props.length,
+			totalViews,
+			totalLikes,
+			topProducts: [],
+			salesTrend: [],
+		};
+		if (!propIds.length) return empty;
+
+		const SALE_MATCH = {
+			paymentStatus: PaymentStatus.PAID,
+			orderStatus: { $nin: [OrderStatus.CANCELLED, OrderStatus.RETURNED] },
+		};
+		const DAY_MS = 24 * 60 * 60 * 1000;
+		const TREND_DAYS = 7;
+		const trendFrom = new Date(Date.now() - (TREND_DAYS - 1) * DAY_MS);
+		trendFrom.setHours(0, 0, 0, 0);
+
+		const agg: any[] = await this.orderModel
+			.aggregate([
+				{ $match: SALE_MATCH },
+				{ $unwind: '$orderItems' },
+				{ $match: { 'orderItems.propertyId': { $in: propIds } } },
+				{
+					$facet: {
+						totals: [
+							{
+								$group: {
+									_id: null,
+									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+									itemsSold: { $sum: '$orderItems.quantity' },
+									orderIds: { $addToSet: '$_id' },
+								},
+							},
+						],
+						top: [
+							{
+								$group: {
+									_id: '$orderItems.propertyId',
+									propertyTitle: { $first: '$orderItems.propertyTitle' },
+									propertyImage: { $first: '$orderItems.propertyImage' },
+									soldQty: { $sum: '$orderItems.quantity' },
+									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+								},
+							},
+							{ $sort: { revenue: -1 } },
+							{ $limit: 5 },
+						],
+						trend: [
+							{ $match: { paidAt: { $gte: trendFrom } } },
+							{
+								$group: {
+									_id: { $dateToString: { format: '%Y-%m-%d', date: '$paidAt' } },
+									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+									orders: { $addToSet: '$_id' },
+								},
+							},
+						],
+					},
+				},
+			])
+			.exec();
+
+		const facet = agg[0] || {};
+		const totals = facet.totals?.[0];
+		const topProducts: SellerTopProduct[] = (facet.top || []).map((t: any) => ({
+			propertyId: String(t._id),
+			propertyTitle: t.propertyTitle,
+			propertyImage: t.propertyImage,
+			soldQty: t.soldQty,
+			revenue: t.revenue,
+		}));
+
+		// Trend'ni 7 kunga to'liq yoyamiz (bo'sh kunlar 0)
+		const trendMap = new Map<string, { revenue: number; orders: number }>();
+		for (const row of facet.trend || []) {
+			trendMap.set(row._id, { revenue: row.revenue, orders: (row.orders || []).length });
+		}
+		const salesTrend: SellerTrendPoint[] = [];
+		for (let i = 0; i < TREND_DAYS; i++) {
+			const d = new Date(trendFrom.getTime() + i * DAY_MS);
+			const key = d.toISOString().slice(0, 10);
+			const hit = trendMap.get(key);
+			salesTrend.push({ date: key, revenue: hit?.revenue ?? 0, orders: hit?.orders ?? 0 });
+		}
+
+		return {
+			...empty,
+			totalRevenue: totals?.revenue ?? 0,
+			totalOrders: (totals?.orderIds || []).length,
+			itemsSold: totals?.itemsSold ?? 0,
+			topProducts,
+			salesTrend,
+		};
 	}
 }
