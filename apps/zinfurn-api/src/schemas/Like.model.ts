@@ -24,5 +24,7 @@ const LikeSchema = new Schema(
 );
 
 LikeSchema.index({ memberId: 1, likeRefId: 1 }, { unique: true });
+// findLikerIds: {likeGroup, likeRefId} bo'yicha qidiruv (bitta obyektni kim yoqtirgani) — collection scan'ni oldini oladi
+LikeSchema.index({ likeRefId: 1, likeGroup: 1 });
 
 export default LikeSchema;
