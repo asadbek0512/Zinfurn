@@ -66,6 +66,9 @@ export class Order {
 	@Field(() => Float, { nullable: true })
 	orderDiscount?: number;
 
+	@Field(() => Float, { nullable: true })
+	deliveryFee?: number;
+
 	@Field(() => DeliveryInfo)
 	deliveryInfo: DeliveryInfo;
 

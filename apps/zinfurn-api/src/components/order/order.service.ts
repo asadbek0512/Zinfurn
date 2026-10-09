@@ -24,6 +24,9 @@ import { UZS_CURRENCY, UZ_PROVIDERS, buildPaymentUrl, isProviderConfigured, uzsP
 /** Narxlar USD'da saqlanadi; Toss faqat KRW qabul qiladi */
 const TOSS_CURRENCY = 'KRW';
 const DEFAULT_KRW_PER_USD = 1350;
+/** Yetkazib berish: belgilangan summadan oshsa bepul, aks holda qat'iy narx (USD) */
+const FREE_DELIVERY_THRESHOLD = Number(process.env.FREE_DELIVERY_THRESHOLD ?? 500);
+const DELIVERY_FEE = Number(process.env.DELIVERY_FEE ?? 15);
 /** To'lov provayder sahifasida amalga oshiriladigan usullar — buyurtma UNPAID yaratiladi */
 const ONLINE_METHODS: PaymentMethod[] = [PaymentMethod.TOSS, ...UZ_PROVIDERS];
 /** Payme tranzaksiyasi "yaratilgan" holati — Payme o'zi 12 soatda bekor qiladi, biz tegmaymiz */
@@ -85,6 +88,11 @@ export class OrderService {
 			input.orderTotal = Math.max(0, input.orderTotal - orderDiscount);
 		}
 
+		// Yetkazib berish narxi serverda hisoblanadi (tovar summasidan kelib chiqib)
+		const merchandise = input.orderItems.reduce((sum, item) => sum + item.propertyPrice * item.quantity, 0);
+		const deliveryFee = merchandise >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+		input.orderTotal = input.orderTotal + deliveryFee;
+
 		// Onlayn usullar: buyurtma to'lanmagan holda yaratiladi, PAID'ni provayder (yoki demo) tasdiqlaydi
 		const paymentMethod = input.paymentMethod ?? PaymentMethod.CARD;
 		const isToss = paymentMethod === PaymentMethod.TOSS;
@@ -97,7 +105,7 @@ export class OrderService {
 		};
 
 		try {
-			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode, ...payment });
+			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode, deliveryFee, ...payment });
 			if (!isOnline) this.onOrderPaid(order);
 			return order;
 		} catch (err) {

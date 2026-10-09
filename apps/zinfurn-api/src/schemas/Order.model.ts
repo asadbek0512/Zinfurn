@@ -33,6 +33,7 @@ const OrderSchema = new Schema(
 		orderTotal: { type: Number, required: true },
 		orderCouponCode: { type: String },
 		orderDiscount: { type: Number, default: 0 },
+		deliveryFee: { type: Number, default: 0 },
 		deliveryInfo: { type: DeliveryInfoSchema, required: true },
 		paymentMethod: { type: String, enum: PaymentMethod, default: PaymentMethod.CARD },
 		paymentStatus: { type: String, enum: PaymentStatus, default: PaymentStatus.PAID },
