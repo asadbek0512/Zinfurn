@@ -25,6 +25,11 @@ const randomBetween = (min: number, max: number, random: () => number): number =
 export const isSaleActive = (property: PriceSource, now: number): boolean =>
 	effectivePrice(property, now) < property.propertyPrice;
 
+/** Frontend getStockInfo bilan bir xil: null = cheksiz, 0 yoki kam = tugagan */
+export const isSoldOut = (property: { propertyInStock?: boolean; propertyStock?: number | null }): boolean =>
+	property.propertyInStock === false ||
+	(property.propertyStock !== null && property.propertyStock !== undefined && property.propertyStock <= 0);
+
 export interface SaleWindow {
 	propertyIsOnSale: true;
 	propertySalePrice: number;

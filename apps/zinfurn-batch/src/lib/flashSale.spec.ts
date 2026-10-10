@@ -1,4 +1,4 @@
-import { buildSaleWindow, isSaleActive, SALE_MAX_DAYS, SALE_MIN_DAYS } from './flashSale';
+import { buildSaleWindow, isSaleActive, isSoldOut, SALE_MAX_DAYS, SALE_MIN_DAYS } from './flashSale';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 9, 10);
@@ -26,5 +26,12 @@ describe('flashSale', () => {
 
 	it('juda arzon mahsulotda chegirma yo\'qolsa — aksiya qo\'yilmaydi', () => {
 		expect(buildSaleWindow(1, NOW, () => 0)).toBeNull();
+	});
+
+	it('stock 0 yoki inStock=false — tugagan, null — cheksiz', () => {
+		expect(isSoldOut({ propertyStock: 0 })).toBe(true);
+		expect(isSoldOut({ propertyInStock: false, propertyStock: null })).toBe(true);
+		expect(isSoldOut({ propertyStock: null })).toBe(false);
+		expect(isSoldOut({ propertyStock: 3 })).toBe(false);
 	});
 });

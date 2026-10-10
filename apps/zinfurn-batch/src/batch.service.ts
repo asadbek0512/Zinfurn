@@ -5,7 +5,7 @@ import { Property } from 'apps/zinfurn-api/src/libs/dto/property/property';
 import { MemberStatus, MemberType } from 'apps/zinfurn-api/src/libs/enums/member.enum';
 import { PropertyStatus } from 'apps/zinfurn-api/src/libs/enums/property.enum';
 import { AnyBulkWriteOperation, Model } from 'mongoose';
-import { buildSaleWindow, isSaleActive } from './lib/flashSale';
+import { buildSaleWindow, isSaleActive, isSoldOut } from './lib/flashSale';
 
 @Injectable()
 export class BatchService {
@@ -80,21 +80,26 @@ export class BatchService {
     const properties = await this.propertyModel
       .find(
         { propertyStatus: PropertyStatus.ACTIVE },
-        { propertyPrice: 1, propertySalePrice: 1, propertyIsOnSale: 1, propertySaleStartsAt: 1, propertySaleExpiresAt: 1 },
+        { propertyPrice: 1, propertySalePrice: 1, propertyIsOnSale: 1, propertySaleStartsAt: 1, propertySaleExpiresAt: 1, propertyInStock: 1, propertyStock: 1 },
       )
       .lean<Property[]>()
       .exec();
 
     const operations: AnyBulkWriteOperation<Property>[] = [];
+    // Tugagan mahsulotga chegirma ko'rsatilmaydi — bor aksiyasi ham o'chiriladi
+    const soldOut = properties.filter((property) => isSoldOut(property) && property.propertyIsOnSale);
+    soldOut.forEach((property) =>
+      operations.push({ updateOne: { filter: { _id: property._id }, update: { $set: { propertyIsOnSale: false } } } }),
+    );
     properties
-      .filter((property) => property.propertyPrice > 0 && !isSaleActive(property, now))
+      .filter((property) => property.propertyPrice > 0 && !isSoldOut(property) && !isSaleActive(property, now))
       .forEach((property) => {
         const window = buildSaleWindow(property.propertyPrice, now);
         if (window) operations.push({ updateOne: { filter: { _id: property._id }, update: { $set: window } } });
       });
 
     if (operations.length) await this.propertyModel.bulkWrite(operations);
-    this.logger.log(`Flash sale renewed: ${operations.length} / ${properties.length}`);
+    this.logger.log(`Flash sale renewed: ${operations.length - soldOut.length} / ${properties.length}, sold out cleared: ${soldOut.length}`);
     return operations.length;
   }
 }
