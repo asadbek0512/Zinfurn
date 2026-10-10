@@ -1,13 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Member } from 'apps/zinfurn-api/src/libs/dto/member/member';
 import { Property } from 'apps/zinfurn-api/src/libs/dto/property/property';
 import { MemberStatus, MemberType } from 'apps/zinfurn-api/src/libs/enums/member.enum';
 import { PropertyStatus } from 'apps/zinfurn-api/src/libs/enums/property.enum';
-import { Model } from 'mongoose';
+import { AnyBulkWriteOperation, Model } from 'mongoose';
+import { buildSaleWindow, isSaleActive } from './lib/flashSale';
 
 @Injectable()
 export class BatchService {
+  private readonly logger = new Logger(BatchService.name);
+
   constructor(
     @InjectModel('Property') private readonly propertyModel: Model<Property>,
     @InjectModel('Member') private readonly memberModel: Model<Member>,
@@ -69,5 +72,29 @@ export class BatchService {
 
   public getHello(): string {
     return 'Welcome to Zinfurn BATCH Server!';
+  }
+
+  /** Aksiyasi yo'q / tugagan / hali boshlanmagan ACTIVE mahsulotlarga darrov yangi aksiya beradi */
+  public async batchFlashSales(): Promise<number> {
+    const now = Date.now();
+    const properties = await this.propertyModel
+      .find(
+        { propertyStatus: PropertyStatus.ACTIVE },
+        { propertyPrice: 1, propertySalePrice: 1, propertyIsOnSale: 1, propertySaleStartsAt: 1, propertySaleExpiresAt: 1 },
+      )
+      .lean<Property[]>()
+      .exec();
+
+    const operations: AnyBulkWriteOperation<Property>[] = [];
+    properties
+      .filter((property) => property.propertyPrice > 0 && !isSaleActive(property, now))
+      .forEach((property) => {
+        const window = buildSaleWindow(property.propertyPrice, now);
+        if (window) operations.push({ updateOne: { filter: { _id: property._id }, update: { $set: window } } });
+      });
+
+    if (operations.length) await this.propertyModel.bulkWrite(operations);
+    this.logger.log(`Flash sale renewed: ${operations.length} / ${properties.length}`);
+    return operations.length;
   }
 }

@@ -1,7 +1,9 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { BatchService as BatchService } from './batch.service';
 import { Cron, Interval, Timeout } from '@nestjs/schedule';
-import { BATCH_ROLLBACK, BATCH_TOP_AGENTS, BATCH_TOP_PROPERTIES } from './lib/config';
+import { BATCH_FLASH_SALES, BATCH_ROLLBACK, BATCH_TOP_AGENTS, BATCH_TOP_PROPERTIES } from './lib/config';
+
+const FLASH_SALES_STARTUP_DELAY_MS = 5000;
 
 @Controller()
 export class BatchController {
@@ -12,6 +14,22 @@ export class BatchController {
   @Timeout(1000)
   handleTimeout() {
     this.logger.debug('BATCH SERVER READY!');
+  }
+
+  // Deploy / restart'dan keyin kutmasdan ishlaydi
+  @Timeout(FLASH_SALES_STARTUP_DELAY_MS)
+  public async batchFlashSalesOnStart() {
+    await this.batchFlashSales();
+  }
+
+  // Har soat: tugagan aksiya o'rniga ko'pi bilan 1 soatda yangisi chiqadi
+  @Cron(`00 05 * * * *`, { name: BATCH_FLASH_SALES })
+  public async batchFlashSales() {
+    try {
+      await this.BatchService.batchFlashSales();
+    } catch (err) {
+      this.logger.error(err);
+    }
   }
 
   @Cron(`00 00 01 * * *`, { name: BATCH_ROLLBACK })
