@@ -2,6 +2,8 @@
 
 GraphQL + WebSocket backend for the [Zinfurn furniture marketplace](https://github.com/asadbek0512/Zinfurn-Next) · **Live:** api.zinfurn.uz/graphql
 
+[![CI](https://github.com/asadbek0512/Zinfurn/actions/workflows/ci.yml/badge.svg)](https://github.com/asadbek0512/Zinfurn/actions/workflows/ci.yml)
+
 NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modules — members/agents, properties, orders with **coupons**, repair service, community, comments, likes, follows, views, reviews, notifications (WebSocket), notices, messages, and AI-powered content **translation**.
 
 ## Highlights
@@ -17,6 +19,104 @@ NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modu
 - **Toss Payments (test mode)**: server-side confirm, `@Cron` job expires or reconciles UNPAID orders after 30 min and releases their coupons
 - **AI chat personas**: Groq-driven members in the WebSocket chat (AI badge, 15 msg/hour cap, idle-aware)
 - Batch app: scheduled ranking recalculation
+
+## Data model
+
+> The furniture catalog lives in the `properties` collection (`Property` model) — a leftover name from the real-estate template the project started from. In the domain it is a **product**; the diagram uses the domain names.
+
+```mermaid
+erDiagram
+  MEMBER ||--o{ PRODUCT : "sells (agent)"
+  MEMBER ||--o{ ORDER : places
+  ORDER ||--|{ ORDER_ITEM : contains
+  PRODUCT ||--o{ ORDER_ITEM : "snapshot of"
+  COUPON |o--o{ ORDER : "discounts"
+  MEMBER ||--o{ REVIEW : writes
+  PRODUCT ||--o{ REVIEW : "rated by"
+  ORDER ||--o{ REVIEW : "purchase-gates"
+  MEMBER ||--o{ REPAIR_REQUEST : submits
+  MEMBER ||--o{ ARTICLE : posts
+  MEMBER ||--o{ COMMENT : writes
+  MEMBER ||--o{ LIKE : gives
+  MEMBER ||--o{ VIEW : records
+  MEMBER ||--o{ FOLLOW : "follows / followed"
+  MEMBER ||--o{ MESSAGE : sends
+  MEMBER ||--o{ NOTIFICATION : receives
+  MEMBER ||--o{ PUSH_DEVICE : registers
+
+  MEMBER {
+    ObjectId _id
+    string memberNick
+    string memberType
+    string memberAuthType
+    int memberPoints
+    int memberRank
+  }
+  PRODUCT {
+    ObjectId _id
+    ObjectId memberId
+    string category
+    string material
+    int price
+    int salePrice
+    int stock
+    float rating
+    string arModel
+  }
+  ORDER {
+    ObjectId _id
+    ObjectId memberId
+    string orderStatus
+    int orderTotal
+    string paymentStatus
+  }
+  ORDER_ITEM {
+    ObjectId productId
+    string title
+    int price
+    int quantity
+  }
+  COUPON {
+    string couponCode
+    string couponType
+    int couponValue
+    int maxUses
+    int usedCount
+  }
+  REVIEW {
+    ObjectId memberId
+    ObjectId productId
+    ObjectId orderId
+    int reviewRating
+  }
+  REPAIR_REQUEST {
+    ObjectId memberId
+    string type
+    string status
+  }
+  ARTICLE {
+    ObjectId memberId
+    string articleCategory
+    string articleTitle
+  }
+  LIKE {
+    ObjectId memberId
+    string likeGroup
+    ObjectId likeRefId
+  }
+  VIEW {
+    ObjectId memberId
+    string viewGroup
+    ObjectId viewRefId
+  }
+  COMMENT {
+    ObjectId memberId
+    string commentGroup
+    ObjectId commentRefId
+  }
+```
+
+`LIKE`, `VIEW` and `COMMENT` are polymorphic (`*Group` + `*RefId` → product, article or member).
 
 ## Layout
 
@@ -37,7 +137,7 @@ apps/
 npm i
 npm run start:dev          # API :3007 (watch)
 npm run start:dev:batch    # batch (watch)
-npm test                   # unit tests (auth token system)
+npm test                   # 81 unit tests (auth, orders, payments, coupons, reviews, push) — also run in CI
 ```
 
 `.env` (see `.env.example`): `MONGO_DEV`, `SECRET_TOKEN`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID/SECRET`, `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`, optional `ADMIN_TELEGRAM_CHAT_ID`, `RESEND_API_KEY`, `MAIL_FROM`, `SESSION_SECRET`.
