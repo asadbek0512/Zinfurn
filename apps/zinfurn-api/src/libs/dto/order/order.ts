@@ -7,16 +7,16 @@ import { Member, TotalCounter } from '../member/member';
 @ObjectType()
 export class OrderItem {
 	@Field(() => String)
-	propertyId: ObjectId;
+	productId: ObjectId;
 
 	@Field(() => String)
-	propertyTitle: string;
+	productTitle: string;
 
 	@Field(() => String, { nullable: true })
-	propertyImage?: string;
+	productImage?: string;
 
 	@Field(() => Float)
-	propertyPrice: number;
+	productPrice: number;
 
 	@Field(() => Int)
 	quantity: number;

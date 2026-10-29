@@ -7,16 +7,16 @@ import { AuthModule } from '../auth/auth.module';
 import { ViewModule } from '../view/view.module';
 import { LikeModule } from '../like/like.module';
 import FollowSchema from '../../schemas/Follow.model';
-import PropertySchema from '../../schemas/Property.model';
-import RepairSchema from '../../schemas/RepairProperty';
+import ProductSchema from '../../schemas/Product.model';
+import RepairSchema from '../../schemas/RepairProduct';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]),
     MongooseModule.forFeature([{ name: 'Follow', schema: FollowSchema }]),
     MongooseModule.forFeature([
-      { name: 'Property', schema: PropertySchema },
-      { name: 'RepairProperty', schema: RepairSchema },
+      { name: 'Product', schema: ProductSchema },
+      { name: 'RepairProduct', schema: RepairSchema },
     ]),
     AuthModule,
     ViewModule,

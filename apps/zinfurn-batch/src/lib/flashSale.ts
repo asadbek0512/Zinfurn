@@ -22,19 +22,19 @@ const roundPrice = (value: number): number => {
 const randomBetween = (min: number, max: number, random: () => number): number => min + random() * (max - min);
 
 /** Hozir chegirma ko'rinib turibdimi — buyurtma narxi bilan bir xil qoida */
-export const isSaleActive = (property: PriceSource, now: number): boolean =>
-	effectivePrice(property, now) < property.propertyPrice;
+export const isSaleActive = (product: PriceSource, now: number): boolean =>
+	effectivePrice(product, now) < product.productPrice;
 
 /** Frontend getStockInfo bilan bir xil: null = cheksiz, 0 yoki kam = tugagan */
-export const isSoldOut = (property: { propertyInStock?: boolean; propertyStock?: number | null }): boolean =>
-	property.propertyInStock === false ||
-	(property.propertyStock !== null && property.propertyStock !== undefined && property.propertyStock <= 0);
+export const isSoldOut = (product: { productInStock?: boolean; productStock?: number | null }): boolean =>
+	product.productInStock === false ||
+	(product.productStock !== null && product.productStock !== undefined && product.productStock <= 0);
 
 export interface SaleWindow {
-	propertyIsOnSale: true;
-	propertySalePrice: number;
-	propertySaleStartsAt: Date;
-	propertySaleExpiresAt: Date;
+	productIsOnSale: true;
+	productSalePrice: number;
+	productSaleStartsAt: Date;
+	productSaleExpiresAt: Date;
 }
 
 export const buildSaleWindow = (price: number, now: number, random: () => number = Math.random): SaleWindow | null => {
@@ -44,9 +44,9 @@ export const buildSaleWindow = (price: number, now: number, random: () => number
 	if (salePrice >= price) return null;
 	const days = randomBetween(SALE_MIN_DAYS, SALE_MAX_DAYS, random);
 	return {
-		propertyIsOnSale: true,
-		propertySalePrice: salePrice,
-		propertySaleStartsAt: new Date(now),
-		propertySaleExpiresAt: new Date(now + days * DAY_MS),
+		productIsOnSale: true,
+		productSalePrice: salePrice,
+		productSaleStartsAt: new Date(now),
+		productSaleExpiresAt: new Date(now + days * DAY_MS),
 	};
 };

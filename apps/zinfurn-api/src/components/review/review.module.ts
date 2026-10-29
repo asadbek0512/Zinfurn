@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import ReviewSchema from '../../schemas/Review.model';
 import OrderSchema from '../../schemas/Order.model';
-import PropertySchema from '../../schemas/Property.model';
+import ProductSchema from '../../schemas/Product.model';
 import { ReviewResolver } from './review.resolver';
 import { ReviewService } from './review.service';
 
@@ -12,7 +12,7 @@ import { ReviewService } from './review.service';
 		MongooseModule.forFeature([
 			{ name: 'Review', schema: ReviewSchema },
 			{ name: 'Order', schema: OrderSchema },
-			{ name: 'Property', schema: PropertySchema },
+			{ name: 'Product', schema: ProductSchema },
 		]),
 		AuthModule,
 	],

@@ -1,6 +1,6 @@
 import { registerEnumType } from '@nestjs/graphql';
 
-export enum RepairPropertyType {
+export enum RepairProductType {
 	STOOL = 'STOOL',
 	TABLE = 'TABLE',
 	BED = 'BED',
@@ -10,16 +10,16 @@ export enum RepairPropertyType {
 	SHELF = 'SHELF',
 	OTHER = 'OTHER',
 }
-registerEnumType(RepairPropertyType, {
-	name: 'RepairPropertyType',
+registerEnumType(RepairProductType, {
+	name: 'RepairProductType',
 });
 
-export enum RepairPropertyStatus {
+export enum RepairProductStatus {
 	ACTIVE = 'ACTIVE',
 	DELETE = 'DELETE',
     PAUSE = 'PAUSE',
 }
 
-registerEnumType(RepairPropertyStatus, {
-	name: 'RepairPropertyStatus',
+registerEnumType(RepairProductStatus, {
+	name: 'RepairProductStatus',
 });

@@ -1,35 +1,35 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, IsArray, IsString, IsMongoId, IsEnum, Length, Min, IsIn } from 'class-validator';
-import { PropertyStatus, PropertyType } from '../../enums/property.enum';
+import { ProductStatus, ProductType } from '../../enums/product.enum';
 import { ObjectId } from 'mongoose';
 import { Direction } from '../../enums/common_enum';
-import { availableRepairPropertySorts } from '../../config';
-import { RepairPropertyStatus, RepairPropertyType } from '../../enums/repairProperty.enum';
+import { availableRepairProductSorts } from '../../config';
+import { RepairProductStatus, RepairProductType } from '../../enums/repairProduct.enum';
 
 @InputType()
-export class RepairPropertyInput {
+export class RepairProductInput {
 
     @IsNotEmpty()
-    @Field(() => RepairPropertyType)
-    repairPropertyType: PropertyType;
+    @Field(() => RepairProductType)
+    repairProductType: ProductType;
 
     @IsOptional()
-    @Field(() => RepairPropertyStatus, { nullable: true })
-    repairPropertyStatus?: RepairPropertyStatus;
+    @Field(() => RepairProductStatus, { nullable: true })
+    repairProductStatus?: RepairProductStatus;
 
     @IsNotEmpty()
     @Length(3, 100)
     @Field(() => String)
-    repairPropertyAddress: string;
+    repairProductAddress: string;
 
     @IsNotEmpty()
     @Length(5, 500)
     @Field(() => String)
-    repairPropertyDescription: string;
+    repairProductDescription: string;
 
     @IsOptional()
     @Field(() => [String], { nullable: true })
-    repairPropertyImages?: string[];
+    repairProductImages?: string[];
 
     @IsOptional()
     @Field(() => Date, { nullable: true })
@@ -45,12 +45,12 @@ export class RepairPISearch {
     memberId?: ObjectId;
 
     @IsOptional()
-    @Field(() => [RepairPropertyType], { nullable: true })
-    typeList?: RepairPropertyType[];
+    @Field(() => [RepairProductType], { nullable: true })
+    typeList?: RepairProductType[];
 
     @IsOptional()
-    @Field(() => RepairPropertyStatus, { nullable: true })
-    repairPropertyStatus?: RepairPropertyStatus;
+    @Field(() => RepairProductStatus, { nullable: true })
+    repairProductStatus?: RepairProductStatus;
 
     @IsOptional()
     @Field(() => String, { nullable: true })
@@ -58,7 +58,7 @@ export class RepairPISearch {
 }
 
 @InputType()
-export class RepairPropertiesInquiry {
+export class RepairProductsInquiry {
     @IsNotEmpty()
     @Min(1)
     @Field(() => Int)
@@ -70,7 +70,7 @@ export class RepairPropertiesInquiry {
     limit: number;
 
     @IsOptional()
-    @IsIn(availableRepairPropertySorts)
+    @IsIn(availableRepairProductSorts)
     @Field(() => String, { nullable: true })
     sort?: string;
 
@@ -100,12 +100,12 @@ export class RepairOrdinaryInquiry {
 @InputType()
 class RAPISearch {
     @IsOptional()
-    @Field(() => RepairPropertyStatus, { nullable: true })
-    repairPropertyStatus?: RepairPropertyStatus;
+    @Field(() => RepairProductStatus, { nullable: true })
+    repairProductStatus?: RepairProductStatus;
 }
 
 @InputType()
-export class TechnicianPropertiesInquiry {
+export class TechnicianProductsInquiry {
     @IsNotEmpty()
     @Min(1)
     @Field(() => Int)
@@ -117,7 +117,7 @@ export class TechnicianPropertiesInquiry {
     limit: number;
 
     @IsOptional()
-    @IsIn(availableRepairPropertySorts)
+    @IsIn(availableRepairProductSorts)
     @Field(() => String, { nullable: true })
     sort?: string;
 
@@ -131,7 +131,7 @@ export class TechnicianPropertiesInquiry {
 }
 
 @InputType()
-export class AllRepairPropertiesInquiry {
+export class AllRepairProductsInquiry {
     @IsNotEmpty()
     @Min(1)
     @Field(() => Int)
@@ -143,7 +143,7 @@ export class AllRepairPropertiesInquiry {
     limit: number;
 
     @IsOptional()
-    @IsIn(availableRepairPropertySorts)
+    @IsIn(availableRepairProductSorts)
     @Field(() => String, { nullable: true })
     sort?: string;
 

@@ -3,13 +3,13 @@ import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class SellerTopProduct {
 	@Field(() => String)
-	propertyId: string;
+	productId: string;
 
 	@Field(() => String)
-	propertyTitle: string;
+	productTitle: string;
 
 	@Field(() => String, { nullable: true })
-	propertyImage?: string;
+	productImage?: string;
 
 	@Field(() => Int)
 	soldQty: number;

@@ -5,12 +5,12 @@ import { Model, ObjectId } from 'mongoose';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { T } from '../../libs/types/common';
 import { Message } from '../../libs/enums/common_enum';
-import { OrdinaryInquiry } from '../../libs/dto/property/property.input';
-import { Properties } from '../../libs/dto/property/property';
+import { OrdinaryInquiry } from '../../libs/dto/product/product.input';
+import { Products } from '../../libs/dto/product/product';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { lookupFavorite, lookupRepairFavorite } from '../../libs/config';
-import { RepairOrdinaryInquiry } from '../../libs/dto/repairProperty/repairProperty.input';
-import { RepairProperties } from '../../libs/dto/repairProperty/repairProperty';
+import { RepairOrdinaryInquiry } from '../../libs/dto/repairProduct/repairProduct.input';
+import { RepairProducts } from '../../libs/dto/repairProduct/repairProduct';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
 
@@ -19,7 +19,7 @@ export class LikeService {
 	constructor(
 		@InjectModel('Like') private readonly likeModel: Model<Like>,
 		private readonly notificationService: NotificationService,
-		@InjectModel('Property') private readonly propertyModel: Model<any>,
+		@InjectModel('Product') private readonly productModel: Model<any>,
 		@InjectModel('BoardArticle') private readonly boardArticleModel: Model<any>,
 		@InjectModel('Member') private readonly memberModel: Model<any>,
 	) {}
@@ -44,11 +44,11 @@ export class LikeService {
 				const liker = await this.memberModel.findById(input.memberId).exec();
 				const likerName = liker ? liker.memberNick : 'Someone';
 
-				if (input.likeGroup === LikeGroup.PROPERTY) {
-					const property = await this.propertyModel.findById(input.likeRefId).exec();
-					if (property) {
-						receiverId = property.memberId.toString();
-						notificationDesc = `${likerName} liked your property "${property.propertyTitle}"`;
+				if (input.likeGroup === LikeGroup.PRODUCT) {
+					const product = await this.productModel.findById(input.likeRefId).exec();
+					if (product) {
+						receiverId = product.memberId.toString();
+						notificationDesc = `${likerName} liked your product "${product.productTitle}"`;
 					}
 				} else if (input.likeGroup === LikeGroup.ARTICLE) {
 					const article = await this.boardArticleModel.findById(input.likeRefId).exec();
@@ -58,8 +58,8 @@ export class LikeService {
 					}
 				} else if (input.likeGroup === LikeGroup.MEMBER) {
 					notificationDesc = `${likerName} liked your profile`;
-				} else if (input.likeGroup === LikeGroup.REPAIR_PROPERTY) {
-					notificationDesc = `${likerName} liked your Repair Property`;
+				} else if (input.likeGroup === LikeGroup.REPAIR_PRODUCT) {
+					notificationDesc = `${likerName} liked your Repair Product`;
 				}
 
 				await this.notificationService.createNotification({
@@ -80,14 +80,14 @@ export class LikeService {
 
 	private mapLikeGroupToNotificationGroup(likeGroup: LikeGroup): NotificationGroup {
 		switch (likeGroup) {
-			case LikeGroup.PROPERTY:
-				return NotificationGroup.PROPERTY;
+			case LikeGroup.PRODUCT:
+				return NotificationGroup.PRODUCT;
 			case LikeGroup.ARTICLE:
 				return NotificationGroup.ARTICLE;
 			case LikeGroup.MEMBER:
 				return NotificationGroup.MEMBER;
-			case LikeGroup.REPAIR_PROPERTY:
-				return NotificationGroup.REPAIR_PROPERTY;
+			case LikeGroup.REPAIR_PRODUCT:
+				return NotificationGroup.REPAIR_PRODUCT;
 			default:
 				return NotificationGroup.MEMBER;
 		}
@@ -99,9 +99,9 @@ export class LikeService {
 		return result ? [{ memberId: memberId, likeRefId: likeRefId, myFavorite: true }] : [];
 	}
 
-	public async getFavoriteProperties(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+	public async getFavoriteProducts(memberId: ObjectId, input: OrdinaryInquiry): Promise<Products> {
 		const { page, limit } = input;
-		const match: T = { likeGroup: LikeGroup.PROPERTY, memberId: memberId };
+		const match: T = { likeGroup: LikeGroup.PRODUCT, memberId: memberId };
 
 		const data: T = await this.likeModel
 			.aggregate([
@@ -109,38 +109,38 @@ export class LikeService {
 				{ $sort: { updatedAt: -1 } },
 				{
 					$lookup: {
-						from: 'properties',
+						from: 'products',
 						localField: 'likeRefId',
 						foreignField: '_id',
-						as: 'favoriteProperty',
+						as: 'favoriteProduct',
 					},
 				},
-				{ $unwind: '$favoriteProperty' },
+				{ $unwind: '$favoriteProduct' },
 				{
 					$facet: {
 						list: [
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookupFavorite,
-							{ $unwind: '$favoriteProperty.memberData' },
+							{ $unwind: '$favoriteProduct.memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
 				},
 			])
 			.exec();
-		const result: Properties = { list: [], metaCounter: data[0].metaCounter };
-		result.list = data[0].list.map((ele) => ele.favoriteProperty);
+		const result: Products = { list: [], metaCounter: data[0].metaCounter };
+		result.list = data[0].list.map((ele) => ele.favoriteProduct);
 		return result;
 	}
 
-	public async getFavoriteRepairProperties(
+	public async getFavoriteRepairProducts(
 		memberId: ObjectId,
 		input: RepairOrdinaryInquiry,
-	): Promise<RepairProperties> {
+	): Promise<RepairProducts> {
 		const { page, limit } = input;
 		const match: T = {
-			likeGroup: LikeGroup.REPAIR_PROPERTY,
+			likeGroup: LikeGroup.REPAIR_PRODUCT,
 			memberId: memberId,
 		};
 
@@ -153,17 +153,17 @@ export class LikeService {
 						from: 'repair_requests',
 						localField: 'likeRefId',
 						foreignField: '_id',
-						as: 'favoriteRepairProperty',
+						as: 'favoriteRepairProduct',
 					},
 				},
-				{ $unwind: '$favoriteRepairProperty' },
+				{ $unwind: '$favoriteRepairProduct' },
 				{
 					$facet: {
 						list: [
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookupRepairFavorite,
-							{ $unwind: '$favoriteRepairProperty.memberData' },
+							{ $unwind: '$favoriteRepairProduct.memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -171,8 +171,8 @@ export class LikeService {
 			])
 			.exec();
 
-		const result: RepairProperties = { list: [], metaCounter: data[0].metaCounter };
-		result.list = data[0].list.map((ele) => ele.favoriteRepairProperty);
+		const result: RepairProducts = { list: [], metaCounter: data[0].metaCounter };
+		result.list = data[0].list.map((ele) => ele.favoriteRepairProduct);
 		return result;
 	}
 

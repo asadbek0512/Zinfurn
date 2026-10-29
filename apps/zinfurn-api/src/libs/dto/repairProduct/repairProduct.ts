@@ -2,7 +2,7 @@ import { Field, ObjectType, Int } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
-import { RepairPropertyStatus, RepairPropertyType } from '../../enums/repairProperty.enum';
+import { RepairProductStatus, RepairProductType } from '../../enums/repairProduct.enum';
 
 @ObjectType()
 export class RepairI18n {
@@ -32,36 +32,36 @@ export class RepairTranslations {
 }
 
 @ObjectType()
-export class RepairProperty {
+export class RepairProduct {
     @Field(() => String)
     _id: ObjectId;
 
-    @Field(() => RepairPropertyType)
-    repairPropertyType: RepairPropertyType;
+    @Field(() => RepairProductType)
+    repairProductType: RepairProductType;
 
-    @Field(() => RepairPropertyStatus, { nullable: true })
-    repairPropertyStatus?: RepairPropertyStatus;
-
-    @Field(() => String)
-    repairPropertyAddress: string;
+    @Field(() => RepairProductStatus, { nullable: true })
+    repairProductStatus?: RepairProductStatus;
 
     @Field(() => String)
-    repairPropertyDescription: string;
+    repairProductAddress: string;
+
+    @Field(() => String)
+    repairProductDescription: string;
 
     @Field(() => [String], { nullable: true })
-    repairPropertyImages?: string[];
+    repairProductImages?: string[];
 
     @Field(() => RepairTranslations, { nullable: true })
-    repairPropertyTranslations?: RepairTranslations;
+    repairProductTranslations?: RepairTranslations;
 
     @Field(() => Int)
-    repairPropertyViews: number;
+    repairProductViews: number;
 
     @Field(() => Int)
-    repairPropertyLikes: number;
+    repairProductLikes: number;
 
     @Field(() => Int)
-    repairPropertyComments: number;
+    repairProductComments: number;
 
     @Field(() => String)
     memberId: ObjectId;
@@ -85,9 +85,9 @@ export class RepairProperty {
 }
 
 @ObjectType()
-export class RepairProperties {
-    @Field(() => [RepairProperty])
-    list: RepairProperty[];
+export class RepairProducts {
+    @Field(() => [RepairProduct])
+    list: RepairProduct[];
 
     @Field(() => [TotalCounter], { nullable: true })
     metaCounter?: TotalCounter[];

@@ -15,7 +15,7 @@ export class ReviewService {
 	constructor(
 		@InjectModel('Review') private readonly reviewModel: Model<Review>,
 		@InjectModel('Order') private readonly orderModel: Model<any>,
-		@InjectModel('Property') private readonly propertyModel: Model<any>,
+		@InjectModel('Product') private readonly productModel: Model<any>,
 	) {}
 
 	public async createReview(memberId: ObjectId, input: CreateReviewInput): Promise<Review> {
@@ -24,13 +24,13 @@ export class ReviewService {
 			memberId,
 			orderStatus: OrderStatus.CONFIRMED,
 			// Faqat shu buyurtmada sotib olingan mahsulotga sharh yoziladi
-			'orderItems.propertyId': input.propertyId,
+			'orderItems.productId': input.productId,
 		});
 		if (!order) throw new BadRequestException('Order must be confirmed before writing a review');
 
 		const existing = await this.reviewModel.findOne({
 			memberId,
-			propertyId: input.propertyId,
+			productId: input.productId,
 			orderId: input.orderId,
 		});
 		if (existing) throw new BadRequestException('You already reviewed this order item');
@@ -41,14 +41,14 @@ export class ReviewService {
 
 			// recalculate average rating and update counters
 			const avgResult = await this.reviewModel.aggregate([
-				{ $match: { propertyId: input.propertyId, reviewStatus: ReviewStatus.ACTIVE } },
+				{ $match: { productId: input.productId, reviewStatus: ReviewStatus.ACTIVE } },
 				{ $group: { _id: null, avg: { $avg: '$reviewRating' } } },
 			]).exec();
 			const newRating = avgResult[0] ? Math.round(avgResult[0].avg * 10) / 10 : 0;
 
-			await this.propertyModel.findByIdAndUpdate(input.propertyId, {
-				$inc: { propertyReviews: 1 },
-				propertyRating: newRating,
+			await this.productModel.findByIdAndUpdate(input.productId, {
+				$inc: { productReviews: 1 },
+				productRating: newRating,
 			});
 			return review;
 		} catch (err) {
@@ -57,10 +57,10 @@ export class ReviewService {
 		}
 	}
 
-	public async getPropertyReviews(input: ReviewsInquiry, memberId?: ObjectId): Promise<Reviews> {
+	public async getProductReviews(input: ReviewsInquiry, memberId?: ObjectId): Promise<Reviews> {
 		const { page, limit, sort, direction, search } = input;
 		const match: T = {
-			propertyId: search.propertyId,
+			productId: search.productId,
 			reviewStatus: ReviewStatus.ACTIVE,
 		};
 		const sortBy: T = { [sort ?? 'createdAt']: direction ?? Direction.DESC };
@@ -150,10 +150,10 @@ export class ReviewService {
 		};
 	}
 
-	public async getPropertyReviewSummary(propertyId: ObjectId): Promise<ReviewSummary> {
+	public async getProductReviewSummary(productId: ObjectId): Promise<ReviewSummary> {
 		const result = await this.reviewModel
 			.aggregate([
-				{ $match: { propertyId, reviewStatus: ReviewStatus.ACTIVE } },
+				{ $match: { productId, reviewStatus: ReviewStatus.ACTIVE } },
 				{
 					$group: {
 						_id: null,

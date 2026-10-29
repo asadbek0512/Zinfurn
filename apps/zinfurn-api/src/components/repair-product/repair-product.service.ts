@@ -4,43 +4,43 @@ import { ViewService } from '../view/view.service';
 import { LikeService } from '../like/like.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
-import { RepairProperties, RepairProperty } from '../../libs/dto/repairProperty/repairProperty';
-import { AllRepairPropertiesInquiry, RepairOrdinaryInquiry, RepairPropertiesInquiry, RepairPropertyInput, TechnicianPropertiesInquiry } from '../../libs/dto/repairProperty/repairProperty.input';
+import { RepairProducts, RepairProduct } from '../../libs/dto/repairProduct/repairProduct';
+import { AllRepairProductsInquiry, RepairOrdinaryInquiry, RepairProductsInquiry, RepairProductInput, TechnicianProductsInquiry } from '../../libs/dto/repairProduct/repairProduct.input';
 import { Direction, Message } from '../../libs/enums/common_enum';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { RepairPropertyStatus } from '../../libs/enums/repairProperty.enum';
+import { RepairProductStatus } from '../../libs/enums/repairProduct.enum';
 import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
 import { LikeInput } from '../../libs/dto/like/like.input';
-import { RepairPropertyUpdate } from '../../libs/dto/repairProperty/repairProperty.update';
+import { RepairProductUpdate } from '../../libs/dto/repairProduct/repairProduct.update';
 import * as moment from 'moment'
 import { TranslationService } from '../translation/translation.service';
 
 @Injectable()
-export class RepairPropertyService {
+export class RepairProductService {
     constructor(
-        @InjectModel('RepairProperty') private readonly repairPropertyModel: Model<RepairProperty>,
+        @InjectModel('RepairProduct') private readonly repairProductModel: Model<RepairProduct>,
         private memberService: MemberService,
         private viewService: ViewService,
         private likeService: LikeService,
         private translationService: TranslationService,
     ) { }
 
-    public async createRepairProperty(input: RepairPropertyInput): Promise<RepairProperty> {
+    public async createRepairProduct(input: RepairProductInput): Promise<RepairProduct> {
         try {
             const data: T = { ...input };
             // Tarjima (NON-BLOCKING: xato bo'lsa ham saqlanadi)
             try {
-                const translations = await this.translationService.translateArticle(input.repairPropertyDescription, '');
-                if (translations) data.repairPropertyTranslations = translations;
+                const translations = await this.translationService.translateArticle(input.repairProductDescription, '');
+                if (translations) data.repairProductTranslations = translations;
             } catch (e) {
                 Logger.warn('Tarjima o\'tkazib yuborildi (repair create)');
             }
-            const result = await this.repairPropertyModel.create(data);
+            const result = await this.repairProductModel.create(data);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberProducts',
                 modifier: 1,
             })
             return result;
@@ -49,47 +49,47 @@ export class RepairPropertyService {
             throw new BadRequestException(Message.CREATE_FAILED);
         }
     }
-    public async getRepairProperty(memberId: ObjectId, repairId: ObjectId): Promise<RepairProperty> {
+    public async getRepairProduct(memberId: ObjectId, repairId: ObjectId): Promise<RepairProduct> {
         // findById o'rniga findOne ishlatish kerak
         const search: T = {
             _id: repairId,
-            repairPropertyStatus: RepairPropertyStatus.ACTIVE,
+            repairProductStatus: RepairProductStatus.ACTIVE,
         };
     
-        const targetProperty: RepairProperty | null = await this.repairPropertyModel
+        const targetProduct: RepairProduct | null = await this.repairProductModel
             .findOne(search) // findById o'rniga findOne
             .lean()
             .exec();
     
-        if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        if (!targetProduct) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIR_PROPERTY };
+            const viewInput = { memberId: memberId, viewRefId: repairId, viewGroup: ViewGroup.REPAIR_PRODUCT };
             
             const newView = await this.viewService.recordView(viewInput);
             
             if (newView) {
-                await this.repairPropertyStatsEditor({ _id: repairId, targetKey: 'repairPropertyViews', modifier: 1 });
-                targetProperty.repairPropertyViews++;
+                await this.repairProductStatsEditor({ _id: repairId, targetKey: 'repairProductViews', modifier: 1 });
+                targetProduct.repairProductViews++;
             }
             
             // meLiked
-            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: LikeGroup.REPAIR_PROPERTY };
-            targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput);
+            const LikeInput = { memberId: memberId, likeRefId: repairId, likeGroup: LikeGroup.REPAIR_PRODUCT };
+            targetProduct.meLiked = await this.likeService.checkLikeExistence(LikeInput);
         }
     
-        targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
+        targetProduct.memberData = await this.memberService.getMember(null, targetProduct.memberId);
     
-        return targetProperty;
+        return targetProduct;
     }
 
-    public async getRepairProperties(memberId: ObjectId, input: RepairPropertiesInquiry): Promise<RepairProperties> {
-        const match: T = { repairPropertyStatus: RepairPropertyStatus.ACTIVE };
+    public async getRepairProducts(memberId: ObjectId, input: RepairProductsInquiry): Promise<RepairProducts> {
+        const match: T = { repairProductStatus: RepairProductStatus.ACTIVE };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
 
-        const result = await this.repairPropertyModel
+        const result = await this.repairProductModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -112,7 +112,7 @@ export class RepairPropertyService {
         return result[0];
     }
 
-    private shapeMatchQuery(match: T, input: RepairPropertiesInquiry): void {
+    private shapeMatchQuery(match: T, input: RepairProductsInquiry): void {
         const {
             memberId,
             typeList,
@@ -120,24 +120,24 @@ export class RepairPropertyService {
         } = input.search;
 
         if (memberId) match.memberId = ShapeIntoMongoObjectId(memberId);
-        if (typeList && typeList.length) match.propertyType = { $in: typeList };
+        if (typeList && typeList.length) match.productType = { $in: typeList };
 
         if (text) {
-            match.propertyTitle = buildSearchRegex(text);
+            match.productTitle = buildSearchRegex(text);
         }
     }
 
-    public async getTechnicianProperties(memberId: ObjectId, input: TechnicianPropertiesInquiry): Promise<RepairProperties> {
-        const { repairPropertyStatus } = input.search;
-        if (repairPropertyStatus === RepairPropertyStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+    public async getTechnicianProducts(memberId: ObjectId, input: TechnicianProductsInquiry): Promise<RepairProducts> {
+        const { repairProductStatus } = input.search;
+        if (repairProductStatus === RepairProductStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
         const match: T = {
             memberId: memberId,
-            repairPropertyStatus: repairPropertyStatus ?? { $ne: RepairPropertyStatus.DELETE },
+            repairProductStatus: repairProductStatus ?? { $ne: RepairProductStatus.DELETE },
         };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        const result = await this.repairPropertyModel
+        const result = await this.repairProductModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -146,7 +146,7 @@ export class RepairPropertyService {
                         list: [
                             { $skip: (input.page - 1) * input.limit },
                             { $limit: input.limit },
-                            lookupMember, // propertimizni memberIdsini boshqa kollekshindan lookup qilyapmiz
+                            lookupMember, // productimizni memberIdsini boshqa kollekshindan lookup qilyapmiz
                             { $unwind: '$memberData' },
                         ],
                         metaCounter: [{ $count: 'total' }],
@@ -159,40 +159,40 @@ export class RepairPropertyService {
         return result[0];
     }
 
-    public async getRepairFavorites(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
-        return await this.likeService.getFavoriteRepairProperties(memberId, input);
+    public async getRepairFavorites(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProducts> {
+        return await this.likeService.getFavoriteRepairProducts(memberId, input);
     }
 
-    public async getRepairVisited(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
-        return await this.viewService.getVisitedRepairProperties(memberId, input);
+    public async getRepairVisited(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProducts> {
+        return await this.viewService.getVisitedRepairProducts(memberId, input);
     }
 
-    public async likeTargetRepairProperty(memberId: ObjectId, likeRefId: ObjectId): Promise<RepairProperty> {
-        const target: RepairProperty | null = await this.repairPropertyModel
-            .findOne({ _id: likeRefId, repairPropertyStatus: RepairPropertyStatus.ACTIVE })
+    public async likeTargetRepairProduct(memberId: ObjectId, likeRefId: ObjectId): Promise<RepairProduct> {
+        const target: RepairProduct | null = await this.repairProductModel
+            .findOne({ _id: likeRefId, repairProductStatus: RepairProductStatus.ACTIVE })
             .exec();
         if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         const input: LikeInput = {
             memberId: memberId,
             likeRefId: likeRefId,
-            likeGroup: LikeGroup.REPAIR_PROPERTY
+            likeGroup: LikeGroup.REPAIR_PRODUCT
         }
 
         const modifier: number = await this.likeService.toggleLike(input)
-        const result = await this.repairPropertyStatsEditor({ _id: likeRefId, targetKey: 'repairPropertyLikes', modifier: modifier });
+        const result = await this.repairProductStatsEditor({ _id: likeRefId, targetKey: 'repairProductLikes', modifier: modifier });
 
         if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
         return result;
     }
 
-    public async getAllRepairPropertiesByAdmin(input: AllRepairPropertiesInquiry): Promise<RepairProperties> {
-        const { repairPropertyStatus } = input.search;
+    public async getAllRepairProductsByAdmin(input: AllRepairProductsInquiry): Promise<RepairProducts> {
+        const { repairProductStatus } = input.search;
         const match: T = {};
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        if (repairPropertyStatus) match.repairPropertyStatus = repairPropertyStatus;
-        const result = await this.repairPropertyModel
+        if (repairProductStatus) match.repairProductStatus = repairProductStatus;
+        const result = await this.repairProductModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -200,7 +200,7 @@ export class RepairPropertyService {
                     $facet: {
                         list: [
                             { $skip: (input.page - 1) * input.limit },
-                            { $limit: input.limit }, // [property1 ,property2]
+                            { $limit: input.limit }, // [product1 ,product2]
                             lookupMember, // memberDate: [memberDataValue]
                             { $unwind: '$memberData' }, // memberData: memberDataValue
                         ],
@@ -214,16 +214,16 @@ export class RepairPropertyService {
         return result[0];
     }
 
-    public async updateRepairPropertyByAdmin(input: RepairPropertyUpdate): Promise<RepairProperty> {
-        let { repairPropertyStatus, deletedAt } = input;
+    public async updateRepairProductByAdmin(input: RepairProductUpdate): Promise<RepairProduct> {
+        let { repairProductStatus, deletedAt } = input;
         const search: T = {
             _id: input._id,
-            repairPropertyStatus: RepairPropertyStatus.ACTIVE,
+            repairProductStatus: RepairProductStatus.ACTIVE,
         };
 
-        if (repairPropertyStatus === RepairPropertyStatus.DELETE) deletedAt = moment().toDate();
+        if (repairProductStatus === RepairProductStatus.DELETE) deletedAt = moment().toDate();
 
-        const result = await this.repairPropertyModel
+        const result = await this.repairProductModel
             .findOneAndUpdate(search, input, {
                 new: true,
             })
@@ -233,7 +233,7 @@ export class RepairPropertyService {
         if (deletedAt) {
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberProducts',
                 modifier: -1,
             });
         }
@@ -241,17 +241,17 @@ export class RepairPropertyService {
         return result;
     }
 
-    public async removeRepairPropertyByAdmin(repairId: ObjectId): Promise<RepairProperty> {
-        const search: T = { _id: repairId, propertyStatus: RepairPropertyStatus.DELETE };
-        const result = await this.repairPropertyModel.findByIdAndDelete(search).exec();
+    public async removeRepairProductByAdmin(repairId: ObjectId): Promise<RepairProduct> {
+        const search: T = { _id: repairId, productStatus: RepairProductStatus.DELETE };
+        const result = await this.repairProductModel.findByIdAndDelete(search).exec();
         if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
 
         return result;
     }
 
-    public async repairPropertyStatsEditor(input: StatisticModifier): Promise<RepairProperty | null> {
+    public async repairProductStatsEditor(input: StatisticModifier): Promise<RepairProduct | null> {
         const { _id, targetKey, modifier } = input;
-        return await this.repairPropertyModel
+        return await this.repairProductModel
             .findByIdAndUpdate(
                 _id,
                 { $inc: { [targetKey]: modifier } },

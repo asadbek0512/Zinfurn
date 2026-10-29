@@ -23,7 +23,7 @@ const sharp = require('sharp') as typeof import('sharp').default;
 import { Message } from '../../libs/enums/common_enum';
 import { SecurityAlertService, SecurityEventType } from '../security/security-alert.service';
 
-const ALLOWED_UPLOAD_TARGETS = ['member', 'property', 'article', 'repair', 'review'];
+const ALLOWED_UPLOAD_TARGETS = ['member', 'product', 'article', 'repair', 'review'];
 
 @Resolver()
 export class MemberResolver {

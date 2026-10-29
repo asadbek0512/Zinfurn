@@ -1,26 +1,26 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { Property } from '../property/property';
-import { PropertyCategory, PropertyColor, PropertyMaterial, PropertyType } from '../../enums/property.enum';
+import { Product } from '../product/product';
+import { ProductCategory, ProductColor, ProductMaterial, ProductType } from '../../enums/product.enum';
 
 @ObjectType()
 export class RoomAnalysisResult {
-	@Field(() => PropertyCategory, { nullable: true })
-	roomType?: PropertyCategory;
+	@Field(() => ProductCategory, { nullable: true })
+	roomType?: ProductCategory;
 
-	@Field(() => PropertyType, { nullable: true })
-	requestedType?: PropertyType; // foydalanuvchi matnidan aniqlangan mahsulot turi (masalan BED)
+	@Field(() => ProductType, { nullable: true })
+	requestedType?: ProductType; // foydalanuvchi matnidan aniqlangan mahsulot turi (masalan BED)
 
-	@Field(() => [PropertyColor])
-	dominantColors: PropertyColor[];
+	@Field(() => [ProductColor])
+	dominantColors: ProductColor[];
 
-	@Field(() => PropertyMaterial, { nullable: true })
-	suggestedMaterial?: PropertyMaterial;
+	@Field(() => ProductMaterial, { nullable: true })
+	suggestedMaterial?: ProductMaterial;
 
 	@Field(() => String)
 	styleNotes: string;
 
-	@Field(() => [Property])
-	matchedProducts: Property[];
+	@Field(() => [Product])
+	matchedProducts: Product[];
 }
 
 @ObjectType()

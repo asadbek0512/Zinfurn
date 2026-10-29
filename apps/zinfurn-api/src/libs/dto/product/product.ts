@@ -1,11 +1,11 @@
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
-import { PropertyCategory, PropertyColor, PropertyCondition, PropertyMaterial, PropertyStatus, PropertyType } from "../../enums/property.enum";
+import { ProductCategory, ProductColor, ProductCondition, ProductMaterial, ProductStatus, ProductType } from "../../enums/product.enum";
 import { Member, TotalCounter } from "../member/member";
 import { MeLiked } from "../like/like";
 
 @ObjectType()
-export class PropertyI18n {
+export class ProductI18n {
     @Field(() => String, { nullable: true })
     title?: string;
 
@@ -14,117 +14,117 @@ export class PropertyI18n {
 }
 
 @ObjectType()
-export class PropertyTranslations {
-    @Field(() => PropertyI18n, { nullable: true })
-    uz?: PropertyI18n;
+export class ProductTranslations {
+    @Field(() => ProductI18n, { nullable: true })
+    uz?: ProductI18n;
 
-    @Field(() => PropertyI18n, { nullable: true })
-    en?: PropertyI18n;
+    @Field(() => ProductI18n, { nullable: true })
+    en?: ProductI18n;
 
-    @Field(() => PropertyI18n, { nullable: true })
-    ru?: PropertyI18n;
+    @Field(() => ProductI18n, { nullable: true })
+    ru?: ProductI18n;
 
-    @Field(() => PropertyI18n, { nullable: true })
-    kr?: PropertyI18n;
+    @Field(() => ProductI18n, { nullable: true })
+    kr?: ProductI18n;
 
-    @Field(() => PropertyI18n, { nullable: true })
-    ar?: PropertyI18n;
+    @Field(() => ProductI18n, { nullable: true })
+    ar?: ProductI18n;
 }
 
 @ObjectType()
-export class Property {
+export class Product {
     @Field(() => String)
     _id: ObjectId;
 
-    @Field(() => PropertyType)
-    propertyType: PropertyType;
+    @Field(() => ProductType)
+    productType: ProductType;
 
-    @Field(() => PropertyStatus, { nullable: true })
-    propertyStatus?: PropertyStatus;
+    @Field(() => ProductStatus, { nullable: true })
+    productStatus?: ProductStatus;
 
-    @Field(() => PropertyCategory)
-    propertyCategory: PropertyCategory;
+    @Field(() => ProductCategory)
+    productCategory: ProductCategory;
 
-    @Field(() => PropertyMaterial)
-    propertyMaterial: PropertyMaterial;
+    @Field(() => ProductMaterial)
+    productMaterial: ProductMaterial;
 
-    @Field(() => PropertyColor)
-    propertyColor: PropertyColor;
-
-    @Field(() => String)
-    propertySize: string;
+    @Field(() => ProductColor)
+    productColor: ProductColor;
 
     @Field(() => String)
-    propertyTitle: string;
+    productSize: string;
+
+    @Field(() => String)
+    productTitle: string;
 
     @Field(() => Number)
-    propertyPrice: number;
+    productPrice: number;
 
     @Field(() => Number, { nullable: true })
-    propertySalePrice?: number;
+    productSalePrice?: number;
 
     @Field(() => Boolean, { nullable: true })
-    propertyIsOnSale?: boolean;
+    productIsOnSale?: boolean;
 
     @Field(() => Number, { nullable: true })
-    propertyStock?: number;
+    productStock?: number;
 
     @Field(() => Date, { nullable: true })
-    propertySaleStartsAt?: Date;
+    productSaleStartsAt?: Date;
 
     @Field(() => Date, { nullable: true })
-    propertySaleExpiresAt?: Date;
+    productSaleExpiresAt?: Date;
 
     @Field(() => [String], { nullable: true })
-    propertyImages?: string[];
+    productImages?: string[];
 
     @Field(() => String, { nullable: true })
-    propertyArModel?: string;
+    productArModel?: string;
 
     @Field(() => String, { nullable: true })
-    propertyDesc?: string;
+    productDesc?: string;
 
-    @Field(() => PropertyTranslations, { nullable: true })
-    propertyTranslations?: PropertyTranslations;
+    @Field(() => ProductTranslations, { nullable: true })
+    productTranslations?: ProductTranslations;
 
     @Field(() => Boolean, { nullable: true })
-    propertyBarter?: boolean;
+    productBarter?: boolean;
 
     @Field(() => Boolean, { nullable: true })
-    propertyRent?: boolean;
+    productRent?: boolean;
 
     @Field(() => Boolean, { nullable: true })
-    propertyInStock?: boolean;
+    productInStock?: boolean;
 
-    @Field(() => PropertyCondition)
-    propertyCondition: PropertyCondition;
-
-    @Field(() => String, { nullable: true })
-    propertyBrand?: string;
+    @Field(() => ProductCondition)
+    productCondition: ProductCondition;
 
     @Field(() => String, { nullable: true })
-    propertyOriginCountry?: string;
+    productBrand?: string;
 
     @Field(() => String, { nullable: true })
-    propertyAddress?: string;
+    productOriginCountry?: string;
+
+    @Field(() => String, { nullable: true })
+    productAddress?: string;
 
     @Field(() => Int )
-    propertyViews: number;
+    productViews: number;
 
     @Field(() => Int, { nullable: true })
-    propertyLikes?: number;
+    productLikes?: number;
 
     @Field(() => Int, { nullable: true })
-    propertyReviews?: number;
+    productReviews?: number;
 
     @Field(() => Float, { nullable: true })
-    propertyRating?: number;
+    productRating?: number;
 
     @Field(() => Int, { nullable: true })
-    propertySoldCount?: number;
+    productSoldCount?: number;
 
     @Field(() => Int, { nullable: true })
-    propertyRank?: number;
+    productRank?: number;
 
     @Field(() => String)
     memberId: ObjectId;
@@ -156,9 +156,9 @@ export class Property {
 
 
 @ObjectType()
-export class Properties {
-    @Field(() => [Property])
-    list: Property[];
+export class Products {
+    @Field(() => [Product])
+    list: Product[];
 
     @Field(() => [TotalCounter], { nullable: true })
     metaCounter: TotalCounter[];

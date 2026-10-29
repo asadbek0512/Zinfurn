@@ -4,10 +4,10 @@ import { PaymentMethod, PaymentStatus } from '../libs/enums/payment.enum';
 
 const OrderItemSchema = new Schema(
 	{
-		propertyId: { type: Schema.Types.ObjectId, required: true, ref: 'Property' },
-		propertyTitle: { type: String, required: true },
-		propertyImage: { type: String },
-		propertyPrice: { type: Number, required: true },
+		productId: { type: Schema.Types.ObjectId, required: true, ref: 'Product' },
+		productTitle: { type: String, required: true },
+		productImage: { type: String },
+		productPrice: { type: Number, required: true },
 		quantity: { type: Number, required: true, default: 1 },
 	},
 	{ _id: false },

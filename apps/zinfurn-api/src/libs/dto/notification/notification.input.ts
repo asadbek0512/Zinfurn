@@ -47,5 +47,5 @@ export class NotificationInput {
 	@Field(() => String, { nullable: true })
 	@IsMongoId()
 	@IsOptional()
-	propertyId?: string;
+	productId?: string;
 }

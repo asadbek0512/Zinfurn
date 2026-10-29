@@ -4,8 +4,8 @@ import { MessageStatus } from '../libs/enums/message.enum';
 const MessageSchema = new Schema(
 	{
 		conversationId: { type: String, required: true, index: true },
-		propertyId: { type: Schema.Types.ObjectId, required: false, ref: 'Property' },
-		kind: { type: String, enum: ['PROPERTY', 'REPAIR'], default: 'PROPERTY' },
+		productId: { type: Schema.Types.ObjectId, required: false, ref: 'Product' },
+		kind: { type: String, enum: ['PRODUCT', 'REPAIR'], default: 'PRODUCT' },
 		senderId: { type: Schema.Types.ObjectId, required: true, ref: 'Member' },
 		receiverId: { type: Schema.Types.ObjectId, required: true, ref: 'Member' },
 		message: { type: String, required: true },

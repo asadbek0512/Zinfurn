@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { AiRoomResolver } from './ai-room.resolver';
 import { AiRoomService } from './ai-room.service';
 import { AiQuotaService } from './ai-quota.service';
-import { PropertyModule } from '../property/property.module';
+import { ProductModule } from '../product/product.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-	imports: [PropertyModule, AuthModule],
+	imports: [ProductModule, AuthModule],
 	providers: [AiRoomResolver, AiRoomService, AiQuotaService],
 	exports: [AiRoomService],
 })

@@ -16,7 +16,7 @@ import { ConfirmTossPaymentInput, OrderItemInput } from '../../libs/dto/order/or
 import { PaymentMethod, PaymentStatus } from '../../libs/enums/payment.enum';
 import { TOSS_DONE_STATUS, TossPaymentService } from './toss-payment.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PropertyStatus } from '../../libs/enums/property.enum';
+import { ProductStatus } from '../../libs/enums/product.enum';
 import { PriceSource, effectivePrice } from '../../libs/pricing';
 import { PushService } from '../push/push.service';
 import { UZS_CURRENCY, UZ_PROVIDERS, buildPaymentUrl, isProviderConfigured, uzsPerUsd } from './payment-gateway.config';
@@ -54,7 +54,7 @@ const ORDER_STATUS_PUSH: Partial<Record<OrderStatus, string>> = {
 };
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
-type OrderableProperty = PriceSource & { _id: ObjectId; propertyTitle: string; propertyImages?: string[]; propertyStock?: number };
+type OrderableProduct = PriceSource & { _id: ObjectId; productTitle: string; productImages?: string[]; productStock?: number };
 
 @Injectable()
 export class OrderService {
@@ -62,7 +62,7 @@ export class OrderService {
 
 	constructor(
 		@InjectModel('Order') private readonly orderModel: Model<Order>,
-		@InjectModel('Property') private readonly propertyModel: Model<any>,
+		@InjectModel('Product') private readonly productModel: Model<any>,
 		private readonly telegramNotify: TelegramNotifyService,
 		private readonly mailNotify: MailNotifyService,
 		private readonly couponService: CouponService,
@@ -76,7 +76,7 @@ export class OrderService {
 
 		// Narx va summa FAQAT serverda hisoblanadi — client yuborgan price/total'ga ishonmaymiz
 		input.orderItems = await this.priceOrderItems(input.orderItems);
-		input.orderTotal = input.orderItems.reduce((sum, item) => sum + item.propertyPrice * item.quantity, 0);
+		input.orderTotal = input.orderItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
 
 		// Kupon: server o'zi tekshiradi va chegirmani o'zi hisoblaydi (clientga ishonmaymiz)
 		let orderDiscount = 0;
@@ -89,7 +89,7 @@ export class OrderService {
 		}
 
 		// Yetkazib berish narxi serverda hisoblanadi (tovar summasidan kelib chiqib)
-		const merchandise = input.orderItems.reduce((sum, item) => sum + item.propertyPrice * item.quantity, 0);
+		const merchandise = input.orderItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
 		const deliveryFee = merchandise >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
 		input.orderTotal = input.orderTotal + deliveryFee;
 
@@ -253,10 +253,10 @@ export class OrderService {
 		const items = order.orderItems ?? [];
 		await Promise.all(
 			items.map((item) =>
-				this.propertyModel
+				this.productModel
 					.updateOne(
-						{ _id: item.propertyId, propertyStock: { $type: 'number' } },
-						{ $inc: { propertyStock: -item.quantity } },
+						{ _id: item.productId, productStock: { $type: 'number' } },
+						{ $inc: { productStock: -item.quantity } },
 					)
 					.exec(),
 			),
@@ -265,26 +265,26 @@ export class OrderService {
 
 	/** Har pozitsiyani DB'dagi mahsulot bo'yicha qayta narxlaydi; sotuvda bo'lmasa rad etadi */
 	private async priceOrderItems(items: OrderItemInput[]): Promise<OrderItemInput[]> {
-		const ids = items.map((item) => item.propertyId);
-		const properties = await this.propertyModel
-			.find({ _id: { $in: ids }, propertyStatus: PropertyStatus.ACTIVE })
-			.select('propertyTitle propertyImages propertyPrice propertySalePrice propertyIsOnSale propertySaleStartsAt propertySaleExpiresAt propertyStock')
-			.lean<OrderableProperty[]>()
+		const ids = items.map((item) => item.productId);
+		const products = await this.productModel
+			.find({ _id: { $in: ids }, productStatus: ProductStatus.ACTIVE })
+			.select('productTitle productImages productPrice productSalePrice productIsOnSale productSaleStartsAt productSaleExpiresAt productStock')
+			.lean<OrderableProduct[]>()
 			.exec();
-		const byId = new Map(properties.map((property) => [String(property._id), property]));
+		const byId = new Map(products.map((product) => [String(product._id), product]));
 
 		return items.map((item) => {
-			const property = byId.get(String(item.propertyId));
-			if (!property) throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
+			const product = byId.get(String(item.productId));
+			if (!product) throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
 			// Zaxira cheklangan bo'lsa (son) va yetarli bo'lmasa — rad etamiz. null = cheksiz.
-			if (typeof property.propertyStock === 'number' && property.propertyStock < item.quantity) {
+			if (typeof product.productStock === 'number' && product.productStock < item.quantity) {
 				throw new BadRequestException(Message.PRODUCT_NOT_AVAILABLE);
 			}
 			return {
-				propertyId: item.propertyId,
-				propertyTitle: property.propertyTitle,
-				propertyImage: property.propertyImages?.[0] ?? item.propertyImage,
-				propertyPrice: effectivePrice(property),
+				productId: item.productId,
+				productTitle: product.productTitle,
+				productImage: product.productImages?.[0] ?? item.productImage,
+				productPrice: effectivePrice(product),
 				quantity: item.quantity,
 			};
 		});
@@ -392,9 +392,9 @@ export class OrderService {
 
 		// increment sold count for each item
 		for (const item of order.orderItems) {
-			await this.propertyModel.findByIdAndUpdate(
-				item.propertyId,
-				{ $inc: { propertySoldCount: item.quantity } },
+			await this.productModel.findByIdAndUpdate(
+				item.productId,
+				{ $inc: { productSoldCount: item.quantity } },
 			);
 		}
 		return confirmed;
@@ -492,10 +492,10 @@ export class OrderService {
 	public async getSellerDashboard(agentId: ObjectId): Promise<SellerDashboard> {
 		// 1) Agent mahsulotlari — statuslar bo'yicha sanoq + views/likes yig'indisi
 		const props: any[] =
-			await this.propertyModel
+			await this.productModel
 				.find(
-					{ memberId: agentId, propertyStatus: { $ne: PropertyStatus.DELETE } },
-					{ _id: 1, propertyStatus: 1, propertyViews: 1, propertyLikes: 1 },
+					{ memberId: agentId, productStatus: { $ne: ProductStatus.DELETE } },
+					{ _id: 1, productStatus: 1, productViews: 1, productLikes: 1 },
 				)
 				.lean()
 				.exec();
@@ -506,10 +506,10 @@ export class OrderService {
 		let totalViews = 0;
 		let totalLikes = 0;
 		for (const p of props) {
-			if (p.propertyStatus === PropertyStatus.ACTIVE) activeListings++;
-			if (p.propertyStatus === PropertyStatus.SOLD) soldListings++;
-			totalViews += p.propertyViews || 0;
-			totalLikes += p.propertyLikes || 0;
+			if (p.productStatus === ProductStatus.ACTIVE) activeListings++;
+			if (p.productStatus === ProductStatus.SOLD) soldListings++;
+			totalViews += p.productViews || 0;
+			totalLikes += p.productLikes || 0;
 		}
 
 		const empty: SellerDashboard = {
@@ -539,14 +539,14 @@ export class OrderService {
 			.aggregate([
 				{ $match: SALE_MATCH },
 				{ $unwind: '$orderItems' },
-				{ $match: { 'orderItems.propertyId': { $in: propIds } } },
+				{ $match: { 'orderItems.productId': { $in: propIds } } },
 				{
 					$facet: {
 						totals: [
 							{
 								$group: {
 									_id: null,
-									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+									revenue: { $sum: { $multiply: ['$orderItems.productPrice', '$orderItems.quantity'] } },
 									itemsSold: { $sum: '$orderItems.quantity' },
 									orderIds: { $addToSet: '$_id' },
 								},
@@ -555,11 +555,11 @@ export class OrderService {
 						top: [
 							{
 								$group: {
-									_id: '$orderItems.propertyId',
-									propertyTitle: { $first: '$orderItems.propertyTitle' },
-									propertyImage: { $first: '$orderItems.propertyImage' },
+									_id: '$orderItems.productId',
+									productTitle: { $first: '$orderItems.productTitle' },
+									productImage: { $first: '$orderItems.productImage' },
 									soldQty: { $sum: '$orderItems.quantity' },
-									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+									revenue: { $sum: { $multiply: ['$orderItems.productPrice', '$orderItems.quantity'] } },
 								},
 							},
 							{ $sort: { revenue: -1 } },
@@ -570,7 +570,7 @@ export class OrderService {
 							{
 								$group: {
 									_id: { $dateToString: { format: '%Y-%m-%d', date: '$paidAt' } },
-									revenue: { $sum: { $multiply: ['$orderItems.propertyPrice', '$orderItems.quantity'] } },
+									revenue: { $sum: { $multiply: ['$orderItems.productPrice', '$orderItems.quantity'] } },
 									orders: { $addToSet: '$_id' },
 								},
 							},
@@ -583,9 +583,9 @@ export class OrderService {
 		const facet = agg[0] || {};
 		const totals = facet.totals?.[0];
 		const topProducts: SellerTopProduct[] = (facet.top || []).map((t: any) => ({
-			propertyId: String(t._id),
-			propertyTitle: t.propertyTitle,
-			propertyImage: t.propertyImage,
+			productId: String(t._id),
+			productTitle: t.productTitle,
+			productImage: t.productImage,
 			soldQty: t.soldQty,
 			revenue: t.revenue,
 		}));

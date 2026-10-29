@@ -2,20 +2,20 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger }
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import {
-    AgentPropertiesInquiry,
-    AllPropertiesInquiry,
+    AgentProductsInquiry,
+    AllProductsInquiry,
     OrdinaryInquiry,
-    PropertiesInquiry,
-    PropertyInput
-} from '../../libs/dto/property/property.input';
-import { Properties, Property } from '../../libs/dto/property/property';
+    ProductsInquiry,
+    ProductInput
+} from '../../libs/dto/product/product.input';
+import { Products, Product } from '../../libs/dto/product/product';
 import { Direction, Message } from '../../libs/enums/common_enum';
 import { MemberService } from '../member/member.service';
 import { ViewService } from '../view/view.service';
-import { PropertyStatus } from '../../libs/enums/property.enum';
+import { ProductStatus } from '../../libs/enums/product.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { StatisticModifier, T } from '../../libs/types/common';
-import { PropertyUpdate } from '../../libs/dto/property/property.update';
+import { ProductUpdate } from '../../libs/dto/product/product.update';
 import * as moment from 'moment'
 import { ShapeIntoMongoObjectId, buildSearchRegex, lookupAuthMemberLiked, lookupMember } from '../../libs/config';
 import { LikeInput } from '../../libs/dto/like/like.input';
@@ -25,26 +25,26 @@ import { TranslationService } from '../translation/translation.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
 
-type PricedProperty = Pick<
-    Property,
-    'propertyPrice' | 'propertySalePrice' | 'propertyIsOnSale' | 'propertySaleStartsAt' | 'propertySaleExpiresAt'
+type PricedProduct = Pick<
+    Product,
+    'productPrice' | 'productSalePrice' | 'productIsOnSale' | 'productSaleStartsAt' | 'productSaleExpiresAt'
 >;
 
 /** Mijoz hozir ko'radigan narx — saytdagi activeSalePrice bilan bir xil qoida */
-const effectivePrice = (p: PricedProperty, now = new Date()): number => {
+const effectivePrice = (p: PricedProduct, now = new Date()): number => {
     const saleActive =
-        p.propertyIsOnSale &&
-        typeof p.propertySalePrice === 'number' &&
-        p.propertySalePrice < p.propertyPrice &&
-        (!p.propertySaleStartsAt || new Date(p.propertySaleStartsAt) <= now) &&
-        (!p.propertySaleExpiresAt || new Date(p.propertySaleExpiresAt) > now);
-    return saleActive ? (p.propertySalePrice as number) : p.propertyPrice;
+        p.productIsOnSale &&
+        typeof p.productSalePrice === 'number' &&
+        p.productSalePrice < p.productPrice &&
+        (!p.productSaleStartsAt || new Date(p.productSaleStartsAt) <= now) &&
+        (!p.productSaleExpiresAt || new Date(p.productSaleExpiresAt) > now);
+    return saleActive ? (p.productSalePrice as number) : p.productPrice;
 };
 
 @Injectable()
-export class PropertyService {
+export class ProductService {
     constructor(
-        @InjectModel('Property') private readonly propertyModel: Model<Property>,
+        @InjectModel('Product') private readonly productModel: Model<Product>,
         private memberService: MemberService,
         private viewService: ViewService,
         private likeService: LikeService,
@@ -53,13 +53,13 @@ export class PropertyService {
     ) { }
 
     /** Narx tushsa mahsulotni yoqtirganlarga bildirishnoma + push (xato bo'lsa update'ni buzmaydi) */
-    private async notifyPriceDrop(before: PricedProperty | null, after: Property): Promise<void> {
+    private async notifyPriceDrop(before: PricedProduct | null, after: Product): Promise<void> {
         if (!before) return;
         const oldPrice = effectivePrice(before);
         const newPrice = effectivePrice(after);
         if (newPrice >= oldPrice) return;
         try {
-            const likerIds = await this.likeService.findLikerIds(LikeGroup.PROPERTY, after._id);
+            const likerIds = await this.likeService.findLikerIds(LikeGroup.PRODUCT, after._id);
             const ownerId = after.memberId.toString();
             await Promise.all(
                 likerIds
@@ -67,12 +67,12 @@ export class PropertyService {
                     .map((receiverId) =>
                         this.notificationService.createNotification({
                             notificationType: NotificationType.PRICE_DROP,
-                            notificationGroup: NotificationGroup.PROPERTY,
+                            notificationGroup: NotificationGroup.PRODUCT,
                             notificationTitle: 'Price drop',
-                            notificationDesc: `"${after.propertyTitle}" is now $${newPrice} (was $${oldPrice})`,
+                            notificationDesc: `"${after.productTitle}" is now $${newPrice} (was $${oldPrice})`,
                             authorId: ownerId,
                             receiverId,
-                            propertyId: after._id.toString(),
+                            productId: after._id.toString(),
                         }),
                     ),
             );
@@ -81,41 +81,41 @@ export class PropertyService {
         }
     }
 
-    private findPricing(search: T): Promise<PricedProperty | null> {
-        return this.propertyModel
+    private findPricing(search: T): Promise<PricedProduct | null> {
+        return this.productModel
             .findOne(search, {
-                propertyPrice: 1,
-                propertySalePrice: 1,
-                propertyIsOnSale: 1,
-                propertySaleStartsAt: 1,
-                propertySaleExpiresAt: 1,
+                productPrice: 1,
+                productSalePrice: 1,
+                productIsOnSale: 1,
+                productSaleStartsAt: 1,
+                productSaleExpiresAt: 1,
             })
             .lean()
             .exec();
     }
 
-    public async createProperty(input: PropertyInput): Promise<Property> {
+    public async createProduct(input: ProductInput): Promise<Product> {
         try {
-            const propertyData: T = {
+            const productData: T = {
                 ...input,
-                propertyInStock: true,     // Majburiy true qilamiz
+                productInStock: true,     // Majburiy true qilamiz
             };
 
             // Tarjima (NON-BLOCKING: xato/sekin bo'lsa ham product baribir saqlanadi)
             try {
-                const translations = await this.translationService.translateProperty(
-                    input.propertyTitle,
-                    input.propertyDesc,
+                const translations = await this.translationService.translateProduct(
+                    input.productTitle,
+                    input.productDesc,
                 );
-                if (translations) propertyData.propertyTranslations = translations;
+                if (translations) productData.productTranslations = translations;
             } catch (e) {
                 Logger.warn('Tarjima o\'tkazib yuborildi (create)');
             }
 
-            const result = await this.propertyModel.create(propertyData);
+            const result = await this.productModel.create(productData);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberProducts',
                 modifier: 1,
             })
             return result;
@@ -125,51 +125,51 @@ export class PropertyService {
         }
     }
 
-    public async getProperty(memberId: ObjectId, propertyId: ObjectId): Promise<Property> {
+    public async getProduct(memberId: ObjectId, productId: ObjectId): Promise<Product> {
         const search: T = {
-            _id: propertyId,
-            propertyStatus: PropertyStatus.ACTIVE,
+            _id: productId,
+            productStatus: ProductStatus.ACTIVE,
         };
 
-        const targetProperty: Property | null = await this.propertyModel.findOne(search).lean().exec();
-        if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        const targetProduct: Product | null = await this.productModel.findOne(search).lean().exec();
+        if (!targetProduct) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: propertyId, viewGroup: ViewGroup.PROPERTY };
+            const viewInput = { memberId: memberId, viewRefId: productId, viewGroup: ViewGroup.PRODUCT };
             const newView = await this.viewService.recordView(viewInput);
             if (newView) {
-                await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
-                targetProperty.propertyViews++;
+                await this.productStatsEditor({ _id: productId, targetKey: 'productViews', modifier: 1 });
+                targetProduct.productViews++;
             }
             // melicked
-            const LikeInput = { memberId: memberId, likeRefId: propertyId, likeGroup: LikeGroup.PROPERTY };
-            targetProperty.meLiked = await this.likeService.checkLikeExistence(LikeInput)
+            const LikeInput = { memberId: memberId, likeRefId: productId, likeGroup: LikeGroup.PRODUCT };
+            targetProduct.meLiked = await this.likeService.checkLikeExistence(LikeInput)
         }
 
-        targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
-        return targetProperty;
+        targetProduct.memberData = await this.memberService.getMember(null, targetProduct.memberId);
+        return targetProduct;
     }
 
-    public async updateProperty(memberId: ObjectId, input: PropertyUpdate): Promise<Property> {
-        let { propertyStatus, soldAt, deletedAt } = input;
+    public async updateProduct(memberId: ObjectId, input: ProductUpdate): Promise<Product> {
+        let { productStatus, soldAt, deletedAt } = input;
         const search: T = {
             _id: input._id,
             memberId: memberId,
-            propertyStatus: PropertyStatus.ACTIVE,
+            productStatus: ProductStatus.ACTIVE,
         };
 
-        if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
-        else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
+        if (productStatus === ProductStatus.SOLD) soldAt = moment().toDate();
+        else if (productStatus === ProductStatus.DELETE) deletedAt = moment().toDate();
 
         // Nom yoki description o'zgarsa — qayta tarjima (NON-BLOCKING)
-        if (input.propertyTitle !== undefined || input.propertyDesc !== undefined) {
+        if (input.productTitle !== undefined || input.productDesc !== undefined) {
             try {
-                const existing: Property | null = await this.propertyModel.findOne(search).lean().exec();
-                const title = input.propertyTitle ?? existing?.propertyTitle;
-                const desc = input.propertyDesc ?? existing?.propertyDesc;
+                const existing: Product | null = await this.productModel.findOne(search).lean().exec();
+                const title = input.productTitle ?? existing?.productTitle;
+                const desc = input.productDesc ?? existing?.productDesc;
                 if (title) {
-                    const translations = await this.translationService.translateProperty(title, desc);
-                    if (translations) (input as T).propertyTranslations = translations;
+                    const translations = await this.translationService.translateProduct(title, desc);
+                    if (translations) (input as T).productTranslations = translations;
                 }
             } catch (e) {
                 Logger.warn('Tarjima o\'tkazib yuborildi (update)');
@@ -177,7 +177,7 @@ export class PropertyService {
         }
 
         const before = await this.findPricing(search);
-        const result = await this.propertyModel
+        const result = await this.productModel
             .findOneAndUpdate(search, input, {
                 new: true,
             })
@@ -188,7 +188,7 @@ export class PropertyService {
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({
                 _id: memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberProducts',
                 modifier: -1,
             });
         }
@@ -196,13 +196,13 @@ export class PropertyService {
         return result;
     }
 
-    public async getProperties(memberId: ObjectId, input: PropertiesInquiry): Promise<Properties> {
-        const match: T = { propertyStatus: PropertyStatus.ACTIVE };
+    public async getProducts(memberId: ObjectId, input: ProductsInquiry): Promise<Products> {
+        const match: T = { productStatus: ProductStatus.ACTIVE };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
 
-        const result = await this.propertyModel
+        const result = await this.productModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -224,7 +224,7 @@ export class PropertyService {
 
         return result[0];
     }
-    private shapeMatchQuery(match: T, input: PropertiesInquiry): void {
+    private shapeMatchQuery(match: T, input: ProductsInquiry): void {
         const {
             memberId,
             categoryList,
@@ -235,35 +235,35 @@ export class PropertyService {
             pricesRange,
             options,
             text,
-            propertyIsOnSale,
+            productIsOnSale,
             idList,
         } = input.search;
 
         if (idList && idList.length) match._id = { $in: idList.map((id) => ShapeIntoMongoObjectId(id)) };
 
         // Flash Sale: sale oynasi ochilgan va muddati o'tmagan mahsulotlar.
-        // propertySaleStartsAt yo'q bo'lsa — eski yozuv, darrov aktiv hisoblanadi.
-        if (propertyIsOnSale) {
+        // productSaleStartsAt yo'q bo'lsa — eski yozuv, darrov aktiv hisoblanadi.
+        if (productIsOnSale) {
             const now = new Date();
-            match.propertyIsOnSale = true;
-            match.propertySaleExpiresAt = { $gt: now };
+            match.productIsOnSale = true;
+            match.productSaleExpiresAt = { $gt: now };
             // $or emas, $and ichida — pastdagi `options` filtri $or'ni o'zi band qiladi
-            match.$and = [{ $or: [{ propertySaleStartsAt: { $lte: now } }, { propertySaleStartsAt: null }] }];
+            match.$and = [{ $or: [{ productSaleStartsAt: { $lte: now } }, { productSaleStartsAt: null }] }];
         }
 
         if (memberId) match.memberId = ShapeIntoMongoObjectId(memberId);
-        if (categoryList && categoryList.length) match.propertyCategory = { $in: categoryList };
-        if (typeList && typeList.length) match.propertyType = { $in: typeList };
-        if (conditionList && conditionList.length) match.propertyCondition = { $in: conditionList };
-        if (materialList && materialList.length) match.propertyMaterial = { $in: materialList };
-        if (colorList && colorList.length) match.propertyColor = { $in: colorList };
+        if (categoryList && categoryList.length) match.productCategory = { $in: categoryList };
+        if (typeList && typeList.length) match.productType = { $in: typeList };
+        if (conditionList && conditionList.length) match.productCondition = { $in: conditionList };
+        if (materialList && materialList.length) match.productMaterial = { $in: materialList };
+        if (colorList && colorList.length) match.productColor = { $in: colorList };
 
         if (pricesRange) {
-            match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
+            match.productPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
         }
 
         if (text) {
-            match.propertyTitle = buildSearchRegex(text);
+            match.productTitle = buildSearchRegex(text);
         }
 
         if (options && options.length) {
@@ -271,25 +271,25 @@ export class PropertyService {
         }
     }
 
-    public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
-        return await this.likeService.getFavoriteProperties(memberId, input);
+    public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Products> {
+        return await this.likeService.getFavoriteProducts(memberId, input);
     }
 
-    public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
-        return await this.viewService.getVisitedProperties(memberId, input);
+    public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Products> {
+        return await this.viewService.getVisitedProducts(memberId, input);
     }
 
-    public async getAgentProperties(memberId: ObjectId, input: AgentPropertiesInquiry): Promise<Properties> {
-        const { propertyStatus } = input.search;
-        if (propertyStatus === PropertyStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+    public async getAgentProducts(memberId: ObjectId, input: AgentProductsInquiry): Promise<Products> {
+        const { productStatus } = input.search;
+        if (productStatus === ProductStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
         const match: T = {
             memberId: memberId,
-            propertyStatus: propertyStatus ?? { $ne: PropertyStatus.DELETE },
+            productStatus: productStatus ?? { $ne: ProductStatus.DELETE },
         };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        const result = await this.propertyModel
+        const result = await this.productModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -298,7 +298,7 @@ export class PropertyService {
                         list: [
                             { $skip: (input.page - 1) * input.limit },
                             { $limit: input.limit },
-                            lookupMember, // propertimizni memberIdsini boshqa kollekshindan lookup qilyapmiz
+                            lookupMember, // productimizni memberIdsini boshqa kollekshindan lookup qilyapmiz
                             { $unwind: '$memberData' },
                         ],
                         metaCounter: [{ $count: 'total' }],
@@ -311,34 +311,34 @@ export class PropertyService {
         return result[0];
     }
 
-    public async likeTargetProperty(memberId: ObjectId, likeRefId: ObjectId): Promise<Property> {
-        const target: Property | null = await this.propertyModel
-            .findOne({ _id: likeRefId, propertyStatus: PropertyStatus.ACTIVE })
+    public async likeTargetProduct(memberId: ObjectId, likeRefId: ObjectId): Promise<Product> {
+        const target: Product | null = await this.productModel
+            .findOne({ _id: likeRefId, productStatus: ProductStatus.ACTIVE })
             .exec();
         if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         const input: LikeInput = {
             memberId: memberId,
             likeRefId: likeRefId,
-            likeGroup: LikeGroup.PROPERTY
+            likeGroup: LikeGroup.PRODUCT
         }
 
         const modifier: number = await this.likeService.toggleLike(input)
-        const result = await this.propertyStatsEditor({ _id: likeRefId, targetKey: 'propertyLikes', modifier: modifier });
+        const result = await this.productStatsEditor({ _id: likeRefId, targetKey: 'productLikes', modifier: modifier });
 
         if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
         return result;
     }
 
-    public async getAllPropertiesByAdmin(input: AllPropertiesInquiry): Promise<Properties> {
-        const { propertyStatus, propertyCategory } = input.search;
+    public async getAllProductsByAdmin(input: AllProductsInquiry): Promise<Products> {
+        const { productStatus, productCategory } = input.search;
         const match: T = {};
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        if (propertyStatus) match.propertyStatus = propertyStatus;
-        if (propertyCategory) match.propertyLocation = { $in: propertyCategory };
+        if (productStatus) match.productStatus = productStatus;
+        if (productCategory) match.productLocation = { $in: productCategory };
 
-        const result = await this.propertyModel
+        const result = await this.productModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -346,7 +346,7 @@ export class PropertyService {
                     $facet: {
                         list: [
                             { $skip: (input.page - 1) * input.limit },
-                            { $limit: input.limit }, // [property1 ,property2]
+                            { $limit: input.limit }, // [product1 ,product2]
                             lookupMember, // memberDate: [memberDataValue]
                             { $unwind: '$memberData' }, // memberData: memberDataValue
                         ],
@@ -360,18 +360,18 @@ export class PropertyService {
         return result[0];
     }
 
-    public async updatePropertyByAdmin(input: PropertyUpdate): Promise<Property> {
-        let { propertyStatus, soldAt, deletedAt } = input;
+    public async updateProductByAdmin(input: ProductUpdate): Promise<Product> {
+        let { productStatus, soldAt, deletedAt } = input;
         const search: T = {
             _id: input._id,
-            propertyStatus: PropertyStatus.ACTIVE,
+            productStatus: ProductStatus.ACTIVE,
         };
 
-        if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
-        else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
+        if (productStatus === ProductStatus.SOLD) soldAt = moment().toDate();
+        else if (productStatus === ProductStatus.DELETE) deletedAt = moment().toDate();
 
         const before = await this.findPricing(search);
-        const result = await this.propertyModel
+        const result = await this.productModel
             .findOneAndUpdate(search, input, {
                 new: true,
             })
@@ -382,7 +382,7 @@ export class PropertyService {
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberProducts',
                 modifier: -1,
             });
         }
@@ -390,17 +390,17 @@ export class PropertyService {
         return result;
     }
 
-    public async removePropertyByAdmin(propertyId: ObjectId): Promise<Property> {
-        const search: T = { _id: propertyId, propertyStatus: PropertyStatus.DELETE };
-        const result = await this.propertyModel.findOneAndDelete(search).exec();
+    public async removeProductByAdmin(productId: ObjectId): Promise<Product> {
+        const search: T = { _id: productId, productStatus: ProductStatus.DELETE };
+        const result = await this.productModel.findOneAndDelete(search).exec();
         if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
 
         return result;
     }
 
-    public async propertyStatsEditor(input: StatisticModifier): Promise<Property | null> {
+    public async productStatsEditor(input: StatisticModifier): Promise<Product | null> {
         const { _id, targetKey, modifier } = input;
-        return await this.propertyModel
+        return await this.productModel
             .findByIdAndUpdate(
                 _id,
                 { $inc: { [targetKey]: modifier } },

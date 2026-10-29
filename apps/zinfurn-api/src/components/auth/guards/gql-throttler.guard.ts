@@ -10,7 +10,7 @@ import { SecurityAlertService, SecurityEventType } from '../../security/security
  */
 @Injectable()
 export class GqlThrottlerGuard extends ThrottlerGuard {
-	// Property injection — ThrottlerGuard konstruktorini qayta yozmaslik uchun.
+	// Product injection — ThrottlerGuard konstruktorini qayta yozmaslik uchun.
 	@Optional() @Inject(SecurityAlertService) private readonly alert?: SecurityAlertService;
 
 	getRequestResponse(context: ExecutionContext) {

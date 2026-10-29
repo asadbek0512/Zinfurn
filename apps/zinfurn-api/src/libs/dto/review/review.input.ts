@@ -7,7 +7,7 @@ import { Direction } from '../../enums/common_enum';
 export class CreateReviewInput {
 	@IsNotEmpty()
 	@Field(() => String)
-	propertyId: ObjectId;
+	productId: ObjectId;
 
 	@IsNotEmpty()
 	@Field(() => String)
@@ -35,7 +35,7 @@ export class CreateReviewInput {
 class RISearch {
 	@IsNotEmpty()
 	@Field(() => String)
-	propertyId: ObjectId;
+	productId: ObjectId;
 }
 
 @InputType()

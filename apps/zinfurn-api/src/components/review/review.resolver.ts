@@ -24,19 +24,19 @@ export class ReviewResolver {
 		@Args('input') input: CreateReviewInput,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Review> {
-		input.propertyId = ShapeIntoMongoObjectId(input.propertyId);
+		input.productId = ShapeIntoMongoObjectId(input.productId);
 		input.orderId = ShapeIntoMongoObjectId(input.orderId);
 		return this.reviewService.createReview(memberId, input);
 	}
 
 	@UseGuards(WithoutGuard)
 	@Query(() => Reviews)
-	public async getPropertyReviews(
+	public async getProductReviews(
 		@Args('input') input: ReviewsInquiry,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Reviews> {
-		input.search.propertyId = ShapeIntoMongoObjectId(input.search.propertyId);
-		return this.reviewService.getPropertyReviews(input, memberId);
+		input.search.productId = ShapeIntoMongoObjectId(input.search.productId);
+		return this.reviewService.getProductReviews(input, memberId);
 	}
 
 	@UseGuards(AuthGuard)
@@ -51,10 +51,10 @@ export class ReviewResolver {
 
 	@UseGuards(WithoutGuard)
 	@Query(() => ReviewSummary)
-	public async getPropertyReviewSummary(
-		@Args('propertyId') propertyId: string,
+	public async getProductReviewSummary(
+		@Args('productId') productId: string,
 	): Promise<ReviewSummary> {
-		return this.reviewService.getPropertyReviewSummary(ShapeIntoMongoObjectId(propertyId));
+		return this.reviewService.getProductReviewSummary(ShapeIntoMongoObjectId(productId));
 	}
 
 	@UseGuards(AuthGuard)

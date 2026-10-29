@@ -1,20 +1,20 @@
-/** Narx hisoblash uchun kerakli Property maydonlari */
+/** Narx hisoblash uchun kerakli Product maydonlari */
 export interface PriceSource {
-	propertyPrice: number;
-	propertySalePrice?: number;
-	propertyIsOnSale?: boolean;
-	propertySaleStartsAt?: Date;
-	propertySaleExpiresAt?: Date;
+	productPrice: number;
+	productSalePrice?: number;
+	productIsOnSale?: boolean;
+	productSaleStartsAt?: Date;
+	productSaleExpiresAt?: Date;
 }
 
 /**
  * Flash sale oynasi ochiq bo'lsa chegirma narxi, aks holda asosiy narx.
  * Frontend'dagi libs/utils/sale.ts bilan bir xil qoida — buyurtma summasi shunga tayanadi.
  */
-export const effectivePrice = (property: PriceSource, now: number = Date.now()): number => {
-	const { propertyIsOnSale, propertySalePrice, propertySaleStartsAt, propertySaleExpiresAt } = property;
-	if (!propertyIsOnSale || !propertySalePrice) return property.propertyPrice;
-	if (propertySaleStartsAt && propertySaleStartsAt.getTime() > now) return property.propertyPrice;
-	if (propertySaleExpiresAt && propertySaleExpiresAt.getTime() <= now) return property.propertyPrice;
-	return propertySalePrice;
+export const effectivePrice = (product: PriceSource, now: number = Date.now()): number => {
+	const { productIsOnSale, productSalePrice, productSaleStartsAt, productSaleExpiresAt } = product;
+	if (!productIsOnSale || !productSalePrice) return product.productPrice;
+	if (productSaleStartsAt && productSaleStartsAt.getTime() > now) return product.productPrice;
+	if (productSaleExpiresAt && productSaleExpiresAt.getTime() <= now) return product.productPrice;
+	return productSalePrice;
 };

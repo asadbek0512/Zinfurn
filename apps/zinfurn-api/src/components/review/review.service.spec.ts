@@ -13,7 +13,7 @@ import { OrderStatus } from '../../libs/enums/order.enum';
  */
 describe('ReviewService.createReview', () => {
 	const MEMBER_ID = 'member1' as unknown as ObjectId;
-	const input = { orderId: 'o1', propertyId: 'p1', reviewRating: 4, reviewContent: 'Good' } as unknown as CreateReviewInput;
+	const input = { orderId: 'o1', productId: 'p1', reviewRating: 4, reviewContent: 'Good' } as unknown as CreateReviewInput;
 
 	const makeService = (order: object | null, existing: object | null = null, avg = 4.26) => {
 		const orderFindOne = jest.fn(async (_filter: object) => order);
@@ -23,13 +23,13 @@ describe('ReviewService.createReview', () => {
 			create,
 			aggregate: jest.fn(() => ({ exec: async () => [{ avg }] })),
 		} as unknown as Model<Review>;
-		const propertyUpdate = jest.fn(async (_id: string, _update: object) => undefined);
+		const productUpdate = jest.fn(async (_id: string, _update: object) => undefined);
 		const service = new ReviewService(
 			reviewModel,
 			{ findOne: orderFindOne } as unknown as Model<unknown>,
-			{ findByIdAndUpdate: propertyUpdate } as unknown as Model<unknown>,
+			{ findByIdAndUpdate: productUpdate } as unknown as Model<unknown>,
 		);
-		return { service, orderFindOne, create, propertyUpdate };
+		return { service, orderFindOne, create, productUpdate };
 	};
 
 	it("buyurtma tarkibidagi mahsulot va CONFIRMED status talab qilinadi", async () => {
@@ -39,7 +39,7 @@ describe('ReviewService.createReview', () => {
 			_id: 'o1',
 			memberId: MEMBER_ID,
 			orderStatus: OrderStatus.CONFIRMED,
-			'orderItems.propertyId': 'p1',
+			'orderItems.productId': 'p1',
 		});
 	});
 
@@ -50,10 +50,10 @@ describe('ReviewService.createReview', () => {
 	});
 
 	it("sharh yaratiladi, reyting bir xonagacha yaxlitlanib mahsulotga yoziladi", async () => {
-		const { service, create, propertyUpdate } = makeService({ _id: 'o1' });
+		const { service, create, productUpdate } = makeService({ _id: 'o1' });
 		const review = await service.createReview(MEMBER_ID, input);
 		expect(review).toMatchObject({ _id: 'r1', memberId: MEMBER_ID });
 		expect(create).toHaveBeenCalled();
-		expect(propertyUpdate).toHaveBeenCalledWith('p1', { $inc: { propertyReviews: 1 }, propertyRating: 4.3 });
+		expect(productUpdate).toHaveBeenCalledWith('p1', { $inc: { productReviews: 1 }, productRating: 4.3 });
 	});
 });

@@ -1,6 +1,6 @@
 import { registerEnumType } from '@nestjs/graphql';
 
-export enum PropertyType {
+export enum ProductType {
 	STOOL = 'STOOL',
 	TABLE = 'TABLE',
 	BED = 'BED',
@@ -10,42 +10,42 @@ export enum PropertyType {
 	SHELF = 'SHELF',
 	OTHER = 'OTHER',
 }
-registerEnumType(PropertyType, {
-	name: 'PropertyType',
+registerEnumType(ProductType, {
+	name: 'ProductType',
 });
 
-export enum PropertyStatus {
+export enum ProductStatus {
 	HOLD = 'HOLD',
 	ACTIVE = 'ACTIVE',
 	SOLD = 'SOLD',
 	DELETE = 'DELETE',
 }
-registerEnumType(PropertyStatus, {
-	name: 'PropertyStatus',
+registerEnumType(ProductStatus, {
+	name: 'ProductStatus',
 });
 
-export enum PropertyCategory {
+export enum ProductCategory {
 	HOME = 'HOME',
 	OFFICE = 'OFFICE',
 	OUTDOOR = 'OUTDOOR',
 	KITCHEN = 'KITCHEN',
 	BATHROOM = 'BATHROOM',
 }
-registerEnumType(PropertyCategory, {
-	name: 'PropertyCategory',
+registerEnumType(ProductCategory, {
+	name: 'ProductCategory',
 });
 
-export enum PropertyMaterial {
+export enum ProductMaterial {
 	WOOD = 'WOOD',
 	METAL = 'METAL',
 	PLASTIC = 'PLASTIC',
 	GLASS = "GLASS"
 }
-registerEnumType(PropertyMaterial, {
-	name: 'PropertyMaterial',
+registerEnumType(ProductMaterial, {
+	name: 'ProductMaterial',
 });
 
-export enum PropertyColor {
+export enum ProductColor {
 	WHITE = 'WHITE',
 	BLACK = 'BLACK',
 	BROWN = 'BROWN',
@@ -54,14 +54,14 @@ export enum PropertyColor {
 	BLUE = 'BLUE',
 	GREEN = 'GREEN',
 }
-registerEnumType(PropertyColor, {
-	name: 'PropertyColor',
+registerEnumType(ProductColor, {
+	name: 'ProductColor',
 });
 
-export enum PropertyCondition {
+export enum ProductCondition {
 	NEW = 'NEW',
 	USED = 'USED',
 }
-registerEnumType(PropertyCondition, {
-	name: 'PropertyCondition',
+registerEnumType(ProductCondition, {
+	name: 'ProductCondition',
 });

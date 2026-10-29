@@ -12,7 +12,7 @@ export class Message {
 	conversationId: string;
 
 	@Field(() => String, { nullable: true })
-	propertyId?: ObjectId;
+	productId?: ObjectId;
 
 	@Field(() => String, { nullable: true })
 	kind?: string;
@@ -46,16 +46,16 @@ export class Conversation {
 	conversationId: string;
 
 	@Field(() => String, { nullable: true })
-	propertyId?: ObjectId;
+	productId?: ObjectId;
 
 	@Field(() => String, { nullable: true })
 	kind?: string;
 
 	@Field(() => String, { nullable: true })
-	propertyTitle?: string;
+	productTitle?: string;
 
 	@Field(() => String, { nullable: true })
-	propertyImage?: string;
+	productImage?: string;
 
 	@Field(() => String)
 	lastMessage: string;

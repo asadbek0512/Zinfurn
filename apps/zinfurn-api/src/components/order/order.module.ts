@@ -5,7 +5,7 @@ import { MemberModule } from '../member/member.module';
 import { CouponModule } from '../coupon/coupon.module';
 import OrderSchema from '../../schemas/Order.model';
 import MemberSchema from '../../schemas/Member.model';
-import PropertySchema from '../../schemas/Property.model';
+import ProductSchema from '../../schemas/Product.model';
 import { OrderResolver } from './order.resolver';
 import { OrderService } from './order.service';
 import { TelegramNotifyService } from './telegram-notify.service';
@@ -19,7 +19,7 @@ import { PaymentController } from './payment.controller';
 	imports: [
 		MongooseModule.forFeature([
 			{ name: 'Order', schema: OrderSchema },
-			{ name: 'Property', schema: PropertySchema },
+			{ name: 'Product', schema: ProductSchema },
 			{ name: 'Member', schema: MemberSchema },
 		]),
 		AuthModule,

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MemberModule } from './member/member.module';
-import { PropertyModule } from './property/property.module';
+import { ProductModule } from './product/product.module';
 import { AuthModule } from './auth/auth.module';
 import { BoardArticleModule } from './board-article/board-article.module';
 import { CommentModule } from './comment/comment.module';
@@ -9,7 +9,7 @@ import { ReportModule } from './report/report.module';
 import { PushModule } from './push/push.module';
 import { LikeModule } from './like/like.module';
 import { ViewModule } from './view/view.module';
-import { RepairPropertyModule } from './repair-property/repair-property.module';
+import { RepairProductModule } from './repair-product/repair-product.module';
 import { NotificationModule } from './notification/notification.module';
 import { NoticeModule } from './notice/notice.module';
 import { OrderModule } from './order/order.module';
@@ -23,7 +23,7 @@ import { AppStatModule } from './app-stat/app-stat.module';
   imports: [
     MemberModule,
     AuthModule,
-    PropertyModule,
+    ProductModule,
     BoardArticleModule,
     CommentModule,
     LikeModule,
@@ -31,7 +31,7 @@ import { AppStatModule } from './app-stat/app-stat.module';
     FollowModule,
     ReportModule,
     PushModule,
-    RepairPropertyModule,
+    RepairProductModule,
     NotificationModule,
     NoticeModule,
     OrderModule,
