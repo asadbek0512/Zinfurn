@@ -17,19 +17,19 @@ import { Direction } from '../../enums/common_enum';
 export class OrderItemInput {
 	@IsNotEmpty()
 	@Field(() => String)
-	propertyId: ObjectId;
+	productId: ObjectId;
 
 	@IsNotEmpty()
 	@Field(() => String)
-	propertyTitle: string;
+	productTitle: string;
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
-	propertyImage?: string;
+	productImage?: string;
 
 	@IsNotEmpty()
 	@Field(() => Float)
-	propertyPrice: number;
+	productPrice: number;
 
 	@IsInt()
 	@Min(1)

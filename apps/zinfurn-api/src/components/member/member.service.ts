@@ -15,8 +15,8 @@ import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
 import { buildSearchRegex, lookupAuthMemberLiked } from '../../libs/config';
-import { PropertyStatus } from '../../libs/enums/property.enum';
-import { RepairPropertyStatus } from '../../libs/enums/repairProperty.enum';
+import { ProductStatus } from '../../libs/enums/product.enum';
+import { RepairProductStatus } from '../../libs/enums/repairProduct.enum';
 import { PushService } from '../push/push.service';
 
 // O'chirilgan akkaunt nick'i — unique index band bo'lib qolmasin, nick boshqalarga bo'shaydi
@@ -24,14 +24,14 @@ const DELETED_NICK_PREFIX = 'deleted_';
 
 @Injectable()
 export class MemberService {
-    repairPropertyStatsEditor(arg0: { _id: import("mongoose").Schema.Types.ObjectId; targetKey: string; modifier: number; }) {
+    repairProductStatsEditor(arg0: { _id: import("mongoose").Schema.Types.ObjectId; targetKey: string; modifier: number; }) {
         throw new Error('Method not implemented.');
     }
     constructor(
         @InjectModel('Member') private readonly memberModel: Model<Member>,
         @InjectModel('Follow') private readonly followModel: Model<Follower | Following>,
-        @InjectModel('Property') private readonly propertyModel: Model<unknown>,
-        @InjectModel('RepairProperty') private readonly repairPropertyModel: Model<unknown>,
+        @InjectModel('Product') private readonly productModel: Model<unknown>,
+        @InjectModel('RepairProduct') private readonly repairProductModel: Model<unknown>,
         private authService: AuthService,
         private viewService: ViewService,
         private likeService: LikeService,
@@ -145,13 +145,13 @@ export class MemberService {
 
         await Promise.all([
             this.pushService.removeMemberDevices(memberId),
-            this.propertyModel
-                .updateMany({ memberId, propertyStatus: { $ne: PropertyStatus.DELETE } }, { propertyStatus: PropertyStatus.DELETE, deletedAt })
+            this.productModel
+                .updateMany({ memberId, productStatus: { $ne: ProductStatus.DELETE } }, { productStatus: ProductStatus.DELETE, deletedAt })
                 .exec(),
-            this.repairPropertyModel
+            this.repairProductModel
                 .updateMany(
-                    { memberId, repairPropertyStatus: { $ne: RepairPropertyStatus.DELETE } },
-                    { repairPropertyStatus: RepairPropertyStatus.DELETE, deletedAt },
+                    { memberId, repairProductStatus: { $ne: RepairProductStatus.DELETE } },
+                    { repairProductStatus: RepairProductStatus.DELETE, deletedAt },
                 )
                 .exec(),
         ]);

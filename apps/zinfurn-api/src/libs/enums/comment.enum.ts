@@ -11,9 +11,9 @@ registerEnumType(CommentStatus, {
 export enum CommentGroup {
 	MEMBER = 'MEMBER',
 	ARTICLE = 'ARTICLE',
-	PROPERTY = 'PROPERTY',
-	PROPERTY_QA = 'PROPERTY_QA',
-	REPAIR_PROPERTY = 'REPAIR_PROPERTY',
+	PRODUCT = 'PRODUCT',
+	PRODUCT_QA = 'PRODUCT_QA',
+	REPAIR_PRODUCT = 'REPAIR_PRODUCT',
 }
 registerEnumType(CommentGroup, {
 	name: 'CommentGroup',

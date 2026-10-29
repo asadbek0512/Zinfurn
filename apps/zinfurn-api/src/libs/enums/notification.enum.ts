@@ -21,8 +21,8 @@ registerEnumType(NotificationStatus, {
 export enum NotificationGroup {
 	MEMBER = 'MEMBER',
 	ARTICLE = 'ARTICLE',
-	PROPERTY = 'PROPERTY',
-	REPAIR_PROPERTY = 'REPAIR_PROPERTY',
+	PRODUCT = 'PRODUCT',
+	REPAIR_PRODUCT = 'REPAIR_PRODUCT',
 
 }
 registerEnumType(NotificationGroup, {

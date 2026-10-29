@@ -4,12 +4,12 @@ import { Model, ObjectId } from 'mongoose';
 import { View } from '../../libs/dto/view/view';
 import { ViewInput } from '../../libs/dto/view/view.input';
 import { T } from '../../libs/types/common';
-import { OrdinaryInquiry } from '../../libs/dto/property/property.input';
-import { Properties } from '../../libs/dto/property/property';
+import { OrdinaryInquiry } from '../../libs/dto/product/product.input';
+import { Products } from '../../libs/dto/product/product';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { lookupRepairVisit, lookupVisit } from '../../libs/config';
-import { RepairOrdinaryInquiry } from '../../libs/dto/repairProperty/repairProperty.input';
-import { RepairProperties } from '../../libs/dto/repairProperty/repairProperty';
+import { RepairOrdinaryInquiry } from '../../libs/dto/repairProduct/repairProduct.input';
+import { RepairProducts } from '../../libs/dto/repairProduct/repairProduct';
 
 @Injectable()
 export class ViewService {
@@ -28,9 +28,9 @@ export class ViewService {
         return await this.viewModel.findOne(search).exec();
     }
 
-    public async getVisitedProperties(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+    public async getVisitedProducts(memberId: ObjectId, input: OrdinaryInquiry): Promise<Products> {
         const { page, limit } = input;
-        const match: T = { viewGroup: ViewGroup.PROPERTY, memberId: memberId };
+        const match: T = { viewGroup: ViewGroup.PRODUCT, memberId: memberId };
     
         const data: T = await this.viewModel
             .aggregate([
@@ -38,20 +38,20 @@ export class ViewService {
                 { $sort: { updatedAt: -1 } },
                 {
                     $lookup: {
-                        from: 'properties',
+                        from: 'products',
                         localField: 'viewRefId',
                         foreignField: '_id',
-                        as: 'visitedProperty',
+                        as: 'visitedProduct',
                     },
                 },
-                { $unwind: '$visitedProperty' },
+                { $unwind: '$visitedProduct' },
                 {
                     $facet: {
                         list: [
                             { $skip: (page - 1) * limit },
                             { $limit: limit },
                             lookupVisit,
-                            { $unwind: '$visitedProperty.memberData' },
+                            { $unwind: '$visitedProduct.memberData' },
                         ],
                         metaCounter: [{ $count: 'total' }],
                     },
@@ -60,16 +60,16 @@ export class ViewService {
             .exec();
             
 
-        const result: Properties = { list: [], metaCounter: data[0].metaCounter };
-        result.list = data[0].list.map((ele) => ele.visitedProperty);
+        const result: Products = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.visitedProduct);
     
         return result;
     }
 
 
-    public async getVisitedRepairProperties(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProperties> {
+    public async getVisitedRepairProducts(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProducts> {
         const { page, limit } = input;
-        const match: T = { viewGroup: ViewGroup.REPAIR_PROPERTY, memberId: memberId };
+        const match: T = { viewGroup: ViewGroup.REPAIR_PRODUCT, memberId: memberId };
     
         const data: T = await this.viewModel
             .aggregate([
@@ -80,25 +80,25 @@ export class ViewService {
                         from: 'repair_requests',
                         localField: 'viewRefId',
                         foreignField: '_id',
-                        as: 'visitedRepairProperty',
+                        as: 'visitedRepairProduct',
                     },
                 },
-                { $unwind: '$visitedRepairProperty' },
+                { $unwind: '$visitedRepairProduct' },
                 {
                     $facet: {
                         list: [
                             { $skip: (page - 1) * limit },
                             { $limit: limit },
                             lookupRepairVisit,
-                            { $unwind: '$visitedRepairProperty.memberData' },
+                            { $unwind: '$visitedRepairProduct.memberData' },
                         ],
                         metaCounter: [{ $count: 'total' }],
                     },
                 },
             ])
             .exec();
-        const result: RepairProperties = { list: [], metaCounter: data[0].metaCounter };
-        result.list = data[0].list.map((ele) => ele.visitedRepairProperty);
+        const result: RepairProducts = { list: [], metaCounter: data[0].metaCounter };
+        result.list = data[0].list.map((ele) => ele.visitedRepairProduct);
     
         return result;
     }

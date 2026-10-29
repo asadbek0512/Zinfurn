@@ -1,7 +1,7 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { BatchService as BatchService } from './batch.service';
 import { Cron, Interval, Timeout } from '@nestjs/schedule';
-import { BATCH_FLASH_SALES, BATCH_ROLLBACK, BATCH_TOP_AGENTS, BATCH_TOP_PROPERTIES } from './lib/config';
+import { BATCH_FLASH_SALES, BATCH_ROLLBACK, BATCH_TOP_AGENTS, BATCH_TOP_PRODUCTS } from './lib/config';
 
 const FLASH_SALES_STARTUP_DELAY_MS = 5000;
 
@@ -43,12 +43,12 @@ export class BatchController {
     }
   }
 
-  @Cron(`20 00 01 * * *`, { name: BATCH_TOP_PROPERTIES })
-  public async batchTopProperties() {
+  @Cron(`20 00 01 * * *`, { name: BATCH_TOP_PRODUCTS })
+  public async batchTopProducts() {
     try{
-      this.logger['context'] = BATCH_TOP_PROPERTIES ;
+      this.logger['context'] = BATCH_TOP_PRODUCTS ;
       this.logger.debug('EXECUTED!');
-      await this.BatchService.batchTopProperties()
+      await this.BatchService.batchTopProducts()
     } catch (err) {
       this.logger.error(err)
     }

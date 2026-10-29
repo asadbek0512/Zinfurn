@@ -23,8 +23,8 @@ apps/
 │   │   │   ├── guards/            # AuthGuard, RolesGuard, WithoutGuard
 │   │   │   └── decorators/        # @AuthMember, @Roles
 │   │   ├── member/                # Users and agents
-│   │   ├── property/              # Furniture CRUD, search, filter
-│   │   ├── repair-property/       # Repair service
+│   │   ├── product/              # Furniture CRUD, search, filter
+│   │   ├── repair-product/       # Repair service
 │   │   ├── order/                 # Orders
 │   │   ├── board-article/         # Community articles
 │   │   ├── comment/               # Comments
@@ -45,7 +45,7 @@ apps/
 └── zinfurn-batch/src/             # Cron: monthly ranking refresh
 
 uploads/                           # Static files
-├── property/                      # Furniture images
+├── product/                      # Furniture images
 ├── member/                        # Profile images
 └── article/                       # Article images
 ```

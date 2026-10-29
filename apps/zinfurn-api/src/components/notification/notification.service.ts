@@ -10,7 +10,7 @@ import { PushService } from '../push/push.service';
 /** Push bosilganda app ichida ochiladigan sahifa */
 const notificationUrl = (input: NotificationInput): string | undefined => {
 	if (input.articleId) return `/community/detail?id=${input.articleId}`;
-	if (input.propertyId) return `/products/detail?id=${input.propertyId}`;
+	if (input.productId) return `/products/detail?id=${input.productId}`;
 	return undefined;
 };
 

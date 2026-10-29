@@ -4,7 +4,7 @@ GraphQL + WebSocket backend for the [Zinfurn furniture marketplace](https://gith
 
 [![CI](https://github.com/asadbek0512/Zinfurn/actions/workflows/ci.yml/badge.svg)](https://github.com/asadbek0512/Zinfurn/actions/workflows/ci.yml)
 
-NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modules — members/agents, properties, orders with **coupons**, repair service, community, comments, likes, follows, views, reviews, notifications (WebSocket), notices, messages, and AI-powered content **translation**.
+NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modules — members/agents, products, orders with **coupons**, repair service, community, comments, likes, follows, views, reviews, notifications (WebSocket), notices, messages, and AI-powered content **translation**.
 
 ## Highlights
 
@@ -22,7 +22,7 @@ NestJS 10 monorepo (code-first Apollo Server, MongoDB/Mongoose): 14 feature modu
 
 ## Data model
 
-> The furniture catalog lives in the `properties` collection (`Property` model) — a leftover name from the real-estate template the project started from. In the domain it is a **product**; the diagram uses the domain names.
+> The furniture catalog lives in the `products` collection (`Product` model). The project started from a real-estate template (`properties` / `Property*`); everything was renamed to the furniture domain — see `scripts/migrations/renamePropertyToProduct.js` for the data migration (with `--reverse`).
 
 ```mermaid
 erDiagram

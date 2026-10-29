@@ -1,160 +1,160 @@
 import { Schema } from 'mongoose';
 import {
-	PropertyType,
-	PropertyStatus,
-	PropertyCategory,
-	PropertyMaterial,
-	PropertyColor,
-	PropertyCondition
-} from '../libs/enums/property.enum';
+	ProductType,
+	ProductStatus,
+	ProductCategory,
+	ProductMaterial,
+	ProductColor,
+	ProductCondition
+} from '../libs/enums/product.enum';
 
-const PropertySchema = new Schema(
+const ProductSchema = new Schema(
 	{
-		propertyType: {
+		productType: {
 			type: String,
-			enum: PropertyType,
+			enum: ProductType,
 			required: true,
 		},
 
-		propertyStatus: {
+		productStatus: {
 			type: String,
-			enum: PropertyStatus,
-			default: PropertyStatus.ACTIVE,
+			enum: ProductStatus,
+			default: ProductStatus.ACTIVE,
 		},
 
-		propertyCategory: {
+		productCategory: {
 			type: String,
-			enum: PropertyCategory,
+			enum: ProductCategory,
 			required: true,
 		},
 
-		propertyMaterial: {
+		productMaterial: {
 			type: String,
-			enum: PropertyMaterial,
+			enum: ProductMaterial,
 			required: true,
 		},
 
-		propertyColor: {
+		productColor: {
 			type: String,
-			enum: PropertyColor,
+			enum: ProductColor,
 			required: true,
 		},
 
-		propertySize: {
+		productSize: {
 			type: String,
 			// required: true,
 		},
 
-		propertyTitle: {
+		productTitle: {
 			type: String,
 			required: true,
 		},
 
-		propertyPrice: {
+		productPrice: {
 			type: Number,
 			required: true,
 		},
 
-		propertySalePrice: {
+		productSalePrice: {
 			type: Number,
 		},
 
-		propertyIsOnSale: {
+		productIsOnSale: {
 			type: Boolean,
 			default: false,
 		},
 
 		// Zaxira miqdori. null/undefined = cheksiz (eski listinglar uchun), 0 = tugagan, past son = "oz qoldi"
-		propertyStock: {
+		productStock: {
 			type: Number,
 		},
 
 		// Sale oynasining boshlanishi — kelajakdagi sale'lar shu sana kelgunicha
 		// mijozga ko'rinmaydi (flash sale navbatma-navbat almashishi uchun)
-		propertySaleStartsAt: {
+		productSaleStartsAt: {
 			type: Date,
 		},
 
-		propertySaleExpiresAt: {
+		productSaleExpiresAt: {
 			type: Date,
 		},
 
-		propertyViews: {
+		productViews: {
 			type: Number,
 			default: 0,
 		},
 
-		propertyLikes: {
+		productLikes: {
 			type: Number,
 			default: 0,
 		},
 
-		propertyReviews: {
+		productReviews: {
 			type: Number,
 			default: 0,
 		},
 
-		propertyRating: {
+		productRating: {
 			type: Number,
 			default: 0,
 		},
 
-		propertySoldCount: {
+		productSoldCount: {
 			type: Number,
 			default: 0,
 		},
 
-		propertyRank: {
+		productRank: {
 			type: Number,
 			default: 0,
 		},
 
-		propertyImages: {
+		productImages: {
 			type: [String],
 			required: true,
 		},
 
-		propertyArModel: {
+		productArModel: {
 			type: String,
 		},
 
-		propertyDesc: {
+		productDesc: {
 			type: String,
 		},
 
 		// Avtomatik tarjimalar: { uz: {title, desc}, en: {...}, ru, kr, ar }
 		// Additive maydon — bo'lmasa frontend asl matnni ko'rsatadi
-		propertyTranslations: {
+		productTranslations: {
 			type: Schema.Types.Mixed,
 			default: {},
 		},
 
-		propertyBarter: {
+		productBarter: {
 			type: Boolean,
 			default: false,
 		},
 
-		propertyRent: {
+		productRent: {
 			type: Boolean,
 			default: false,
 		},
 
-		propertyInStock: {
+		productInStock: {
 			type: Boolean,
 			default: true,
 		},
 
-		propertyCondition: {
+		productCondition: {
 			type: String,
-			enum: PropertyCondition,
+			enum: ProductCondition,
 			required: true,
 		},
 
-		propertyBrand: {
+		productBrand: {
 			type: String,
 		},
 
-		propertyOriginCountry: {
+		productOriginCountry: {
 			type: String,
 		},
 
@@ -172,17 +172,17 @@ const PropertySchema = new Schema(
 			type: Date,
 		},
 	},
-	{ timestamps: true, collection: 'properties' },
+	{ timestamps: true, collection: 'products' },
 );
 
-PropertySchema.index(
+ProductSchema.index(
 	{
-		propertyType: 1,
-		propertyCategory: 1,
-		propertyTitle: 1,
-		propertyPrice: 1,
+		productType: 1,
+		productCategory: 1,
+		productTitle: 1,
+		productPrice: 1,
 	},
 	{ unique: true },
 );
 
-export default PropertySchema;
+export default ProductSchema;

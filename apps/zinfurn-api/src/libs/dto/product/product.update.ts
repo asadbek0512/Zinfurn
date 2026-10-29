@@ -1,103 +1,103 @@
 import { Field, InputType, Int } from "@nestjs/graphql";
 import { IsInt, IsNotEmpty, IsOptional, Length, MinLength, Min } from "class-validator";
 import { ObjectId } from "mongoose";
-import { PropertyCategory, PropertyColor, PropertyCondition, PropertyMaterial, PropertyStatus, PropertyType } from "../../enums/property.enum";
+import { ProductCategory, ProductColor, ProductCondition, ProductMaterial, ProductStatus, ProductType } from "../../enums/product.enum";
 
 @InputType()
-export class PropertyUpdate {
+export class ProductUpdate {
   @IsNotEmpty()
   @Field(() => String)
   _id: ObjectId;
 
   @IsOptional()
-  @Field(() => PropertyType, { nullable: true })
-  propertyType?: PropertyType;
+  @Field(() => ProductType, { nullable: true })
+  productType?: ProductType;
 
   @IsOptional()
-  @Field(() => PropertyStatus, { nullable: true })
-  propertyStatus?: PropertyStatus;
+  @Field(() => ProductStatus, { nullable: true })
+  productStatus?: ProductStatus;
 
   @IsOptional()
-  @Field(() => PropertyCategory, { nullable: true })
-  propertyCategory?: PropertyCategory;
+  @Field(() => ProductCategory, { nullable: true })
+  productCategory?: ProductCategory;
 
   @IsOptional()
-  @Field(() => PropertyMaterial, { nullable: true })
-  propertyMaterial?: PropertyMaterial;
+  @Field(() => ProductMaterial, { nullable: true })
+  productMaterial?: ProductMaterial;
 
   @IsOptional()
-  @Field(() => PropertyColor, { nullable: true })
-  propertyColor?: PropertyColor;
+  @Field(() => ProductColor, { nullable: true })
+  productColor?: ProductColor;
 
   @IsOptional()
   @Field(() => String, { nullable: true })
-  propertySize?: string;
+  productSize?: string;
 
   @IsOptional()
   @Length(3, 100)
   @Field(() => String, { nullable: true })
-  propertyTitle?: string;
+  productTitle?: string;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
-  propertyPrice?: number;
+  productPrice?: number;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
-  propertySalePrice?: number;
+  productSalePrice?: number;
 
   @IsOptional()
   @Field(() => Boolean, { nullable: true })
-  propertyIsOnSale?: boolean;
+  productIsOnSale?: boolean;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
-  propertyStock?: number;
+  productStock?: number;
 
   @IsOptional()
   @Field(() => Date, { nullable: true })
-  propertySaleStartsAt?: Date;
+  productSaleStartsAt?: Date;
 
   @IsOptional()
   @Field(() => Date, { nullable: true })
-  propertySaleExpiresAt?: Date;
+  productSaleExpiresAt?: Date;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })
-  propertyImages?: string[];
+  productImages?: string[];
 
   @IsOptional()
   @Field(() => String, { nullable: true })
-  propertyArModel?: string;
+  productArModel?: string;
 
   @IsOptional()
   @MinLength(5)
   @Field(() => String, { nullable: true })
-  propertyDesc?: string;
+  productDesc?: string;
 
   @IsOptional()
   @Field(() => Boolean, { nullable: true })
-  propertyBarter?: boolean;
+  productBarter?: boolean;
 
   @IsOptional()
   @Field(() => Boolean, { nullable: true })
-  propertyRent?: boolean;
+  productRent?: boolean;
 
   @IsOptional()
   @Field(() => Boolean, { nullable: true })
-  propertyInStock?: boolean;
+  productInStock?: boolean;
 
   @IsOptional()
-  @Field(() => PropertyCondition, { nullable: true })
-  propertyCondition?: PropertyCondition;
+  @Field(() => ProductCondition, { nullable: true })
+  productCondition?: ProductCondition;
 
   @IsOptional()
   @Field(() => String, { nullable: true })
-  propertyBrand?: string;
+  productBrand?: string;
 
   @IsOptional()
   @Field(() => String, { nullable: true })
-  propertyOriginCountry?: string;
+  productOriginCountry?: string;
 
 
   soldAt?: Date;

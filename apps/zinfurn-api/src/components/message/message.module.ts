@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationModule } from '../notification/notification.module';
 import MessageSchema from '../../schemas/Message.model';
-import PropertySchema from '../../schemas/Property.model';
+import ProductSchema from '../../schemas/Product.model';
 import MemberSchema from '../../schemas/Member.model';
 import { MessageResolver } from './message.resolver';
 import { MessageService } from './message.service';
@@ -12,7 +12,7 @@ import { MessageService } from './message.service';
 	imports: [
 		MongooseModule.forFeature([
 			{ name: 'Message', schema: MessageSchema },
-			{ name: 'Property', schema: PropertySchema },
+			{ name: 'Product', schema: ProductSchema },
 			{ name: 'Member', schema: MemberSchema },
 		]),
 		AuthModule,

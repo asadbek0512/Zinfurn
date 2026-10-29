@@ -21,7 +21,7 @@ export class Review {
 	memberId: ObjectId;
 
 	@Field(() => String)
-	propertyId: ObjectId;
+	productId: ObjectId;
 
 	@Field(() => String)
 	orderId: ObjectId;

@@ -4,7 +4,7 @@ import { ReviewStatus } from '../libs/enums/review.enum';
 const ReviewSchema = new Schema(
 	{
 		memberId: { type: Schema.Types.ObjectId, required: true, ref: 'Member' },
-		propertyId: { type: Schema.Types.ObjectId, required: true, ref: 'Property' },
+		productId: { type: Schema.Types.ObjectId, required: true, ref: 'Product' },
 		orderId: { type: Schema.Types.ObjectId, required: true, ref: 'Order' },
 		reviewRating: { type: Number, required: true, min: 1, max: 5 },
 		reviewContent: { type: String, required: true },
@@ -16,6 +16,6 @@ const ReviewSchema = new Schema(
 	{ timestamps: true, collection: 'reviews' },
 );
 
-ReviewSchema.index({ memberId: 1, propertyId: 1, orderId: 1 }, { unique: true });
+ReviewSchema.index({ memberId: 1, productId: 1, orderId: 1 }, { unique: true });
 
 export default ReviewSchema;

@@ -29,7 +29,7 @@ export interface I18nText {
 	title: string;
 	desc: string;
 }
-export type PropertyTranslationsMap = Partial<Record<SupportedLocale, I18nText>>;
+export type ProductTranslationsMap = Partial<Record<SupportedLocale, I18nText>>;
 
 @Injectable()
 export class TranslationService {
@@ -54,12 +54,12 @@ DESCRIPTION: ${desc || ''}`;
 	private buildResponseSchema() {
 		const item = {
 			type: 'OBJECT',
-			properties: { title: { type: 'STRING' }, desc: { type: 'STRING' } },
+			products: { title: { type: 'STRING' }, desc: { type: 'STRING' } },
 			required: ['title', 'desc'],
 		};
 		return {
 			type: 'OBJECT',
-			properties: Object.fromEntries(SUPPORTED_LOCALES.map((k) => [k, item])),
+			products: Object.fromEntries(SUPPORTED_LOCALES.map((k) => [k, item])),
 			required: [...SUPPORTED_LOCALES],
 		};
 	}
@@ -79,20 +79,20 @@ TITLE: ${title}
 CONTENT: ${content || ''}`;
 	}
 
-	/** Property nom/desc tarjimasi. Xato bo'lsa null (throw qilmaydi). */
-	public async translateProperty(title: string, desc?: string): Promise<PropertyTranslationsMap | null> {
+	/** Product nom/desc tarjimasi. Xato bo'lsa null (throw qilmaydi). */
+	public async translateProduct(title: string, desc?: string): Promise<ProductTranslationsMap | null> {
 		if (!title || !title.trim()) return null;
 		return this.run(this.buildPrompt(title, desc || ''));
 	}
 
 	/** Article nom/content tarjimasi. Xato bo'lsa null. */
-	public async translateArticle(title: string, content?: string): Promise<PropertyTranslationsMap | null> {
+	public async translateArticle(title: string, content?: string): Promise<ProductTranslationsMap | null> {
 		if (!title || !title.trim()) return null;
 		return this.run(this.buildArticlePrompt(title, content || ''));
 	}
 
 	/** Tarjima: avval Groq, bo'lmasa Gemini. Xato bo'lsa null. */
-	private async run(prompt: string): Promise<PropertyTranslationsMap | null> {
+	private async run(prompt: string): Promise<ProductTranslationsMap | null> {
 		if (process.env.GROQ_API_KEY) {
 			const viaGroq = await this.runGroq(prompt);
 			if (viaGroq) return viaGroq;
@@ -102,7 +102,7 @@ CONTENT: ${content || ''}`;
 	}
 
 	/** Groq (OpenAI-uslub chat API, JSON mode). Xato bo'lsa null. */
-	private async runGroq(prompt: string): Promise<PropertyTranslationsMap | null> {
+	private async runGroq(prompt: string): Promise<ProductTranslationsMap | null> {
 		const controller = new AbortController();
 		const timer = setTimeout(() => controller.abort(), TRANSLATE_TIMEOUT_MS);
 		try {
@@ -145,8 +145,8 @@ CONTENT: ${content || ''}`;
 	}
 
 	/** Parse natijasidan faqat ruxsat etilgan tillarni qoldirish */
-	private cleanParsed(parsed: PropertyTranslationsMap): PropertyTranslationsMap | null {
-		const clean: PropertyTranslationsMap = {};
+	private cleanParsed(parsed: ProductTranslationsMap): ProductTranslationsMap | null {
+		const clean: ProductTranslationsMap = {};
 		for (const loc of SUPPORTED_LOCALES) {
 			if (parsed[loc]?.title) clean[loc] = { title: parsed[loc]!.title, desc: parsed[loc]!.desc || '' };
 		}
@@ -154,7 +154,7 @@ CONTENT: ${content || ''}`;
 	}
 
 	/** Gemini fallback. Xato bo'lsa null. */
-	private async runGemini(prompt: string): Promise<PropertyTranslationsMap | null> {
+	private async runGemini(prompt: string): Promise<ProductTranslationsMap | null> {
 		const key = process.env.GEMINI_API_KEY;
 		if (!key) {
 			this.logger.warn('GEMINI_API_KEY topilmadi — tarjima o\'tkazib yuborildi');
@@ -188,7 +188,7 @@ CONTENT: ${content || ''}`;
 			const data: any = await res.json();
 			const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 			if (!raw) return null;
-			return this.cleanParsed(JSON.parse(raw) as PropertyTranslationsMap);
+			return this.cleanParsed(JSON.parse(raw) as ProductTranslationsMap);
 		} catch (err: any) {
 			this.logger.warn(`Tarjima bajarilmadi: ${err?.message || err}`);
 			return null;

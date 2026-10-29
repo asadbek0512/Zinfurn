@@ -1,52 +1,52 @@
 import { Schema } from 'mongoose';
-import { RepairPropertyStatus, RepairPropertyType } from '../libs/enums/repairProperty.enum';
+import { RepairProductStatus, RepairProductType } from '../libs/enums/repairProduct.enum';
 
 const RepairSchema = new Schema(
   {
-    repairPropertyType: {
+    repairProductType: {
       type: String,
-      enum: RepairPropertyType,
+      enum: RepairProductType,
       required: true,
     },
 
-    repairPropertyStatus: {
+    repairProductStatus: {
       type: String,
-      enum: RepairPropertyStatus,
-      default: RepairPropertyStatus.ACTIVE,
+      enum: RepairProductStatus,
+      default: RepairProductStatus.ACTIVE,
     },
 
-    repairPropertyAddress: {
-      type: String,
-      required: true,
-    },
-
-    repairPropertyDescription: {
+    repairProductAddress: {
       type: String,
       required: true,
     },
 
-    repairPropertyImages: {
+    repairProductDescription: {
+      type: String,
+      required: true,
+    },
+
+    repairProductImages: {
       type: [String],
       required: false,
     },
 
     // Avtomatik tarjimalar: { uz: {title, desc}, en, ru, kr, ar }. Additive.
-    repairPropertyTranslations: {
+    repairProductTranslations: {
       type: Schema.Types.Mixed,
       default: {},
     },
 
-    repairPropertyViews: {
+    repairProductViews: {
       type: Number,
       default: 0,
     },
 
-    repairPropertyLikes: {
+    repairProductLikes: {
       type: Number,
       default: 0,
     },
 
-    repairPropertyComments: {
+    repairProductComments: {
       type: Number,
       default: 0,
     },

@@ -12,7 +12,7 @@ import { NotificationService } from '../notification/notification.service';
 export class MessageService {
 	constructor(
 		@InjectModel('Message') private readonly messageModel: Model<Message>,
-		@InjectModel('Property') private readonly propertyModel: Model<any>,
+		@InjectModel('Product') private readonly productModel: Model<any>,
 		@InjectModel('Member') private readonly memberModel: Model<any>,
 		private readonly notificationService: NotificationService,
 	) {}
@@ -28,29 +28,29 @@ export class MessageService {
 		return (me as { memberBlocked?: Types.ObjectId[] } | null)?.memberBlocked ?? [];
 	}
 
-	private convId(propertyId: string, a: string, b: string): string {
-		return [String(a), String(b)].sort().join('_') + '_' + String(propertyId);
+	private convId(productId: string, a: string, b: string): string {
+		return [String(a), String(b)].sort().join('_') + '_' + String(productId);
 	}
 
 	public async sendMessage(senderId: ObjectId, input: SendMessageInput): Promise<Message> {
-		const property = await this.propertyModel.findById(input.propertyId);
-		if (!property) throw new BadRequestException(Msg.NO_DATA_FOUND);
+		const product = await this.productModel.findById(input.productId);
+		if (!product) throw new BadRequestException(Msg.NO_DATA_FOUND);
 
-		const receiverId = property.memberId;
+		const receiverId = product.memberId;
 		if (String(receiverId) === String(senderId)) throw new BadRequestException('You cannot message your own listing');
 		await this.assertNotBlocked(senderId, receiverId);
 
-		const conversationId = this.convId(String(input.propertyId), String(senderId), String(receiverId));
+		const conversationId = this.convId(String(input.productId), String(senderId), String(receiverId));
 		const message = await this.messageModel.create({
 			conversationId,
-			propertyId: input.propertyId,
+			productId: input.productId,
 			senderId,
 			receiverId,
 			message: input.message,
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		await this.notifyNew(senderId, receiverId, input.propertyId, property.propertyTitle, input.message, false, conversationId);
+		await this.notifyNew(senderId, receiverId, input.productId, product.productTitle, input.message, false, conversationId);
 		return message as unknown as Message;
 	}
 
@@ -66,15 +66,15 @@ export class MessageService {
 
 		const message = await this.messageModel.create({
 			conversationId: input.conversationId,
-			propertyId: last.propertyId,
+			productId: last.productId,
 			senderId,
 			receiverId,
 			message: input.message,
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		const property = last.propertyId ? await this.propertyModel.findById(last.propertyId) : null;
-		await this.notifyNew(senderId, receiverId, last.propertyId ? String(last.propertyId) : undefined, property?.propertyTitle, input.message, last.get('kind') === 'REPAIR', input.conversationId);
+		const product = last.productId ? await this.productModel.findById(last.productId) : null;
+		await this.notifyNew(senderId, receiverId, last.productId ? String(last.productId) : undefined, product?.productTitle, input.message, last.get('kind') === 'REPAIR', input.conversationId);
 		return message as unknown as Message;
 	}
 
@@ -103,18 +103,18 @@ export class MessageService {
 		return message as unknown as Message;
 	}
 
-	private async notifyNew(senderId: ObjectId, receiverId: any, propertyId: string | undefined, propertyTitle: string | undefined, text: string, isRepair = false, conversationId?: string) {
+	private async notifyNew(senderId: ObjectId, receiverId: any, productId: string | undefined, productTitle: string | undefined, text: string, isRepair = false, conversationId?: string) {
 		const sender = await this.memberModel.findById(senderId);
 		const nick = sender ? sender.memberNick : 'Someone';
 		const short = text.length > 60 ? text.slice(0, 60) + '...' : text;
 		await this.notificationService.createNotification({
 			notificationType: NotificationType.MESSAGE,
-			notificationGroup: isRepair ? NotificationGroup.REPAIR_PROPERTY : NotificationGroup.PROPERTY,
+			notificationGroup: isRepair ? NotificationGroup.REPAIR_PRODUCT : NotificationGroup.PRODUCT,
 			notificationTitle: isRepair ? 'New Repair Request' : 'New Message',
 			notificationDesc: `${nick}: ${short}`,
 			authorId: String(senderId),
 			receiverId: String(receiverId),
-			...(propertyId ? { propertyId } : {}),
+			...(productId ? { productId } : {}),
 			...(conversationId ? { conversationId } : {}),
 		} as any);
 	}
@@ -134,7 +134,7 @@ export class MessageService {
 			{
 				$group: {
 					_id: '$conversationId',
-					propertyId: { $first: '$propertyId' },
+					productId: { $first: '$productId' },
 					kind: { $first: '$kind' },
 					lastMessage: { $first: '$message' },
 					lastMessageAt: { $first: '$createdAt' },
@@ -148,17 +148,17 @@ export class MessageService {
 			{ $addFields: { partnerId: { $cond: [{ $eq: ['$lastSender', me] }, '$lastReceiver', '$lastSender'] } } },
 			{ $lookup: { from: 'members', localField: 'partnerId', foreignField: '_id', as: 'partner' } },
 			{ $unwind: { path: '$partner', preserveNullAndEmptyArrays: true } },
-			{ $lookup: { from: 'properties', localField: 'propertyId', foreignField: '_id', as: 'property' } },
-			{ $unwind: { path: '$property', preserveNullAndEmptyArrays: true } },
+			{ $lookup: { from: 'products', localField: 'productId', foreignField: '_id', as: 'product' } },
+			{ $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
 			{ $sort: { lastMessageAt: -1 } },
 			{
 				$project: {
 					_id: 0,
 					conversationId: '$_id',
-					propertyId: 1,
+					productId: 1,
 					kind: 1,
-					propertyTitle: '$property.propertyTitle',
-					propertyImage: { $arrayElemAt: ['$property.propertyImages', 0] },
+					productTitle: '$product.productTitle',
+					productImage: { $arrayElemAt: ['$product.productImages', 0] },
 					lastMessage: 1,
 					lastMessageAt: 1,
 					unreadCount: 1,

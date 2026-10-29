@@ -23,17 +23,17 @@ describe('OrderService.createOrder', () => {
 	const MEMBER_ID = 'member1' as unknown as ObjectId;
 	const DAY_MS = 24 * 60 * 60 * 1000;
 
-	const sofa = { _id: 'p1', propertyTitle: 'Sofa', propertyImages: ['sofa.jpg'], propertyPrice: 500000 };
+	const sofa = { _id: 'p1', productTitle: 'Sofa', productImages: ['sofa.jpg'], productPrice: 500000 };
 	const chair = {
 		_id: 'p2',
-		propertyTitle: 'Chair',
-		propertyImages: ['chair.jpg'],
-		propertyPrice: 100000,
-		propertySalePrice: 80000,
-		propertyIsOnSale: true,
+		productTitle: 'Chair',
+		productImages: ['chair.jpg'],
+		productPrice: 100000,
+		productSalePrice: 80000,
+		productIsOnSale: true,
 	};
 
-	const makeService = (properties: object[], discountAmount = 0, storedOrder: object | null = null) => {
+	const makeService = (products: object[], discountAmount = 0, storedOrder: object | null = null) => {
 		const create = jest.fn(async (doc: object) => ({ _id: 'o1', ...doc }));
 		const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...storedOrder, ...update }) }));
 		const orderModel = {
@@ -41,15 +41,15 @@ describe('OrderService.createOrder', () => {
 			findOne: jest.fn(() => ({ lean: () => ({ exec: async () => storedOrder }) })),
 			findOneAndUpdate,
 		} as unknown as Model<Order>;
-		const propertyModel = {
-			find: jest.fn(() => ({ select: () => ({ lean: () => ({ exec: async () => properties }) }) })),
+		const productModel = {
+			find: jest.fn(() => ({ select: () => ({ lean: () => ({ exec: async () => products }) }) })),
 		} as unknown as Model<unknown>;
 		const notify = { notifyCustomer: jest.fn(), notifyAdminNewOrder: jest.fn() };
 		const tossConfirm = jest.fn(async () => ({ status: 'DONE' }));
 		const redeemCoupon = jest.fn(async (couponCode: string) => ({ couponCode, discountAmount }));
 		const service = new OrderService(
 			orderModel,
-			propertyModel,
+			productModel,
 			notify as unknown as TelegramNotifyService,
 			notify as unknown as MailNotifyService,
 			{ redeemCoupon } as unknown as CouponService,
@@ -64,8 +64,8 @@ describe('OrderService.createOrder', () => {
 	const makeInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput =>
 		({
 			orderItems: [
-				{ propertyId: 'p1', propertyTitle: 'Fake', propertyImage: 'x.jpg', propertyPrice: 1, quantity: 2 },
-				{ propertyId: 'p2', propertyTitle: 'Fake', propertyImage: 'x.jpg', propertyPrice: 1, quantity: 1 },
+				{ productId: 'p1', productTitle: 'Fake', productImage: 'x.jpg', productPrice: 1, quantity: 2 },
+				{ productId: 'p2', productTitle: 'Fake', productImage: 'x.jpg', productPrice: 1, quantity: 1 },
 			],
 			orderTotal: 3,
 			...overrides,
@@ -76,8 +76,8 @@ describe('OrderService.createOrder', () => {
 		const order = await service.createOrder(MEMBER_ID, makeInput());
 		expect(order.orderTotal).toBe(500000 * 2 + 80000);
 		const saved = create.mock.calls[0][0] as unknown as CreateOrderInput;
-		expect(saved.orderItems[0]).toMatchObject({ propertyTitle: 'Sofa', propertyImage: 'sofa.jpg', propertyPrice: 500000 });
-		expect(saved.orderItems[1].propertyPrice).toBe(80000);
+		expect(saved.orderItems[0]).toMatchObject({ productTitle: 'Sofa', productImage: 'sofa.jpg', productPrice: 500000 });
+		expect(saved.orderItems[1].productPrice).toBe(80000);
 	});
 
 	it('sotuvda bo\'lmagan (topilmagan) mahsulot bo\'lsa buyurtma rad etiladi', async () => {
@@ -237,19 +237,19 @@ describe('OrderService.createOrder', () => {
 		const now = Date.now();
 
 		it('sale yoqilmagan bo\'lsa asosiy narx', () => {
-			expect(effectivePrice({ ...chair, propertyIsOnSale: false }, now)).toBe(100000);
+			expect(effectivePrice({ ...chair, productIsOnSale: false }, now)).toBe(100000);
 		});
 
 		it('sale hali boshlanmagan bo\'lsa asosiy narx', () => {
-			expect(effectivePrice({ ...chair, propertySaleStartsAt: new Date(now + DAY_MS) }, now)).toBe(100000);
+			expect(effectivePrice({ ...chair, productSaleStartsAt: new Date(now + DAY_MS) }, now)).toBe(100000);
 		});
 
 		it('sale muddati tugagan bo\'lsa asosiy narx', () => {
-			expect(effectivePrice({ ...chair, propertySaleExpiresAt: new Date(now - DAY_MS) }, now)).toBe(100000);
+			expect(effectivePrice({ ...chair, productSaleExpiresAt: new Date(now - DAY_MS) }, now)).toBe(100000);
 		});
 
 		it('sale oynasi ochiq bo\'lsa sale narxi', () => {
-			const window = { propertySaleStartsAt: new Date(now - DAY_MS), propertySaleExpiresAt: new Date(now + DAY_MS) };
+			const window = { productSaleStartsAt: new Date(now - DAY_MS), productSaleExpiresAt: new Date(now + DAY_MS) };
 			expect(effectivePrice({ ...chair, ...window }, now)).toBe(80000);
 		});
 	});

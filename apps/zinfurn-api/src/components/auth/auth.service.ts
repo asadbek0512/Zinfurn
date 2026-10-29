@@ -89,7 +89,7 @@ export class AuthService {
 			memberImage: doc.memberImage,
 			memberRank: doc.memberRank,
 			memberPoints: doc.memberPoints,
-			memberProperties: doc.memberProperties,
+			memberProducts: doc.memberProducts,
 			memberArticles: doc.memberArticles,
 			memberFollowers: doc.memberFollowers,
 			memberFollowings: doc.memberFollowings,

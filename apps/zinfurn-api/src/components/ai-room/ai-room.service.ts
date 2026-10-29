@@ -2,11 +2,11 @@ import { Injectable, Logger, InternalServerErrorException, BadRequestException }
 import { ObjectId } from 'mongoose';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { PropertyService } from '../property/property.service';
+import { ProductService } from '../product/product.service';
 import { GenerateRoomImageInput, RoomAnalysisInput } from '../../libs/dto/ai-room/ai-room.input';
 import { GeneratedRoomImage, RoomAnalysisResult } from '../../libs/dto/ai-room/ai-room';
-import { PropertiesInquiry } from '../../libs/dto/property/property.input';
-import { PropertyCategory, PropertyColor, PropertyMaterial, PropertyType } from '../../libs/enums/property.enum';
+import { ProductsInquiry } from '../../libs/dto/product/product.input';
+import { ProductCategory, ProductColor, ProductMaterial, ProductType } from '../../libs/enums/product.enum';
 import { Message } from '../../libs/enums/common_enum';
 import { ShapeIntoMongoObjectId } from '../../libs/config';
 
@@ -30,18 +30,18 @@ interface GeminiRoomAnalysis {
 export class AiRoomService {
 	private readonly logger = new Logger(AiRoomService.name);
 
-	constructor(private readonly propertyService: PropertyService) {}
+	constructor(private readonly productService: ProductService) {}
 
 	public async analyzeRoom(input: RoomAnalysisInput): Promise<RoomAnalysisResult> {
 		const raw = await this.runGeminiVision(input);
 		if (!raw) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 
-		const roomType = this.cleanEnumValue(raw.roomType, PropertyCategory);
+		const roomType = this.cleanEnumValue(raw.roomType, ProductCategory);
 		const dominantColors = (raw.dominantColors || [])
-			.map((c) => this.cleanEnumValue(c, PropertyColor))
-			.filter((c): c is PropertyColor => !!c);
-		const suggestedMaterial = this.cleanEnumValue(raw.suggestedMaterial, PropertyMaterial);
-		const requestedType = this.cleanEnumValue(raw.requestedType, PropertyType);
+			.map((c) => this.cleanEnumValue(c, ProductColor))
+			.filter((c): c is ProductColor => !!c);
+		const suggestedMaterial = this.cleanEnumValue(raw.suggestedMaterial, ProductMaterial);
+		const requestedType = this.cleanEnumValue(raw.requestedType, ProductType);
 		const searchKeyword = raw.searchKeyword?.trim() || undefined;
 
 		const matchedProducts = await this.findMatchingProducts(
@@ -64,9 +64,9 @@ export class AiRoomService {
 
 	public async generateRoomImage(input: GenerateRoomImageInput): Promise<GeneratedRoomImage> {
 		const anonymousMemberId = undefined as unknown as ObjectId;
-		const propertyId = ShapeIntoMongoObjectId(input.productId);
-		const product = await this.propertyService.getProperty(anonymousMemberId, propertyId);
-		const productImagePath = product.propertyImages?.[0];
+		const productId = ShapeIntoMongoObjectId(input.productId);
+		const product = await this.productService.getProduct(anonymousMemberId, productId);
+		const productImagePath = product.productImages?.[0];
 		if (!productImagePath) throw new BadRequestException(Message.NO_DATA_FOUND);
 
 		const productImage = await this.readImageAsBase64(productImagePath);
@@ -75,7 +75,7 @@ export class AiRoomService {
 			input.mimeType || 'image/jpeg',
 			productImage.base64,
 			productImage.mimeType,
-			product.propertyTitle,
+			product.productTitle,
 		);
 		if (!generated) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 		return generated;
@@ -156,20 +156,20 @@ Edit the FIRST image (the room) by realistically placing the furniture from the 
 	}
 
 	private async findMatchingProducts(
-		roomType?: PropertyCategory,
-		colors?: PropertyColor[],
-		material?: PropertyMaterial,
-		requestedType?: PropertyType,
+		roomType?: ProductCategory,
+		colors?: ProductColor[],
+		material?: ProductMaterial,
+		requestedType?: ProductType,
 		searchKeyword?: string,
 	) {
-		// getProperties auth'siz chaqirilganda memberId undefined bo'lishi kutiladi — mavjud resolver'lar ham shunday ishlatadi.
+		// getProducts auth'siz chaqirilganda memberId undefined bo'lishi kutiladi — mavjud resolver'lar ham shunday ishlatadi.
 		const anonymousMemberId = undefined as unknown as ObjectId;
 
 		// Faqat SO'RALGAN MAHSULOT TURI (masalan TABLE, CHAIR, SOFA) qattiq filtr — chunki foydalanuvchi
 		// aniq shu turni so'ragan. Xona kategoriyasi, rang, material — bularning barchasi ball (score)
 		// sifatida ishlatiladi, qattiq AND filtr emas, aks holda bittasi mos kelmasa ham bo'sh qaytadi.
 		// Tur berilmagan bo'lsa (umumiy so'rov), xona kategoriyasi bo'yicha qidiramiz.
-		const candidateInquiry: PropertiesInquiry = {
+		const candidateInquiry: ProductsInquiry = {
 			page: 1,
 			limit: CANDIDATE_POOL_LIMIT,
 			search: {
@@ -177,7 +177,7 @@ Edit the FIRST image (the room) by realistically placing the furniture from the 
 				categoryList: !requestedType && roomType ? [roomType] : undefined,
 			},
 		};
-		const candidateResult = await this.propertyService.getProperties(anonymousMemberId, candidateInquiry);
+		const candidateResult = await this.productService.getProducts(anonymousMemberId, candidateInquiry);
 		const candidates = candidateResult?.list ?? [];
 		if (!candidates.length) return [];
 
@@ -185,11 +185,11 @@ Edit the FIRST image (the room) by realistically placing the furniture from the 
 
 		const scored = candidates.map((product) => {
 			let score = 0;
-			const title = (product.propertyTitle ?? '').toLowerCase();
+			const title = (product.productTitle ?? '').toLowerCase();
 			for (const word of keywordWords) if (title.includes(word)) score += 3;
-			if (roomType && product.propertyCategory === roomType) score += 2;
-			if (material && product.propertyMaterial === material) score += 2;
-			if (colors && colors.includes(product.propertyColor)) score += 1;
+			if (roomType && product.productCategory === roomType) score += 2;
+			if (material && product.productMaterial === material) score += 2;
+			if (colors && colors.includes(product.productColor)) score += 1;
 			return { product, score };
 		});
 
@@ -216,23 +216,23 @@ Look at the room photo and determine:
 ${userRequest ? `User's request (may be in Uzbek): "${userRequest}"` : 'User did not provide a request text — leave requestedType and searchKeyword empty.'}
 
 Respond ONLY with values from the allowed lists below.
-roomType allowed values: ${Object.values(PropertyCategory).join(', ')}
-dominantColors allowed values: ${Object.values(PropertyColor).join(', ')}
-suggestedMaterial allowed values: ${Object.values(PropertyMaterial).join(', ')}
-requestedType allowed values: ${Object.values(PropertyType).join(', ')}`;
+roomType allowed values: ${Object.values(ProductCategory).join(', ')}
+dominantColors allowed values: ${Object.values(ProductColor).join(', ')}
+suggestedMaterial allowed values: ${Object.values(ProductMaterial).join(', ')}
+requestedType allowed values: ${Object.values(ProductType).join(', ')}`;
 	}
 
 	private buildResponseSchema() {
 		return {
 			type: 'OBJECT',
-			properties: {
-				roomType: { type: 'STRING', enum: Object.values(PropertyCategory) },
+			products: {
+				roomType: { type: 'STRING', enum: Object.values(ProductCategory) },
 				dominantColors: {
 					type: 'ARRAY',
-					items: { type: 'STRING', enum: Object.values(PropertyColor) },
+					items: { type: 'STRING', enum: Object.values(ProductColor) },
 				},
-				suggestedMaterial: { type: 'STRING', enum: Object.values(PropertyMaterial) },
-				requestedType: { type: 'STRING', enum: Object.values(PropertyType) },
+				suggestedMaterial: { type: 'STRING', enum: Object.values(ProductMaterial) },
+				requestedType: { type: 'STRING', enum: Object.values(ProductType) },
 				searchKeyword: { type: 'STRING' },
 				styleNotes: { type: 'STRING' },
 			},

@@ -48,13 +48,13 @@ const randomBetween = (min, max) => min + Math.random() * (max - min);
 
 	const client = new MongoClient(uri);
 	await client.connect();
-	const properties = client.db().collection('properties');
+	const products = client.db().collection('products');
 
 	// Faqat sotuvdagi mahsulotlar; eng ko'p ko'rilganlari birinchi navbatda sale'ga tushadi
-	const candidates = await properties
-		.find({ propertyStatus: 'ACTIVE' })
-		.sort({ propertyViews: -1, createdAt: -1 })
-		.project({ propertyTitle: 1, propertyPrice: 1 })
+	const candidates = await products
+		.find({ productStatus: 'ACTIVE' })
+		.sort({ productViews: -1, createdAt: -1 })
+		.project({ productTitle: 1, productPrice: 1 })
 		.toArray();
 
 	if (!candidates.length) {
@@ -74,26 +74,26 @@ const randomBetween = (min, max) => min + Math.random() * (max - min);
 		// Boshlanish sanasi orqaga hisoblanadi — birinchi uchtasi o'tmishda, ya'ni allaqachon aktiv
 		const startsAt = new Date(expiresAt.getTime() - SALE_DURATION_DAYS * DAY_MS);
 		const discount = Math.round(randomBetween(DISCOUNT_MIN, DISCOUNT_MAX));
-		const salePrice = roundPrice(product.propertyPrice * (1 - discount / 100));
+		const salePrice = roundPrice(product.productPrice * (1 - discount / 100));
 
 		operations.push({
 			updateOne: {
 				filter: { _id: product._id },
 				update: {
 					$set: {
-						propertyIsOnSale: true,
-						propertySalePrice: salePrice,
-						propertySaleStartsAt: startsAt,
-						propertySaleExpiresAt: expiresAt,
+						productIsOnSale: true,
+						productSalePrice: salePrice,
+						productSaleStartsAt: startsAt,
+						productSaleExpiresAt: expiresAt,
 					},
 				},
 			},
 		});
 		preview.push({
-			mahsulot: product.propertyTitle,
-			narx: product.propertyPrice,
+			mahsulot: product.productTitle,
+			narx: product.productPrice,
 			saleNarx: salePrice,
-			chegirma: `${Math.round(((product.propertyPrice - salePrice) / product.propertyPrice) * 100)}%`,
+			chegirma: `${Math.round(((product.productPrice - salePrice) / product.productPrice) * 100)}%`,
 			boshlanadi: asDateTime(startsAt),
 			tugaydi: asDateTime(expiresAt),
 			holat: startsAt.getTime() <= now ? 'AKTIV' : 'navbatda',
@@ -112,7 +112,7 @@ const randomBetween = (min, max) => min + Math.random() * (max - min);
 	if (dryRun) {
 		console.log('--dry rejimi: DB o‘zgartirilmadi.');
 	} else {
-		const result = await properties.bulkWrite(operations);
+		const result = await products.bulkWrite(operations);
 		console.log(`Yangilandi: ${result.modifiedCount} ta mahsulot.`);
 	}
 

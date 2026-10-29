@@ -5,7 +5,7 @@ import { IsNotEmpty, IsOptional, Length } from 'class-validator';
 export class SendMessageInput {
 	@IsNotEmpty()
 	@Field(() => String)
-	propertyId: string;
+	productId: string;
 
 	@IsNotEmpty()
 	@Length(1, 2000)

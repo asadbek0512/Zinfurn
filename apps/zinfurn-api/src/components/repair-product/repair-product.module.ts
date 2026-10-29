@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { RepairPropertyService } from './repair-property.service';
-import { RepairPropertyResolver } from './repair-property.resolver';
+import { RepairProductService } from './repair-product.service';
+import { RepairProductResolver } from './repair-product.resolver';
 import { MongooseModule } from '@nestjs/mongoose';
-import RepairProperty from '../../schemas/RepairProperty';
+import RepairProduct from '../../schemas/RepairProduct';
 import { AuthModule } from '../auth/auth.module';
 import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
@@ -13,8 +13,8 @@ import { TranslationModule } from '../translation/translation.module';
   imports: [
     MongooseModule.forFeature([
       {
-        name: 'RepairProperty',
-        schema: RepairProperty,
+        name: 'RepairProduct',
+        schema: RepairProduct,
       },
     ]),
     AuthModule,
@@ -24,7 +24,7 @@ import { TranslationModule } from '../translation/translation.module';
     TranslationModule,
   ],
 
-  providers: [RepairPropertyService, RepairPropertyResolver],
-  exports: [RepairPropertyService]
+  providers: [RepairProductService, RepairProductResolver],
+  exports: [RepairProductService]
 })
-export class RepairPropertyModule { }
+export class RepairProductModule { }

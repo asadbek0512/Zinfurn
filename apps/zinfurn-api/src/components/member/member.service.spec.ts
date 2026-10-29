@@ -4,7 +4,7 @@ import { PushService } from '../push/push.service';
 import { MemberService } from './member.service';
 import { Member } from '../../libs/dto/member/member';
 import { MemberStatus } from '../../libs/enums/member.enum';
-import { PropertyStatus } from '../../libs/enums/property.enum';
+import { ProductStatus } from '../../libs/enums/product.enum';
 import { AuthService } from '../auth/auth.service';
 import { ViewService } from '../view/view.service';
 import { LikeService } from '../like/like.service';
@@ -17,19 +17,19 @@ describe('MemberService.deleteMyAccount', () => {
 
 	const makeService = (modifiedCount: number) => {
 		const memberUpdate = jest.fn(() => ({ exec: async () => ({ modifiedCount }) }));
-		const propertyUpdate = jest.fn(() => ({ exec: async () => ({}) }));
+		const productUpdate = jest.fn(() => ({ exec: async () => ({}) }));
 		const repairUpdate = jest.fn(() => ({ exec: async () => ({}) }));
 		const service = new MemberService(
 			{ updateOne: memberUpdate } as unknown as Model<Member>,
 			{} as unknown as Model<never>,
-			{ updateMany: propertyUpdate } as unknown as Model<unknown>,
+			{ updateMany: productUpdate } as unknown as Model<unknown>,
 			{ updateMany: repairUpdate } as unknown as Model<unknown>,
 			{} as AuthService,
 			{} as ViewService,
 			{} as LikeService,
 			{ removeMemberDevices: async () => undefined } as unknown as PushService,
 		);
-		return { service, memberUpdate, propertyUpdate, repairUpdate };
+		return { service, memberUpdate, productUpdate, repairUpdate };
 	};
 
 	it('shaxsiy ma\'lumot tozalanadi, login identifikatorlari va sessiyalar o\'chiriladi', async () => {
@@ -47,18 +47,18 @@ describe('MemberService.deleteMyAccount', () => {
 	});
 
 	it('e\'lonlar yashiriladi', async () => {
-		const { service, propertyUpdate, repairUpdate } = makeService(1);
+		const { service, productUpdate, repairUpdate } = makeService(1);
 		await service.deleteMyAccount(MEMBER_ID);
-		const [propertyFilter, propertySet] = propertyUpdate.mock.calls[0] as unknown as [Record<string, unknown>, Record<string, unknown>];
-		expect(propertyFilter.memberId).toBe(MEMBER_ID);
-		expect(propertySet.propertyStatus).toBe(PropertyStatus.DELETE);
+		const [productFilter, productSet] = productUpdate.mock.calls[0] as unknown as [Record<string, unknown>, Record<string, unknown>];
+		expect(productFilter.memberId).toBe(MEMBER_ID);
+		expect(productSet.productStatus).toBe(ProductStatus.DELETE);
 		expect(repairUpdate).toHaveBeenCalledTimes(1);
 	});
 
 	it('akkaunt topilmasa yoki allaqachon o\'chirilgan bo\'lsa xato, e\'lonlarga tegilmaydi', async () => {
-		const { service, propertyUpdate } = makeService(0);
+		const { service, productUpdate } = makeService(0);
 		await expect(service.deleteMyAccount(MEMBER_ID)).rejects.toBeInstanceOf(BadRequestException);
-		expect(propertyUpdate).not.toHaveBeenCalled();
+		expect(productUpdate).not.toHaveBeenCalled();
 	});
 });
 

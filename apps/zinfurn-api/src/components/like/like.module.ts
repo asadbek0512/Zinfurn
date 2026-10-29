@@ -5,13 +5,13 @@ import LikeSchema from '../../schemas/Like.model';
 import { NotificationModule } from '../notification/notification.module';
 import BoardArticleSchema from '../../schemas/BoardArticle.model';
 import MemberSchema from '../../schemas/Member.model';
-import PropertySchema from '../../schemas/Property.model';
+import ProductSchema from '../../schemas/Product.model';
 
 @Module({
 	imports: [
 		MongooseModule.forFeature([
 			{ name: 'Like', schema: LikeSchema },
-			{ name: 'Property', schema: PropertySchema },
+			{ name: 'Product', schema: ProductSchema },
 			{ name: 'BoardArticle', schema: BoardArticleSchema },
 			{ name: 'Member', schema: MemberSchema },
 		]),
