@@ -134,10 +134,7 @@ export class LikeService {
 		return result;
 	}
 
-	public async getFavoriteRepairProducts(
-		memberId: ObjectId,
-		input: RepairOrdinaryInquiry,
-	): Promise<RepairProducts> {
+	public async getFavoriteRepairProducts(memberId: ObjectId, input: RepairOrdinaryInquiry): Promise<RepairProducts> {
 		const { page, limit } = input;
 		const match: T = {
 			likeGroup: LikeGroup.REPAIR_PRODUCT,

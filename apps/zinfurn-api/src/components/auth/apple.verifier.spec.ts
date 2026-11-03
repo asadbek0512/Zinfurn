@@ -15,7 +15,13 @@ const sign = (payload: object, key = privateKey) => {
 	return `${head}.${createSign('RSA-SHA256').update(head).sign(key).toString('base64url')}`;
 };
 const now = () => Math.floor(Date.now() / 1000);
-const validPayload = () => ({ iss: 'https://appleid.apple.com', aud: BUNDLE_ID, exp: now() + HOUR_SEC, sub: '001.abc', email: 'a@privaterelay.appleid.com' });
+const validPayload = () => ({
+	iss: 'https://appleid.apple.com',
+	aud: BUNDLE_ID,
+	exp: now() + HOUR_SEC,
+	sub: '001.abc',
+	email: 'a@privaterelay.appleid.com',
+});
 
 describe('AppleVerifier', () => {
 	beforeEach(() => {
@@ -26,14 +32,21 @@ describe('AppleVerifier', () => {
 	});
 
 	it("to'g'ri imzolangan token'dan sub va email qaytadi", async () => {
-		await expect(new AppleVerifier().verify(sign(validPayload()))).resolves.toEqual({ sub: '001.abc', email: 'a@privaterelay.appleid.com' });
+		await expect(new AppleVerifier().verify(sign(validPayload()))).resolves.toEqual({
+			sub: '001.abc',
+			email: 'a@privaterelay.appleid.com',
+		});
 	});
 
-	it('boshqa kalit bilan imzolangan, boshqa audience yoki muddati o\'tgan token rad etiladi', async () => {
+	it("boshqa kalit bilan imzolangan, boshqa audience yoki muddati o'tgan token rad etiladi", async () => {
 		const v = new AppleVerifier();
 		await expect(v.verify(sign(validPayload(), other.privateKey))).rejects.toBeInstanceOf(UnauthorizedException);
-		await expect(v.verify(sign({ ...validPayload(), aud: 'com.evil.app' }))).rejects.toBeInstanceOf(UnauthorizedException);
-		await expect(v.verify(sign({ ...validPayload(), exp: now() - HOUR_SEC }))).rejects.toBeInstanceOf(UnauthorizedException);
+		await expect(v.verify(sign({ ...validPayload(), aud: 'com.evil.app' }))).rejects.toBeInstanceOf(
+			UnauthorizedException,
+		);
+		await expect(v.verify(sign({ ...validPayload(), exp: now() - HOUR_SEC }))).rejects.toBeInstanceOf(
+			UnauthorizedException,
+		);
 		await expect(v.verify('garbage')).rejects.toBeInstanceOf(UnauthorizedException);
 	});
 });

@@ -56,7 +56,6 @@ export class NoticeResolver {
 		@Args('noticeId', { type: () => GraphQLString }) noticeId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Notice> {
-
 		const objectId = ShapeIntoMongoObjectId(noticeId);
 		return await this.noticeService.removeNotice(memberId, objectId);
 	}

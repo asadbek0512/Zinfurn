@@ -17,7 +17,7 @@ registerEnumType(RepairProductType, {
 export enum RepairProductStatus {
 	ACTIVE = 'ACTIVE',
 	DELETE = 'DELETE',
-    PAUSE = 'PAUSE',
+	PAUSE = 'PAUSE',
 }
 
 registerEnumType(RepairProductStatus, {

@@ -81,7 +81,7 @@ describe('CouponService', () => {
 		expect(update).toEqual({ $inc: { usedCount: 1 } });
 	});
 
-	it("redeem: oxirgi foydalanishni boshqa buyurtma yutib olsa rad etiladi", async () => {
+	it('redeem: oxirgi foydalanishni boshqa buyurtma yutib olsa rad etiladi', async () => {
 		const { service } = makeService({ ...baseCoupon, maxUses: 1 }, null);
 		await expect(service.redeemCoupon('SALE10', 200)).rejects.toThrow('limiti tugagan');
 	});
@@ -92,9 +92,12 @@ describe('CouponService', () => {
 		expect(findOneAndUpdate).not.toHaveBeenCalled();
 	});
 
-	it('release: usedCount faqat 0 dan katta bo\'lsa kamayadi', async () => {
+	it("release: usedCount faqat 0 dan katta bo'lsa kamayadi", async () => {
 		const { service, updateOne } = makeService(baseCoupon);
 		await service.releaseCoupon('SALE10');
-		expect(updateOne).toHaveBeenCalledWith({ couponCode: 'SALE10', usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
+		expect(updateOne).toHaveBeenCalledWith(
+			{ couponCode: 'SALE10', usedCount: { $gt: 0 } },
+			{ $inc: { usedCount: -1 } },
+		);
 	});
 });

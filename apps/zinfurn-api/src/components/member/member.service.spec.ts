@@ -32,11 +32,14 @@ describe('MemberService.deleteMyAccount', () => {
 		return { service, memberUpdate, productUpdate, repairUpdate };
 	};
 
-	it('shaxsiy ma\'lumot tozalanadi, login identifikatorlari va sessiyalar o\'chiriladi', async () => {
+	it("shaxsiy ma'lumot tozalanadi, login identifikatorlari va sessiyalar o'chiriladi", async () => {
 		const { service, memberUpdate } = makeService(1);
 		await expect(service.deleteMyAccount(MEMBER_ID)).resolves.toBe(true);
 
-		const [filter, update] = memberUpdate.mock.calls[0] as unknown as [Record<string, unknown>, Record<string, Record<string, unknown>>];
+		const [filter, update] = memberUpdate.mock.calls[0] as unknown as [
+			Record<string, unknown>,
+			Record<string, Record<string, unknown>>,
+		];
 		expect(filter).toEqual({ _id: MEMBER_ID, memberStatus: { $ne: MemberStatus.DELETE } });
 		expect(update.$set.memberStatus).toBe(MemberStatus.DELETE);
 		expect(update.$set.memberNick).toBe(`deleted_${MEMBER_ID}`);
@@ -46,16 +49,19 @@ describe('MemberService.deleteMyAccount', () => {
 		);
 	});
 
-	it('e\'lonlar yashiriladi', async () => {
+	it("e'lonlar yashiriladi", async () => {
 		const { service, productUpdate, repairUpdate } = makeService(1);
 		await service.deleteMyAccount(MEMBER_ID);
-		const [productFilter, productSet] = productUpdate.mock.calls[0] as unknown as [Record<string, unknown>, Record<string, unknown>];
+		const [productFilter, productSet] = productUpdate.mock.calls[0] as unknown as [
+			Record<string, unknown>,
+			Record<string, unknown>,
+		];
 		expect(productFilter.memberId).toBe(MEMBER_ID);
 		expect(productSet.productStatus).toBe(ProductStatus.DELETE);
 		expect(repairUpdate).toHaveBeenCalledTimes(1);
 	});
 
-	it('akkaunt topilmasa yoki allaqachon o\'chirilgan bo\'lsa xato, e\'lonlarga tegilmaydi', async () => {
+	it("akkaunt topilmasa yoki allaqachon o'chirilgan bo'lsa xato, e'lonlarga tegilmaydi", async () => {
 		const { service, productUpdate } = makeService(0);
 		await expect(service.deleteMyAccount(MEMBER_ID)).rejects.toBeInstanceOf(BadRequestException);
 		expect(productUpdate).not.toHaveBeenCalled();
@@ -71,7 +77,10 @@ describe('MemberService.blockMember', () => {
 		const memberUpdate = jest.fn(() => ({ exec: async () => ({}) }));
 		const followDelete = jest.fn(() => ({ exec: async () => ({}) }));
 		const service = new MemberService(
-			{ updateOne: memberUpdate, exists: () => ({ exec: async () => (targetExists ? { _id: TARGET } : null) }) } as unknown as Model<Member>,
+			{
+				updateOne: memberUpdate,
+				exists: () => ({ exec: async () => (targetExists ? { _id: TARGET } : null) }),
+			} as unknown as Model<Member>,
 			{ deleteOne: followDelete } as unknown as Model<never>,
 			{} as Model<unknown>,
 			{} as Model<unknown>,

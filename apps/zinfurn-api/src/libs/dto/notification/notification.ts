@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
 import { NotificationType, NotificationStatus, NotificationGroup } from '../../enums/notification.enum';
 
 @ObjectType()

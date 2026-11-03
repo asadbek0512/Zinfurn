@@ -149,13 +149,16 @@ export class AuthService {
 		const expiresAt = new Date((nowSec() + this.sessionRemaining(sid, client)) * 1000);
 		// Shu sessiyaning eski yozuvi va muddati o'tganlar tozalanadi, keyin joriy jti yoziladi
 		await this.memberModel
-			.updateOne({ _id: doc._id }, { $pull: { memberSessions: { $or: [{ sid }, { expiresAt: { $lt: new Date() } }] } } } as T)
+			.updateOne({ _id: doc._id }, {
+				$pull: { memberSessions: { $or: [{ sid }, { expiresAt: { $lt: new Date() } }] } },
+			} as T)
 			.exec();
 		await this.memberModel
-			.updateOne(
-				{ _id: doc._id },
-				{ $push: { memberSessions: { $each: [{ sid, jti, prevJti, rotatedAt: new Date(), expiresAt }], $slice: -MAX_SESSIONS } } } as T,
-			)
+			.updateOne({ _id: doc._id }, {
+				$push: {
+					memberSessions: { $each: [{ sid, jti, prevJti, rotatedAt: new Date(), expiresAt }], $slice: -MAX_SESSIONS },
+				},
+			} as T)
 			.exec();
 		const refresh = await this.createRefreshToken(member, sid, client, jti);
 		return { token, refresh };
@@ -172,7 +175,10 @@ export class AuthService {
 	}
 
 	public async createLinkToken(memberId: string): Promise<string> {
-		return await this.jwtService.signAsync({ _id: memberId, tokenType: LINK_TOKEN_TYPE }, { expiresIn: LINK_TOKEN_TTL_SEC });
+		return await this.jwtService.signAsync(
+			{ _id: memberId, tokenType: LINK_TOKEN_TYPE },
+			{ expiresIn: LINK_TOKEN_TTL_SEC },
+		);
 	}
 
 	/** Link token'dan memberId. Boshqa turdagi yoki muddati o'tgan token — xato */
@@ -255,7 +261,10 @@ export class AuthService {
 			.exec();
 	}
 
-	public async googleLogin(googleUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
+	public async googleLogin(
+		googleUser: any,
+		client: SessionClient = 'web',
+	): Promise<{ token: string; refresh: string }> {
 		const { email, firstName, lastName, picture, sub } = googleUser;
 
 		// 1. Google ID bilan qidir
@@ -299,7 +308,11 @@ export class AuthService {
 		// Shu email bilan Google orqali kirgan akkaunt bo'lsa — unga bog'laymiz
 		if (!member && identity.email) {
 			member = await this.memberModel
-				.findOneAndUpdate({ memberEmail: identity.email, memberStatus: { $ne: MemberStatus.DELETE } }, { memberAppleId: identity.sub }, { new: true })
+				.findOneAndUpdate(
+					{ memberEmail: identity.email, memberStatus: { $ne: MemberStatus.DELETE } },
+					{ memberAppleId: identity.sub },
+					{ new: true },
+				)
 				.exec();
 		}
 		if (!member) {
@@ -316,7 +329,10 @@ export class AuthService {
 		return await this.createTokenPair(member, undefined, client);
 	}
 
-	public async telegramLogin(telegramUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
+	public async telegramLogin(
+		telegramUser: any,
+		client: SessionClient = 'web',
+	): Promise<{ token: string; refresh: string }> {
 		const { id, first_name, last_name, username, photo_url } = telegramUser;
 
 		let member = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -335,7 +351,11 @@ export class AuthService {
 		return await this.createTokenPair(member, undefined, client);
 	}
 
-	public async linkTelegram(memberId: string, telegramUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
+	public async linkTelegram(
+		memberId: string,
+		telegramUser: any,
+		client: SessionClient = 'web',
+	): Promise<{ token: string; refresh: string }> {
 		const { id } = telegramUser;
 
 		const existing = await this.memberModel.findOne({ memberTelegramId: String(id) }).exec();
@@ -348,7 +368,11 @@ export class AuthService {
 		return await this.createTokenPair(member!, undefined, client);
 	}
 
-	public async linkGoogle(memberId: string, googleUser: any, client: SessionClient = 'web'): Promise<{ token: string; refresh: string }> {
+	public async linkGoogle(
+		memberId: string,
+		googleUser: any,
+		client: SessionClient = 'web',
+	): Promise<{ token: string; refresh: string }> {
 		const { email, sub } = googleUser;
 
 		// 1. Bu Google ID allaqachon bog'langanmi

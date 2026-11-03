@@ -95,7 +95,6 @@ export class AuthController {
 	@UseGuards(AuthGuard('google'))
 	async googleAuthCallback(@Req() req: any, @Res() res: any) {
 		try {
-			
 			const user = req.user;
 			const cookies = this.parseCookies(req);
 			const isApp = cookies.oauthClient === 'app';
@@ -110,9 +109,7 @@ export class AuthController {
 				const result = await this.authService.linkGoogle(memberId, user, isApp ? 'app' : 'web');
 				res.cookie('linkMemberId', '', { maxAge: 0 });
 				this.setAuthCookie(res, result.token);
-				return res.redirect(
-					this.authRedirectUrl(isApp, '/mypage', { token: result.token, refresh: result.refresh }),
-				);
+				return res.redirect(this.authRedirectUrl(isApp, '/mypage', { token: result.token, refresh: result.refresh }));
 			} else {
 				// Normal login
 				const result = await this.authService.googleLogin(user, isApp ? 'app' : 'web');

@@ -25,7 +25,7 @@ export class NoticeService {
 				const translations = await this.translationService.translateArticle(input.noticeTitle, input.noticeContent);
 				if (translations) data.noticeTranslations = translations;
 			} catch (e) {
-				Logger.warn('Tarjima o\'tkazib yuborildi (notice create)');
+				Logger.warn("Tarjima o'tkazib yuborildi (notice create)");
 			}
 			const result = await this.noticeModel.create(data);
 			return result;
@@ -43,10 +43,7 @@ export class NoticeService {
 		if (noticeStatus) match.noticeStatus = noticeStatus;
 
 		if (search) {
-			match.$or = [
-				{ noticeTitle: buildSearchRegex(search) },
-				{ noticeContent: buildSearchRegex(search) },
-			];
+			match.$or = [{ noticeTitle: buildSearchRegex(search) }, { noticeContent: buildSearchRegex(search) }];
 		}
 
 		try {
@@ -124,7 +121,7 @@ export class NoticeService {
 						if (translations) (input as T).noticeTranslations = translations;
 					}
 				} catch (e) {
-					Logger.warn('Tarjima o\'tkazib yuborildi (notice update)');
+					Logger.warn("Tarjima o'tkazib yuborildi (notice update)");
 				}
 			}
 

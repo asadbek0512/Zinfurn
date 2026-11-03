@@ -38,10 +38,7 @@ export class OrderResolver {
 	/** Payme/Click to'lov sahifasi havolasi (kalit yo'q bo'lsa demo sahifa) */
 	@UseGuards(AuthGuard)
 	@Mutation(() => String)
-	public async startPayment(
-		@Args('orderId') orderId: string,
-		@AuthMember('_id') memberId: ObjectId,
-	): Promise<string> {
+	public async startPayment(@Args('orderId') orderId: string, @AuthMember('_id') memberId: ObjectId): Promise<string> {
 		return this.orderService.getPaymentUrl(memberId, orderId);
 	}
 
@@ -65,10 +62,7 @@ export class OrderResolver {
 
 	@UseGuards(AuthGuard)
 	@Query(() => Order)
-	public async getOrderById(
-		@Args('orderId') orderId: string,
-		@AuthMember('_id') memberId: ObjectId,
-	): Promise<Order> {
+	public async getOrderById(@Args('orderId') orderId: string, @AuthMember('_id') memberId: ObjectId): Promise<Order> {
 		return this.orderService.getOrderById(memberId, ShapeIntoMongoObjectId(orderId));
 	}
 
@@ -92,10 +86,7 @@ export class OrderResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => Order)
-	public async requestReturn(
-		@Args('input') input: OrderUpdate,
-		@AuthMember('_id') memberId: ObjectId,
-	): Promise<Order> {
+	public async requestReturn(@Args('input') input: OrderUpdate, @AuthMember('_id') memberId: ObjectId): Promise<Order> {
 		input._id = ShapeIntoMongoObjectId(input._id);
 		return this.orderService.requestReturn(memberId, input);
 	}

@@ -1,4 +1,11 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	CanActivate,
+	ExecutionContext,
+	Injectable,
+	UnauthorizedException,
+	Logger,
+} from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
 import { SecurityAlertService } from '../../security/security-alert.service';
@@ -17,7 +24,7 @@ export class AuthGuard implements CanActivate {
 	constructor(
 		private authService: AuthService,
 		private alert: SecurityAlertService,
-	) { }
+	) {}
 
 	async canActivate(context: ExecutionContext | any): Promise<boolean> {
 		Logger.log('--- @guard() Authentication [AuthGuard] ---');
@@ -38,7 +45,12 @@ export class AuthGuard implements CanActivate {
 				// Yaroqsiz/soxta token — brute-force signali sifatida qayd qilinadi
 				const xff = request?.headers?.['x-forwarded-for'];
 				const ip = (typeof xff === 'string' && xff.split(',')[0].trim()) || request?.ip || 'unknown';
-				this.alert.noteAuthFailure(ip, 'yaroqsiz access token', request?.originalUrl || 'graphql', String(request?.headers?.['user-agent'] || ''));
+				this.alert.noteAuthFailure(
+					ip,
+					'yaroqsiz access token',
+					request?.originalUrl || 'graphql',
+					String(request?.headers?.['user-agent'] || ''),
+				);
 				throw err;
 			}
 			if (!authMember) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
@@ -49,7 +61,6 @@ export class AuthGuard implements CanActivate {
 		}
 
 		return false; // ?????????????
-
 
 		// description => http, rpc, gprs and etc are ignored
 	}

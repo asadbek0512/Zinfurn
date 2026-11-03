@@ -1,4 +1,11 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, ForbiddenException, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	CanActivate,
+	ExecutionContext,
+	Injectable,
+	ForbiddenException,
+	Logger,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from '../auth.service';
 import { Message } from 'apps/zinfurn-api/src/libs/enums/common_enum';
@@ -57,6 +64,10 @@ export class RolesGuard implements CanActivate {
 	private reqMeta(request: any): { ip: string; path: string; ua: string } {
 		const xff = request?.headers?.['x-forwarded-for'];
 		const ip = (typeof xff === 'string' && xff.split(',')[0].trim()) || request?.ip || 'unknown';
-		return { ip, path: request?.originalUrl || request?.url || 'graphql', ua: String(request?.headers?.['user-agent'] || '') };
+		return {
+			ip,
+			path: request?.originalUrl || request?.url || 'graphql',
+			ua: String(request?.headers?.['user-agent'] || ''),
+		};
 	}
 }

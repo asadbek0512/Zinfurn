@@ -20,26 +20,26 @@ import { AiRoomModule } from './ai-room/ai-room.module';
 import { AppStatModule } from './app-stat/app-stat.module';
 
 @Module({
-  imports: [
-    MemberModule,
-    AuthModule,
-    ProductModule,
-    BoardArticleModule,
-    CommentModule,
-    LikeModule,
-    ViewModule,
-    FollowModule,
-    ReportModule,
-    PushModule,
-    RepairProductModule,
-    NotificationModule,
-    NoticeModule,
-    OrderModule,
-    CouponModule,
-    ReviewModule,
-    MessageModule,
-    AiRoomModule,
-    AppStatModule,
-  ],
+	imports: [
+		MemberModule,
+		AuthModule,
+		ProductModule,
+		BoardArticleModule,
+		CommentModule,
+		LikeModule,
+		ViewModule,
+		FollowModule,
+		ReportModule,
+		PushModule,
+		RepairProductModule,
+		NotificationModule,
+		NoticeModule,
+		OrderModule,
+		CouponModule,
+		ReviewModule,
+		MessageModule,
+		AiRoomModule,
+		AppStatModule,
+	],
 })
-export class ComponentsModule { }
+export class ComponentsModule {}

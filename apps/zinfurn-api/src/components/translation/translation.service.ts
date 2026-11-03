@@ -148,7 +148,7 @@ CONTENT: ${content || ''}`;
 	private cleanParsed(parsed: ProductTranslationsMap): ProductTranslationsMap | null {
 		const clean: ProductTranslationsMap = {};
 		for (const loc of SUPPORTED_LOCALES) {
-			if (parsed[loc]?.title) clean[loc] = { title: parsed[loc]!.title, desc: parsed[loc]!.desc || '' };
+			if (parsed[loc]?.title) clean[loc] = { title: parsed[loc].title, desc: parsed[loc].desc || '' };
 		}
 		return Object.keys(clean).length ? clean : null;
 	}
@@ -157,7 +157,7 @@ CONTENT: ${content || ''}`;
 	private async runGemini(prompt: string): Promise<ProductTranslationsMap | null> {
 		const key = process.env.GEMINI_API_KEY;
 		if (!key) {
-			this.logger.warn('GEMINI_API_KEY topilmadi — tarjima o\'tkazib yuborildi');
+			this.logger.warn("GEMINI_API_KEY topilmadi — tarjima o'tkazib yuborildi");
 			return null;
 		}
 

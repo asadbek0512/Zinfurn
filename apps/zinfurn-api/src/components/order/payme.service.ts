@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ObjectId } from 'mongoose';
+import { Model } from 'mongoose';
 import { timingSafeEqual } from 'crypto';
 import { Order } from '../../libs/dto/order/order';
 import { OrderStatus } from '../../libs/enums/order.enum';
@@ -153,7 +153,10 @@ export class PaymeService {
 		return order;
 	}
 
-	private async checkPerform(orderId: string | undefined, amount: number | undefined): Promise<Record<string, unknown>> {
+	private async checkPerform(
+		orderId: string | undefined,
+		amount: number | undefined,
+	): Promise<Record<string, unknown>> {
 		await this.findPayableOrder(orderId, amount);
 		return { allow: true };
 	}
@@ -177,10 +180,22 @@ export class PaymeService {
 		const order = await this.findPayableOrder(account?.order_id, amount);
 		if (order.paymeTxn?.state === PaymeState.CREATED) throw new PaymeException(PaymeError.ORDER_BUSY);
 
-		const txn: PaymeTxn = { id, time, createTime: Date.now(), performTime: 0, cancelTime: 0, state: PaymeState.CREATED, reason: null };
+		const txn: PaymeTxn = {
+			id,
+			time,
+			createTime: Date.now(),
+			performTime: 0,
+			cancelTime: 0,
+			state: PaymeState.CREATED,
+			reason: null,
+		};
 		// Faqat ochiq tranzaksiyasi yo'q buyurtmaga yoziladi — parallel CreateTransaction'dan himoya
 		const saved = await this.orderModel
-			.findOneAndUpdate({ _id: order._id, 'paymeTxn.state': { $ne: PaymeState.CREATED } }, { paymeTxn: txn }, { new: true })
+			.findOneAndUpdate(
+				{ _id: order._id, 'paymeTxn.state': { $ne: PaymeState.CREATED } },
+				{ paymeTxn: txn },
+				{ new: true },
+			)
 			.exec();
 		if (!saved) throw new PaymeException(PaymeError.ORDER_BUSY);
 		return this.txnReceipt(order._id, txn);
@@ -208,11 +223,14 @@ export class PaymeService {
 			.lean<PaymeOrder>()
 			.exec();
 		if (!updated?.paymeTxn) throw new PaymeException(PaymeError.CANNOT_PERFORM);
-		await this.orderService.markPaid(order._id as ObjectId, txn.id);
+		await this.orderService.markPaid(order._id, txn.id);
 		return { transaction: String(order._id), perform_time: updated.paymeTxn.performTime, state: PaymeState.PERFORMED };
 	}
 
-	private async cancelTransaction(id: string | undefined, reason: number | undefined): Promise<Record<string, unknown>> {
+	private async cancelTransaction(
+		id: string | undefined,
+		reason: number | undefined,
+	): Promise<Record<string, unknown>> {
 		const order = await this.requireTxn(id);
 		const txn = order.paymeTxn as PaymeTxn;
 		if (txn.state === PaymeState.CANCELLED || txn.state === PaymeState.CANCELLED_AFTER_PERFORM) {
@@ -285,7 +303,7 @@ export class PaymeService {
 				.exec();
 			this.logger.warn(`Payme refunded order ${order.orderId}`);
 		} else {
-			await this.orderService.cancelUnpaidOrder(order._id as ObjectId);
+			await this.orderService.cancelUnpaidOrder(order._id);
 		}
 		return { ...txn, state, cancelTime, reason };
 	}

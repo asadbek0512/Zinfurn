@@ -7,11 +7,7 @@ import NoticeSchema from '../../schemas/Notice.model';
 import { TranslationModule } from '../translation/translation.module';
 
 @Module({
-	imports: [
-		MongooseModule.forFeature([{ name: 'Notice', schema: NoticeSchema }]),
-		AuthModule,
-		TranslationModule,
-	],
+	imports: [MongooseModule.forFeature([{ name: 'Notice', schema: NoticeSchema }]), AuthModule, TranslationModule],
 	providers: [NoticeResolver, NoticeService],
 	exports: [NoticeService],
 })

@@ -27,7 +27,7 @@ describe('AuthService (token pair)', () => {
 		expect(claims.sid).toBeGreaterThan(0);
 	});
 
-	it('createToken: sessiya qoldig\'i 1 soatdan kam bo\'lsa access shu qoldiq bilan cheklanadi', async () => {
+	it("createToken: sessiya qoldig'i 1 soatdan kam bo'lsa access shu qoldiq bilan cheklanadi", async () => {
 		const service = makeService();
 		// Sessiya 9.5 soat oldin boshlangan — 30 daqiqa qoldi
 		const sid = nowSec() - (SESSION_MAX_AGE_SEC - 30 * 60);
@@ -37,7 +37,7 @@ describe('AuthService (token pair)', () => {
 		expect(claims.exp - claims.iat).toBeGreaterThan(29 * 60);
 	});
 
-	it('createRefreshToken sessiya qoldig\'iga teng muddat beradi (tokenType=refresh, minimal payload)', async () => {
+	it("createRefreshToken sessiya qoldig'iga teng muddat beradi (tokenType=refresh, minimal payload)", async () => {
 		const service = makeService();
 		const token = await service.createRefreshToken(fakeMember);
 		const claims: any = jwt.decode(token);
@@ -46,7 +46,7 @@ describe('AuthService (token pair)', () => {
 		expect(claims.memberNick).toBeUndefined(); // profil ma'lumotlari refresh'da bo'lmasin
 	});
 
-	it('createRefreshToken: sessiya tugagan bo\'lsa token bermaydi', async () => {
+	it("createRefreshToken: sessiya tugagan bo'lsa token bermaydi", async () => {
 		const service = makeService();
 		const expiredSid = nowSec() - SESSION_MAX_AGE_SEC - 1;
 		await expect(service.createRefreshToken(fakeMember, expiredSid)).rejects.toThrow('Session expired');
@@ -151,7 +151,6 @@ describe('AuthService (token pair)', () => {
 		await expect(service.refreshTokens(access)).rejects.toThrow('Invalid refresh token');
 	});
 
-
 	describe('app sessiyasi (sirpanuvchi)', () => {
 		const DAY = 24 * 60 * 60;
 		/** memberSessions'ni xotirada saqlaydigan minimal mock */
@@ -198,7 +197,7 @@ describe('AuthService (token pair)', () => {
 			expect((jwt.decode(token) as any).exp - (jwt.decode(token) as any).iat).toBe(60 * 60);
 		});
 
-		it('app refresh har rotation\'da 30 kunga uzayadi, lekin 90 kundan oshmaydi', async () => {
+		it("app refresh har rotation'da 30 kunga uzayadi, lekin 90 kundan oshmaydi", async () => {
 			const service = makeService(makeAppModel());
 			const oldSid = nowSec() - 80 * DAY;
 			const { refresh } = await service.createTokenPair(fakeMember, oldSid, 'app');
@@ -209,7 +208,7 @@ describe('AuthService (token pair)', () => {
 			expect(r.exp - r.iat).toBeGreaterThan(10 * DAY - 60);
 		});
 
-		it('app: 90 kun o\'tgach refresh RAD etiladi', async () => {
+		it("app: 90 kun o'tgach refresh RAD etiladi", async () => {
 			const service = makeService(makeAppModel());
 			const stale = await jwt.signAsync(
 				{ _id: fakeMember._id, tokenType: 'refresh', sid: nowSec() - 91 * DAY, client: 'app', jti: 'x' },
@@ -218,14 +217,14 @@ describe('AuthService (token pair)', () => {
 			await expect(service.refreshTokens(stale)).rejects.toThrow('Session expired');
 		});
 
-		it('app: oldingi refresh grace ichida qabul qilinadi (javob yo\'qolgan holat)', async () => {
+		it("app: oldingi refresh grace ichida qabul qilinadi (javob yo'qolgan holat)", async () => {
 			const service = makeService(makeAppModel());
 			const { refresh } = await service.createTokenPair(fakeMember, undefined, 'app');
 			await service.refreshTokens(refresh);
 			await expect(service.refreshTokens(refresh)).resolves.toBeTruthy();
 		});
 
-		it('app: grace\'dan keyin eski refresh qayta ishlatilsa sessiya yopiladi', async () => {
+		it("app: grace'dan keyin eski refresh qayta ishlatilsa sessiya yopiladi", async () => {
 			const model = makeAppModel();
 			const service = makeService(model);
 			const { refresh } = await service.createTokenPair(fakeMember, undefined, 'app');
@@ -247,7 +246,7 @@ describe('AuthService (token pair)', () => {
 			await expect(service.refreshTokens(b.refresh)).rejects.toThrow('Session revoked');
 		});
 
-		it('web: refresh jti bilan bazaga yoziladi, logout\'dan keyin RAD etiladi', async () => {
+		it("web: refresh jti bilan bazaga yoziladi, logout'dan keyin RAD etiladi", async () => {
 			const model = makeAppModel();
 			const service = makeService(model);
 			const { refresh } = await service.createTokenPair(fakeMember);

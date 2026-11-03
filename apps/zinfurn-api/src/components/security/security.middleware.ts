@@ -14,7 +14,7 @@ const INJECTION_PATTERNS: RegExp[] = [
 ];
 
 /** Path traversal imzolari (URL'da). */
-const TRAVERSAL_PATTERNS: RegExp[] = [/\.\.[\/\\]/, /%2e%2e[%2f%5c]/i, /\/etc\/passwd/i, /\/proc\/self/i];
+const TRAVERSAL_PATTERNS: RegExp[] = [/\.\.[/\\]/, /%2e%2e[%2f%5c]/i, /\/etc\/passwd/i, /\/proc\/self/i];
 
 /** Avtomatik skanerlar qidiradigan yo'llar. */
 const SCANNER_PATHS: RegExp[] = [
@@ -44,12 +44,24 @@ export class SecurityMiddleware implements NestMiddleware {
 
 		// 1) Path traversal / skaner — URL bo'yicha
 		if (TRAVERSAL_PATTERNS.some((re) => re.test(path))) {
-			this.alert.report({ type: SecurityEventType.PATH_TRAVERSAL, detail: 'URLda path traversal imzosi', ip, path, userAgent: ua });
+			this.alert.report({
+				type: SecurityEventType.PATH_TRAVERSAL,
+				detail: 'URLda path traversal imzosi',
+				ip,
+				path,
+				userAgent: ua,
+			});
 			res.status(404).end();
 			return;
 		}
 		if (SCANNER_PATHS.some((re) => re.test(path))) {
-			this.alert.report({ type: SecurityEventType.SCANNER_PROBE, detail: `Skaner yo'liga murojaat: ${path}`, ip, path, userAgent: ua });
+			this.alert.report({
+				type: SecurityEventType.SCANNER_PROBE,
+				detail: `Skaner yo'liga murojaat: ${path}`,
+				ip,
+				path,
+				userAgent: ua,
+			});
 			res.status(404).end();
 			return;
 		}

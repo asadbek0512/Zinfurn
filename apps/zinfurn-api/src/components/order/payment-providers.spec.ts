@@ -112,24 +112,44 @@ describe('PaymeService', () => {
 
 	it("noto'g'ri kalit — -32504", async () => {
 		const { call } = setup();
-		const res = await call('CheckPerformTransaction', { amount: TIYIN, account: { order_id: 'ZIN-1' } }, 'Basic d3Jvbmc=');
+		const res = await call(
+			'CheckPerformTransaction',
+			{ amount: TIYIN, account: { order_id: 'ZIN-1' } },
+			'Basic d3Jvbmc=',
+		);
 		expect(res.error?.code).toBe(-32504);
 	});
 
-	it("summa mos kelmasa — -31001, buyurtma topilmasa — -31050", async () => {
+	it('summa mos kelmasa — -31001, buyurtma topilmasa — -31050', async () => {
 		const { call } = setup();
-		expect((await call('CheckPerformTransaction', { amount: 1, account: { order_id: 'ZIN-1' } })).error?.code).toBe(-31001);
-		expect((await call('CheckPerformTransaction', { amount: TIYIN, account: { order_id: 'X' } })).error?.code).toBe(-31050);
+		expect((await call('CheckPerformTransaction', { amount: 1, account: { order_id: 'ZIN-1' } })).error?.code).toBe(
+			-31001,
+		);
+		expect((await call('CheckPerformTransaction', { amount: TIYIN, account: { order_id: 'X' } })).error?.code).toBe(
+			-31050,
+		);
 	});
 
 	it("to'liq oqim: Check → Create → Perform → buyurtma PAID, takroriy Perform idempotent", async () => {
 		const { doc, orderService, call } = setup();
-		expect((await call('CheckPerformTransaction', { amount: TIYIN, account: { order_id: 'ZIN-1' } })).result).toEqual({ allow: true });
+		expect((await call('CheckPerformTransaction', { amount: TIYIN, account: { order_id: 'ZIN-1' } })).result).toEqual({
+			allow: true,
+		});
 
-		const create = await call('CreateTransaction', { id: 'tx1', time: Date.now(), amount: TIYIN, account: { order_id: 'ZIN-1' } });
+		const create = await call('CreateTransaction', {
+			id: 'tx1',
+			time: Date.now(),
+			amount: TIYIN,
+			account: { order_id: 'ZIN-1' },
+		});
 		expect(create.result).toMatchObject({ state: 1, transaction: 'db1' });
 		// Boshqa tranzaksiya shu buyurtmaga — band
-		const other = await call('CreateTransaction', { id: 'tx2', time: Date.now(), amount: TIYIN, account: { order_id: 'ZIN-1' } });
+		const other = await call('CreateTransaction', {
+			id: 'tx2',
+			time: Date.now(),
+			amount: TIYIN,
+			account: { order_id: 'ZIN-1' },
+		});
 		expect(other.error?.code).toBe(-31051);
 
 		const perform = await call('PerformTransaction', { id: 'tx1' });
@@ -141,7 +161,7 @@ describe('PaymeService', () => {
 		expect((await call('CheckTransaction', { id: 'tx1' })).result).toMatchObject({ state: 2, reason: null });
 	});
 
-	it("bajarilgan tranzaksiya bekor qilinsa — state -2, buyurtma CANCELLED", async () => {
+	it('bajarilgan tranzaksiya bekor qilinsa — state -2, buyurtma CANCELLED', async () => {
 		const { doc, call } = setup();
 		await call('CreateTransaction', { id: 'tx1', time: Date.now(), amount: TIYIN, account: { order_id: 'ZIN-1' } });
 		await call('PerformTransaction', { id: 'tx1' });
@@ -151,7 +171,7 @@ describe('PaymeService', () => {
 		expect((await call('CheckTransaction', { id: 'tx1' })).result).toMatchObject({ state: -2, reason: 5 });
 	});
 
-	it("yaratilgan tranzaksiya bekor qilinsa — state -1, Perform endi -31008", async () => {
+	it('yaratilgan tranzaksiya bekor qilinsa — state -1, Perform endi -31008', async () => {
 		const { orderService, call } = setup();
 		await call('CreateTransaction', { id: 'tx1', time: Date.now(), amount: TIYIN, account: { order_id: 'ZIN-1' } });
 		expect((await call('CancelTransaction', { id: 'tx1', reason: 3 })).result).toMatchObject({ state: -1 });
@@ -181,14 +201,22 @@ describe('ClickService', () => {
 
 	const sign = (p: Doc, prepareId = '') =>
 		createHash('md5')
-			.update(`${p.click_trans_id}${SERVICE_ID}${SECRET}${p.merchant_trans_id}${prepareId}${p.amount}${p.action}${p.sign_time}`)
+			.update(
+				`${p.click_trans_id}${SERVICE_ID}${SECRET}${p.merchant_trans_id}${prepareId}${p.amount}${p.action}${p.sign_time}`,
+			)
 			.digest('hex');
 
 	const setup = () => {
 		const doc = makeOrder(PaymentMethod.CLICK);
 		const orderService = makeOrderService(doc);
 		const service = new ClickService(makeOrderModel([doc]), orderService);
-		const base = { click_trans_id: '555', service_id: SERVICE_ID, merchant_trans_id: 'ZIN-1', amount: `${AMOUNT_SUM}.00`, sign_time: '2026-10-09 10:00:00' };
+		const base = {
+			click_trans_id: '555',
+			service_id: SERVICE_ID,
+			merchant_trans_id: 'ZIN-1',
+			amount: `${AMOUNT_SUM}.00`,
+			sign_time: '2026-10-09 10:00:00',
+		};
 		return { doc, service, base };
 	};
 
@@ -214,7 +242,7 @@ describe('ClickService', () => {
 		expect(again.error).toBe(-4);
 	});
 
-	it("summa mos kelmasa — -2; Click xato yuborsa buyurtma bekor — -9", async () => {
+	it('summa mos kelmasa — -2; Click xato yuborsa buyurtma bekor — -9', async () => {
 		const { doc, service, base } = setup();
 		const wrong = { ...base, amount: '1.00', action: '0' };
 		expect((await service.prepare({ ...wrong, sign_string: sign(wrong) })).error).toBe(-2);

@@ -67,7 +67,8 @@ const MAX_TOPIC_PERSONAS = 3;
 const QUOTE_PREVIOUS_PROBABILITY = 0.35;
 
 /** Tabiiy ko'rinishdagi illustratsiya avatarlar (DiceBear) — robot ikonka o'rniga */
-const AVATAR_BASE = 'https://api.dicebear.com/9.x/avataaars/svg?eyes=default&eyebrows=default&mouth=smile&skinColor=edb98a';
+const AVATAR_BASE =
+	'https://api.dicebear.com/9.x/avataaars/svg?eyes=default&eyebrows=default&mouth=smile&skinColor=edb98a';
 const avatar = (params: string): string => `${AVATAR_BASE}&${params}`;
 
 const PERSONAS: Persona[] = [
@@ -75,7 +76,9 @@ const PERSONAS: Persona[] = [
 		member: {
 			_id: 'ai-malika',
 			memberNick: 'Malika',
-			memberImage: avatar('top=longButNotTooLong&hairColor=2c1b18&facialHairProbability=0&accessoriesProbability=0&clothing=blazerAndShirt&backgroundColor=f3e3d3'),
+			memberImage: avatar(
+				'top=longButNotTooLong&hairColor=2c1b18&facialHairProbability=0&accessoriesProbability=0&clothing=blazerAndShirt&backgroundColor=f3e3d3',
+			),
 			isAi: true,
 		},
 		style: 'likes interior design, calm and friendly, shares quick practical tips from her own home',
@@ -84,7 +87,9 @@ const PERSONAS: Persona[] = [
 		member: {
 			_id: 'ai-jasur',
 			memberNick: 'Jasur',
-			memberImage: avatar('top=shortFlat&hairColor=2c1b18&facialHair=beardLight&facialHairColor=2c1b18&facialHairProbability=100&accessoriesProbability=0&clothing=shirtCrewNeck&clothesColor=5199e4&backgroundColor=e6f0e0'),
+			memberImage: avatar(
+				'top=shortFlat&hairColor=2c1b18&facialHair=beardLight&facialHairColor=2c1b18&facialHairProbability=100&accessoriesProbability=0&clothing=shirtCrewNeck&clothesColor=5199e4&backgroundColor=e6f0e0',
+			),
 			isAi: true,
 		},
 		style: 'works with wood and repairs furniture, jokes a lot, short blunt replies',
@@ -93,7 +98,9 @@ const PERSONAS: Persona[] = [
 		member: {
 			_id: 'ai-dilnoza',
 			memberNick: 'Dilnoza',
-			memberImage: avatar('top=straight01&hairColor=4a312c&facialHairProbability=0&accessoriesProbability=0&clothing=hoodie&clothesColor=ff488e&backgroundColor=e3ecf3'),
+			memberImage: avatar(
+				'top=straight01&hairColor=4a312c&facialHairProbability=0&accessoriesProbability=0&clothing=hoodie&clothesColor=ff488e&backgroundColor=e3ecf3',
+			),
 			isAi: true,
 		},
 		style: 'student living in Seoul, furnishing her room on a small budget, curious and cheerful',
@@ -102,7 +109,9 @@ const PERSONAS: Persona[] = [
 		member: {
 			_id: 'ai-timur',
 			memberNick: 'Timur',
-			memberImage: avatar('top=shortWaved&hairColor=4a312c&facialHairProbability=0&accessories=prescription02&accessoriesProbability=100&clothing=blazerAndSweater&backgroundColor=ece6f3'),
+			memberImage: avatar(
+				'top=shortWaved&hairColor=4a312c&facialHairProbability=0&accessories=prescription02&accessoriesProbability=100&clothing=blazerAndSweater&backgroundColor=ece6f3',
+			),
 			isAi: true,
 		},
 		style: 'works in an office, practical, cares about comfort and quality, a bit skeptical',
@@ -235,7 +244,8 @@ JSON format: {"messages":[{"persona":"<name>","text":"<reply>"}]}`;
 	 */
 	private quoteFor(lines: GeneratedLine[], index: number): { text: string; memberNick: string } | undefined {
 		const targetIndex = lines[index].replyTo;
-		if (typeof targetIndex !== 'number' || !Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= index) return undefined;
+		if (typeof targetIndex !== 'number' || !Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= index)
+			return undefined;
 		const isPrevious = targetIndex === index - 1;
 		if (isPrevious && Math.random() >= QUOTE_PREVIOUS_PROBABILITY) return undefined;
 		const target = lines[targetIndex];
@@ -245,7 +255,9 @@ JSON format: {"messages":[{"persona":"<name>","text":"<reply>"}]}`;
 	private emitLine(line: GeneratedLine, replyTo?: { text: string; memberNick: string }): boolean {
 		if (!this.hooks || !this.withinHourlyLimit()) return false;
 		const persona = PERSONAS.find((p) => p.member.memberNick.toLowerCase() === String(line.persona).toLowerCase());
-		const text = String(line.text ?? '').trim().slice(0, MAX_TEXT_LENGTH);
+		const text = String(line.text ?? '')
+			.trim()
+			.slice(0, MAX_TEXT_LENGTH);
 		if (!persona || !text) return true;
 		this.sentTimestamps.push(Date.now());
 		this.hooks.emit(persona.member, text, replyTo);
@@ -262,7 +274,10 @@ JSON format: {"messages":[{"persona":"<name>","text":"<reply>"}]}`;
 		const lines = this.hooks?.history().slice(-HISTORY_SIZE) ?? [];
 		if (!lines.length) return '(empty)';
 		return lines
-			.map((m) => `${m.memberData?.memberNick ?? 'Guest'}${m.memberData?.isAi ? ' (AI)' : ''}: ${String(m.text).slice(0, MAX_TEXT_LENGTH)}`)
+			.map(
+				(m) =>
+					`${m.memberData?.memberNick ?? 'Guest'}${m.memberData?.isAi ? ' (AI)' : ''}: ${String(m.text).slice(0, MAX_TEXT_LENGTH)}`,
+			)
 			.join('\n');
 	}
 

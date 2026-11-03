@@ -54,7 +54,12 @@ const ORDER_STATUS_PUSH: Partial<Record<OrderStatus, string>> = {
 };
 const krwPerUsd = (): number => Number(process.env.KRW_PER_USD) || DEFAULT_KRW_PER_USD;
 
-type OrderableProduct = PriceSource & { _id: ObjectId; productTitle: string; productImages?: string[]; productStock?: number };
+type OrderableProduct = PriceSource & {
+	_id: ObjectId;
+	productTitle: string;
+	productImages?: string[];
+	productStock?: number;
+};
 
 @Injectable()
 export class OrderService {
@@ -105,7 +110,14 @@ export class OrderService {
 		};
 
 		try {
-			const order = await this.orderModel.create({ ...input, orderId, orderDiscount, orderCouponCode, deliveryFee, ...payment });
+			const order = await this.orderModel.create({
+				...input,
+				orderId,
+				orderDiscount,
+				orderCouponCode,
+				deliveryFee,
+				...payment,
+			});
 			if (!isOnline) this.onOrderPaid(order);
 			return order;
 		} catch (err) {
@@ -134,7 +146,7 @@ export class OrderService {
 
 		await this.tossPayment.confirm(paymentKey, orderId, amount);
 
-		const paid = await this.markPaid(order._id as ObjectId, paymentKey);
+		const paid = await this.markPaid(order._id, paymentKey);
 		// Parallel so'rov allaqachon PAID qilgan bo'lsa — o'sha holatni qaytaramiz
 		if (!paid) {
 			const current = await this.orderModel.findById(order._id).exec();
@@ -168,12 +180,12 @@ export class OrderService {
 			if (order.paymentMethod === PaymentMethod.TOSS) {
 				const toss = await this.tossPayment.findByOrderId(order.orderId);
 				if (toss?.status === TOSS_DONE_STATUS && toss.totalAmount === order.paymentAmount) {
-					await this.markPaid(order._id as ObjectId, toss.paymentKey);
+					await this.markPaid(order._id, toss.paymentKey);
 					this.logger.log(`Toss order reconciled as paid: ${order.orderId}`);
 					continue;
 				}
 			}
-			await this.cancelUnpaidOrder(order._id as ObjectId);
+			await this.cancelUnpaidOrder(order._id);
 		}
 	}
 
@@ -192,7 +204,7 @@ export class OrderService {
 		if (isProviderConfigured(order.paymentMethod as PaymentMethod)) {
 			throw new BadRequestException(Message.DEMO_PAYMENT_DISABLED);
 		}
-		const paid = await this.markPaid(order._id as ObjectId, `DEMO-${order.paymentMethod}-${Date.now()}`);
+		const paid = await this.markPaid(order._id, `DEMO-${order.paymentMethod}-${Date.now()}`);
 		if (!paid) throw new BadRequestException(Message.PAYMENT_FAILED);
 		return paid;
 	}
@@ -239,7 +251,7 @@ export class OrderService {
 	/** To'lov tasdiqlangach: xabarlar va demo status progression */
 	private onOrderPaid(order: Order): void {
 		const { memberId, orderId, orderTotal } = order;
-		this.scheduleAutoProgression(order._id as ObjectId);
+		this.scheduleAutoProgression(order._id);
 		// Telegram/email xabarlar (non-blocking)
 		this.telegramNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
 		this.mailNotify.notifyCustomer(memberId, orderId, OrderStatus.PENDING, orderTotal);
@@ -268,7 +280,9 @@ export class OrderService {
 		const ids = items.map((item) => item.productId);
 		const products = await this.productModel
 			.find({ _id: { $in: ids }, productStatus: ProductStatus.ACTIVE })
-			.select('productTitle productImages productPrice productSalePrice productIsOnSale productSaleStartsAt productSaleExpiresAt productStock')
+			.select(
+				'productTitle productImages productPrice productSalePrice productIsOnSale productSaleStartsAt productSaleExpiresAt productStock',
+			)
 			.lean<OrderableProduct[]>()
 			.exec();
 		const byId = new Map(products.map((product) => [String(product._id), product]));
@@ -323,9 +337,7 @@ export class OrderService {
 			const update: T = following
 				? { orderStatus: step.next, orderAutoProgressAt: new Date(Date.now() + following.afterMs) }
 				: { orderStatus: step.next, $unset: { orderAutoProgressAt: 1 } };
-			const doc = await this.orderModel
-				.findOneAndUpdate({ _id, orderStatus }, update, { new: true })
-				.exec();
+			const doc = await this.orderModel.findOneAndUpdate({ _id, orderStatus }, update, { new: true }).exec();
 			if (doc) {
 				this.telegramNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
 				this.mailNotify.notifyCustomer(doc.memberId, doc.orderId, step.next);
@@ -381,21 +393,18 @@ export class OrderService {
 		if (order.orderStatus !== OrderStatus.DELIVERED) {
 			throw new BadRequestException('Order must be DELIVERED before confirmation');
 		}
-		const confirmed = await this.orderModel.findByIdAndUpdate(
+		const confirmed = (await this.orderModel.findByIdAndUpdate(
 			orderId,
 			{ orderStatus: OrderStatus.CONFIRMED, confirmedAt: new Date() },
 			{ new: true },
-		) as unknown as Order;
+		)) as unknown as Order;
 
 		this.telegramNotify.notifyCustomer(memberId, order.orderId, OrderStatus.CONFIRMED);
 		this.mailNotify.notifyCustomer(memberId, order.orderId, OrderStatus.CONFIRMED);
 
 		// increment sold count for each item
 		for (const item of order.orderItems) {
-			await this.productModel.findByIdAndUpdate(
-				item.productId,
-				{ $inc: { productSoldCount: item.quantity } },
-			);
+			await this.productModel.findByIdAndUpdate(item.productId, { $inc: { productSoldCount: item.quantity } });
 		}
 		return confirmed;
 	}
@@ -491,14 +500,13 @@ export class OrderService {
 	 */
 	public async getSellerDashboard(agentId: ObjectId): Promise<SellerDashboard> {
 		// 1) Agent mahsulotlari — statuslar bo'yicha sanoq + views/likes yig'indisi
-		const props: any[] =
-			await this.productModel
-				.find(
-					{ memberId: agentId, productStatus: { $ne: ProductStatus.DELETE } },
-					{ _id: 1, productStatus: 1, productViews: 1, productLikes: 1 },
-				)
-				.lean()
-				.exec();
+		const props: any[] = await this.productModel
+			.find(
+				{ memberId: agentId, productStatus: { $ne: ProductStatus.DELETE } },
+				{ _id: 1, productStatus: 1, productViews: 1, productLikes: 1 },
+			)
+			.lean()
+			.exec();
 
 		const propIds = props.map((p) => p._id);
 		let activeListings = 0;

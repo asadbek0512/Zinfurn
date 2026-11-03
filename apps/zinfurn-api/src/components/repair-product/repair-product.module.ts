@@ -10,21 +10,21 @@ import { LikeModule } from '../like/like.module';
 import { TranslationModule } from '../translation/translation.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      {
-        name: 'RepairProduct',
-        schema: RepairProduct,
-      },
-    ]),
-    AuthModule,
-    ViewModule,
-    MemberModule,
-    LikeModule,
-    TranslationModule,
-  ],
+	imports: [
+		MongooseModule.forFeature([
+			{
+				name: 'RepairProduct',
+				schema: RepairProduct,
+			},
+		]),
+		AuthModule,
+		ViewModule,
+		MemberModule,
+		LikeModule,
+		TranslationModule,
+	],
 
-  providers: [RepairProductService, RepairProductResolver],
-  exports: [RepairProductService]
+	providers: [RepairProductService, RepairProductResolver],
+	exports: [RepairProductService],
 })
-export class RepairProductModule { }
+export class RepairProductModule {}

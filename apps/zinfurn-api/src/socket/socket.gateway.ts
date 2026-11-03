@@ -101,39 +101,43 @@ export class SocketGateway implements OnGatewayInit {
 		client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
 		this.aiChatBot.onClientJoined();
 
-		client.on('message', async (data: any) => {
-			try {
-				const parsed = JSON.parse(data.toString());
+		client.on('message', (data: any) => {
+			void (async () => {
+				try {
+					const parsed = JSON.parse(data.toString());
 
-				if (parsed.event === 'message') {
-					let messageText = parsed.data ?? parsed.text ?? '';
-					let replyTo: { text: string; memberNick: string } | undefined = undefined;
+					if (parsed.event === 'message') {
+						const messageText = parsed.data ?? parsed.text ?? '';
+						let replyTo: { text: string; memberNick: string } | undefined = undefined;
 
-					if (parsed.replyTo) {
-						replyTo = {
-							text: String(parsed.replyTo.text ?? ''),
-							memberNick: String(parsed.replyTo.memberNick ?? 'User'),
+						if (parsed.replyTo) {
+							replyTo = {
+								text: String(parsed.replyTo.text ?? ''),
+								memberNick: String(parsed.replyTo.memberNick ?? 'User'),
+							};
+						}
+
+						const newMessage: MessagePayload = {
+							event: 'message',
+							text: messageText,
+							memberData: authMember ?? null,
+							replyTo: replyTo,
+							createdAt: new Date().toISOString(),
 						};
+
+						this.pushMessage(newMessage);
+						this.aiChatBot.onUserMessage(String(messageText), authMember?.memberNick ?? 'Guest');
+					} else if (parsed.event === 'getMessages') {
+						client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+					} else if (parsed.event === 'get_notifications') {
+						await this.handleGetNotifications(client);
+					} else if (parsed.event === 'markNotificationsAsRead') {
+						await this.handleMarkNotificationsAsRead(client, parsed.data);
 					}
-
-					const newMessage: MessagePayload = {
-						event: 'message',
-						text: messageText,
-						memberData: authMember ?? null,
-						replyTo: replyTo,
-						createdAt: new Date().toISOString(),
-					};
-
-					this.pushMessage(newMessage);
-					this.aiChatBot.onUserMessage(String(messageText), authMember?.memberNick ?? 'Guest');
-				} else if (parsed.event === 'getMessages') {
-					client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
-				} else if (parsed.event === 'get_notifications') {
-					await this.handleGetNotifications(client);
-				} else if (parsed.event === 'markNotificationsAsRead') {
-					await this.handleMarkNotificationsAsRead(client, parsed.data);
+				} catch {
+					// noto'g'ri JSON — e'tiborsiz qoldiriladi
 				}
-			} catch (e) {}
+			})();
 		});
 
 		if (authMember) {

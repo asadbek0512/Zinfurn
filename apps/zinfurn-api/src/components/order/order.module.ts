@@ -27,7 +27,15 @@ import { PaymentController } from './payment.controller';
 		CouponModule,
 	],
 	controllers: [PaymentController],
-	providers: [OrderResolver, OrderService, TelegramNotifyService, MailNotifyService, TossPaymentService, PaymeService, ClickService],
+	providers: [
+		OrderResolver,
+		OrderService,
+		TelegramNotifyService,
+		MailNotifyService,
+		TossPaymentService,
+		PaymeService,
+		ClickService,
+	],
 	exports: [OrderService],
 })
 export class OrderModule {}

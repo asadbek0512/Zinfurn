@@ -103,33 +103,29 @@ export class NotificationService {
 	}
 
 	async markMultipleAsRead(userId: string, notifications: Notification[]): Promise<void> {
-		try {
-			const notificationIds = notifications.map((n) => n._id);
+		const notificationIds = notifications.map((n) => n._id);
 
-			await this.notificationModel.updateMany(
-				{
-					_id: { $in: notificationIds },
-					receiverId: userId,
-					notificationStatus: NotificationStatus.WAIT,
-				},
-				{
-					notificationStatus: NotificationStatus.READ,
-				},
-			);
+		await this.notificationModel.updateMany(
+			{
+				_id: { $in: notificationIds },
+				receiverId: userId,
+				notificationStatus: NotificationStatus.WAIT,
+			},
+			{
+				notificationStatus: NotificationStatus.READ,
+			},
+		);
 
-			// Send status updates for each notification
-			for (const notification of notifications) {
-				this.socketGateway.sendNotification(userId, {
-					id: notification._id.toString(),
-					title: notification.notificationTitle,
-					desc: notification.notificationDesc,
-					type: notification.notificationType,
-					status: NotificationStatus.READ,
-					createdAt: notification.createdAt,
-				});
-			}
-		} catch (error) {
-			throw error;
+		// Send status updates for each notification
+		for (const notification of notifications) {
+			this.socketGateway.sendNotification(userId, {
+				id: notification._id.toString(),
+				title: notification.notificationTitle,
+				desc: notification.notificationDesc,
+				type: notification.notificationType,
+				status: NotificationStatus.READ,
+				createdAt: notification.createdAt,
+			});
 		}
 	}
 }

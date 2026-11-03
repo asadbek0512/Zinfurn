@@ -1,32 +1,31 @@
-import { registerEnumType } from "@nestjs/graphql";
+import { registerEnumType } from '@nestjs/graphql';
 
 export enum MemberType {
-    USER = 'USER',
-    AGENT = 'AGENT',
-    ADMIN = 'ADMIN',
-    TECHNICIAN = 'TECHNICIAN'
-
+	USER = 'USER',
+	AGENT = 'AGENT',
+	ADMIN = 'ADMIN',
+	TECHNICIAN = 'TECHNICIAN',
 }
 registerEnumType(MemberType, {
-    name: "MemberType",
+	name: 'MemberType',
 });
 
 export enum MemberStatus {
-    ACTIVE = 'ACTIVE',
-    BLOCK = 'BLOCK',
-    DELETE = 'DELETE'
+	ACTIVE = 'ACTIVE',
+	BLOCK = 'BLOCK',
+	DELETE = 'DELETE',
 }
 registerEnumType(MemberStatus, {
-    name: "MemberStatus",
+	name: 'MemberStatus',
 });
 
 export enum MemberAuthType {
-    PHONE = 'PHONE',
-    EMAIL = 'EMAIL',
-    TELEGRAM = 'TELEGRAM',
-    GOOGLE = 'GOOGLE',
-    APPLE = 'APPLE',
+	PHONE = 'PHONE',
+	EMAIL = 'EMAIL',
+	TELEGRAM = 'TELEGRAM',
+	GOOGLE = 'GOOGLE',
+	APPLE = 'APPLE',
 }
 registerEnumType(MemberAuthType, {
-    name: "MemberAuthType",
+	name: 'MemberAuthType',
 });

@@ -13,7 +13,12 @@ import { OrderStatus } from '../../libs/enums/order.enum';
  */
 describe('ReviewService.createReview', () => {
 	const MEMBER_ID = 'member1' as unknown as ObjectId;
-	const input = { orderId: 'o1', productId: 'p1', reviewRating: 4, reviewContent: 'Good' } as unknown as CreateReviewInput;
+	const input = {
+		orderId: 'o1',
+		productId: 'p1',
+		reviewRating: 4,
+		reviewContent: 'Good',
+	} as unknown as CreateReviewInput;
 
 	const makeService = (order: object | null, existing: object | null = null, avg = 4.26) => {
 		const orderFindOne = jest.fn(async (_filter: object) => order);
@@ -32,7 +37,7 @@ describe('ReviewService.createReview', () => {
 		return { service, orderFindOne, create, productUpdate };
 	};
 
-	it("buyurtma tarkibidagi mahsulot va CONFIRMED status talab qilinadi", async () => {
+	it('buyurtma tarkibidagi mahsulot va CONFIRMED status talab qilinadi', async () => {
 		const { service, orderFindOne } = makeService(null);
 		await expect(service.createReview(MEMBER_ID, input)).rejects.toThrow('Order must be confirmed');
 		expect(orderFindOne.mock.calls[0][0]).toEqual({
@@ -49,7 +54,7 @@ describe('ReviewService.createReview', () => {
 		expect(create).not.toHaveBeenCalled();
 	});
 
-	it("sharh yaratiladi, reyting bir xonagacha yaxlitlanib mahsulotga yoziladi", async () => {
+	it('sharh yaratiladi, reyting bir xonagacha yaxlitlanib mahsulotga yoziladi', async () => {
 		const { service, create, productUpdate } = makeService({ _id: 'o1' });
 		const review = await service.createReview(MEMBER_ID, input);
 		expect(review).toMatchObject({ _id: 'r1', memberId: MEMBER_ID });

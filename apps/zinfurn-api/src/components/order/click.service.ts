@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ObjectId } from 'mongoose';
+import { Model } from 'mongoose';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Order } from '../../libs/dto/order/order';
 import { OrderStatus } from '../../libs/enums/order.enum';
@@ -114,11 +114,11 @@ export class ClickService {
 
 		// Click tomonda to'lov o'tmagan (error < 0) — buyurtmani bekor qilamiz
 		if (Number(req.error) < 0) {
-			await this.orderService.cancelUnpaidOrder(order._id as ObjectId);
+			await this.orderService.cancelUnpaidOrder(order._id);
 			return this.fail(base, ClickError.TRANSACTION_CANCELLED);
 		}
 
-		await this.orderService.markPaid(order._id as ObjectId, `CLICK-${req.click_trans_id}`);
+		await this.orderService.markPaid(order._id, `CLICK-${req.click_trans_id}`);
 		this.logger.log(`Click paid order ${order.orderId}`);
 		return { ...base, merchant_confirm_id: txn.prepareId };
 	}

@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
 import { CouponStatus, CouponType } from '../../enums/coupon.enum';
 
 @InputType()

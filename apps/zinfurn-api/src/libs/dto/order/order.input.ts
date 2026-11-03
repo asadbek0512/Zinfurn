@@ -1,5 +1,18 @@
 import { Field, Float, InputType, Int } from '@nestjs/graphql';
-import { ArrayMaxSize, ArrayNotEmpty, IsEnum, IsIn, IsInt, IsString, Length, IsNotEmpty, IsOptional, Max, Min, ValidateNested } from 'class-validator';
+import {
+	ArrayMaxSize,
+	ArrayNotEmpty,
+	IsEnum,
+	IsIn,
+	IsInt,
+	IsString,
+	Length,
+	IsNotEmpty,
+	IsOptional,
+	Max,
+	Min,
+	ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../enums/payment.enum';
 

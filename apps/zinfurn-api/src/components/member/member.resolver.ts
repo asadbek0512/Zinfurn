@@ -1,6 +1,12 @@
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { MemberService } from './member.service';
-import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry, TechnicianInquiry } from '../../libs/dto/member/member.input';
+import {
+	AgentsInquiry,
+	LoginInput,
+	MemberInput,
+	MembersInquiry,
+	TechnicianInquiry,
+} from '../../libs/dto/member/member.input';
 import { Member, Members } from '../../libs/dto/member/member';
 import { UseGuards, Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -11,7 +17,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
-import { ShapeIntoMongoObjectId, getSerialForImage, validMimeTypes, validModelMimeTypes, GLB_MAGIC, MAX_MODEL_BYTES } from '../../libs/config';
+import {
+	ShapeIntoMongoObjectId,
+	getSerialForImage,
+	validMimeTypes,
+	validModelMimeTypes,
+	GLB_MAGIC,
+	MAX_MODEL_BYTES,
+} from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { clientFromRequest } from '../auth/auth.service';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
@@ -19,6 +32,7 @@ import { createWriteStream, mkdirSync, openSync, readSync, closeSync, statSync, 
 // sharp 0.35 CJS eksporti — callable funksiya (module.exports = sharp).
 // tsconfig'da esModuleInterop yo'q, shuning uchun `import sharp from 'sharp'` runtime'da
 // `sharp_1.default` (undefined) beradi. require bilan to'g'ri callable olamiz.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp = require('sharp') as typeof import('sharp').default;
 import { Message } from '../../libs/enums/common_enum';
 import { SecurityAlertService, SecurityEventType } from '../security/security-alert.service';
@@ -27,298 +41,300 @@ const ALLOWED_UPLOAD_TARGETS = ['member', 'product', 'article', 'repair', 'revie
 
 @Resolver()
 export class MemberResolver {
-    constructor(
-        private readonly memberService: MemberService,
-        private readonly alert: SecurityAlertService,
-    ) { }//dpendensiy injekshen
+	constructor(
+		private readonly memberService: MemberService,
+		private readonly alert: SecurityAlertService,
+	) {} //dpendensiy injekshen
 
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
-    @Mutation(() => Member)
-    public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
-        const member = await this.memberService.signup(input, clientFromRequest(ctx.req));
-        this.setAuthCookie(ctx.res, member.accessToken as string);
-        return member;
-    }
+	@Throttle({ default: { limit: 5, ttl: 60000 } })
+	@Mutation(() => Member)
+	public async signup(@Args('input') input: MemberInput, @Context() ctx: any): Promise<Member> {
+		const member = await this.memberService.signup(input, clientFromRequest(ctx.req));
+		this.setAuthCookie(ctx.res, member.accessToken as string);
+		return member;
+	}
 
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
-    @Mutation(() => Member)
-    public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
-        const member = await this.memberService.login(input, clientFromRequest(ctx.req));
-        this.setAuthCookie(ctx.res, member.accessToken as string);
-        return member;
-    }
+	@Throttle({ default: { limit: 5, ttl: 60000 } })
+	@Mutation(() => Member)
+	public async login(@Args('input') input: LoginInput, @Context() ctx: any): Promise<Member> {
+		const member = await this.memberService.login(input, clientFromRequest(ctx.req));
+		this.setAuthCookie(ctx.res, member.accessToken as string);
+		return member;
+	}
 
-    /** Access token muddati tugaganda refresh token evaziga yangi juftlik olish (guard'siz) */
-    @Throttle({ default: { limit: 20, ttl: 60000 } })
-    @Mutation(() => Member)
-    public async refreshToken(@Args('refreshToken') refreshToken: string, @Context() ctx: any): Promise<Member> {
-        const member = await this.memberService.refreshToken(refreshToken);
-        this.setAuthCookie(ctx.res, member.accessToken as string);
-        return member;
-    }
+	/** Access token muddati tugaganda refresh token evaziga yangi juftlik olish (guard'siz) */
+	@Throttle({ default: { limit: 20, ttl: 60000 } })
+	@Mutation(() => Member)
+	public async refreshToken(@Args('refreshToken') refreshToken: string, @Context() ctx: any): Promise<Member> {
+		const member = await this.memberService.refreshToken(refreshToken);
+		this.setAuthCookie(ctx.res, member.accessToken as string);
+		return member;
+	}
 
-    @UseGuards(AuthGuard)
-    @Query(() => Member)
-    public async getMyProfile(@AuthMember('_id') memberId: ObjectId): Promise<Member> {
-        return await this.memberService.getMyProfile(memberId);
-    }
+	@UseGuards(AuthGuard)
+	@Query(() => Member)
+	public async getMyProfile(@AuthMember('_id') memberId: ObjectId): Promise<Member> {
+		return await this.memberService.getMyProfile(memberId);
+	}
 
-    private setAuthCookie(res: any, token: string): void {
-        res.cookie('accessToken', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            maxAge: 60 * 60 * 1000, // 1 soat
-        });
-    }
+	private setAuthCookie(res: any, token: string): void {
+		res.cookie('accessToken', token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+			maxAge: 60 * 60 * 1000, // 1 soat
+		});
+	}
 
-    @UseGuards(AuthGuard)
-    @Query(() => String)
-    public async checkAuth(@AuthMember('memberNick') memberNick: string): Promise<string> {
-        return `Hi ${memberNick}`;
-    }
+	@UseGuards(AuthGuard)
+	@Query(() => String)
+	public async checkAuth(@AuthMember('memberNick') memberNick: string): Promise<string> {
+		return `Hi ${memberNick}`;
+	}
 
-    @Roles(MemberType.USER, MemberType.AGENT)
-    @UseGuards(RolesGuard)
-    @Query(() => String)
-    public async checkAuthRoles(@AuthMember() authMember: Member): Promise<string> {
-        return `Hi ${authMember.memberNick}, you are ${authMember.memberType} (memberId: ${authMember._id})`;
-    }
+	@Roles(MemberType.USER, MemberType.AGENT)
+	@UseGuards(RolesGuard)
+	@Query(() => String)
+	public async checkAuthRoles(@AuthMember() authMember: Member): Promise<string> {
+		return `Hi ${authMember.memberNick}, you are ${authMember.memberType} (memberId: ${authMember._id})`;
+	}
 
-    @UseGuards(AuthGuard)
-    @Mutation(() => Member)
-    public async updateMember(
-        @Args('input') input: MemberUpdate,
-        @AuthMember() authMember: Member,
-        @Context() ctx: any,
-    ): Promise<Member> {
-        delete input._id;
-        // Xavfsizlik: user o'z rol/holatini oshira olmasin — bu maydonlar faqat updateMemberByAdmin orqali.
-        if (input.memberType !== undefined || input.memberStatus !== undefined) {
-            const req = ctx?.req;
-            const xff = req?.headers?.['x-forwarded-for'];
-            this.alert.report({
-                type: SecurityEventType.PRIVILEGE_ESCALATION,
-                detail: `updateMember orqali memberType=${input.memberType} / memberStatus=${input.memberStatus} o'rnatishga urinish (bloklandi)`,
-                ip: (typeof xff === 'string' && xff.split(',')[0].trim()) || req?.ip || 'unknown',
-                path: req?.originalUrl || 'graphql',
-                userAgent: String(req?.headers?.['user-agent'] || ''),
-                memberId: String(authMember._id),
-            });
-        }
-        delete input.memberType;
-        delete input.memberStatus;
-        // Profil yangilanishi yangi token beradi, lekin sessiya boshlanish vaqti (sid) saqlanadi —
-        // aks holda profilni tahrirlash sessiya muddatini cheksiz uzaytirardi.
-        return await this.memberService.updateMember(authMember._id, input, (authMember as any).sid, (authMember as any).client);
-    }
+	@UseGuards(AuthGuard)
+	@Mutation(() => Member)
+	public async updateMember(
+		@Args('input') input: MemberUpdate,
+		@AuthMember() authMember: Member,
+		@Context() ctx: any,
+	): Promise<Member> {
+		delete input._id;
+		// Xavfsizlik: user o'z rol/holatini oshira olmasin — bu maydonlar faqat updateMemberByAdmin orqali.
+		if (input.memberType !== undefined || input.memberStatus !== undefined) {
+			const req = ctx?.req;
+			const xff = req?.headers?.['x-forwarded-for'];
+			this.alert.report({
+				type: SecurityEventType.PRIVILEGE_ESCALATION,
+				detail: `updateMember orqali memberType=${input.memberType} / memberStatus=${input.memberStatus} o'rnatishga urinish (bloklandi)`,
+				ip: (typeof xff === 'string' && xff.split(',')[0].trim()) || req?.ip || 'unknown',
+				path: req?.originalUrl || 'graphql',
+				userAgent: String(req?.headers?.['user-agent'] || ''),
+				memberId: String(authMember._id),
+			});
+		}
+		delete input.memberType;
+		delete input.memberStatus;
+		// Profil yangilanishi yangi token beradi, lekin sessiya boshlanish vaqti (sid) saqlanadi —
+		// aks holda profilni tahrirlash sessiya muddatini cheksiz uzaytirardi.
+		return await this.memberService.updateMember(
+			authMember._id,
+			input,
+			(authMember as any).sid,
+			(authMember as any).client,
+		);
+	}
 
-    @UseGuards(AuthGuard)
-    @Mutation(() => Boolean)
-    public async deleteMyAccount(@AuthMember('_id') memberId: ObjectId): Promise<boolean> {
-        return await this.memberService.deleteMyAccount(memberId);
-    }
+	@UseGuards(AuthGuard)
+	@Mutation(() => Boolean)
+	public async deleteMyAccount(@AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+		return await this.memberService.deleteMyAccount(memberId);
+	}
 
-    @UseGuards(AuthGuard)
-    @Mutation(() => Boolean)
-    public async blockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
-        return await this.memberService.blockMember(memberId, ShapeIntoMongoObjectId(input));
-    }
+	@UseGuards(AuthGuard)
+	@Mutation(() => Boolean)
+	public async blockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+		return await this.memberService.blockMember(memberId, ShapeIntoMongoObjectId(input));
+	}
 
-    @UseGuards(AuthGuard)
-    @Mutation(() => Boolean)
-    public async unblockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
-        return await this.memberService.unblockMember(memberId, ShapeIntoMongoObjectId(input));
-    }
+	@UseGuards(AuthGuard)
+	@Mutation(() => Boolean)
+	public async unblockMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+		return await this.memberService.unblockMember(memberId, ShapeIntoMongoObjectId(input));
+	}
 
-    @UseGuards(WithoutGuard)
-    @Query(() => Member)
-    public async getMember(
-        @Args('memberId') input: string,
-        @AuthMember('_id') memberId: ObjectId,
-    ): Promise<Member> {
-        const targetId = ShapeIntoMongoObjectId(input)
-        return await this.memberService.getMember(memberId, targetId);
-    }
+	@UseGuards(WithoutGuard)
+	@Query(() => Member)
+	public async getMember(@Args('memberId') input: string, @AuthMember('_id') memberId: ObjectId): Promise<Member> {
+		const targetId = ShapeIntoMongoObjectId(input);
+		return await this.memberService.getMember(memberId, targetId);
+	}
 
-    @UseGuards(WithoutGuard)
-    @Query(() => Members)
-    public async getAgents(
-        @Args('input') input: AgentsInquiry,
-        @AuthMember('_id') memberId: ObjectId //
-    ): Promise<Members> {
-        return await this.memberService.getAgents(memberId, input);
-    }
+	@UseGuards(WithoutGuard)
+	@Query(() => Members)
+	public async getAgents(
+		@Args('input') input: AgentsInquiry,
+		@AuthMember('_id') memberId: ObjectId, //
+	): Promise<Members> {
+		return await this.memberService.getAgents(memberId, input);
+	}
 
-    @UseGuards(WithoutGuard)
-    @Query(() => Members)
-    public async getTechnicians(
-        @Args('input') input: TechnicianInquiry,
-        @AuthMember('_id') memberId: ObjectId //
-    ): Promise<Members> {
-        return await this.memberService.getTechnicians(memberId, input);
-    }
+	@UseGuards(WithoutGuard)
+	@Query(() => Members)
+	public async getTechnicians(
+		@Args('input') input: TechnicianInquiry,
+		@AuthMember('_id') memberId: ObjectId, //
+	): Promise<Members> {
+		return await this.memberService.getTechnicians(memberId, input);
+	}
 
-    @UseGuards(AuthGuard)
-    @Mutation(() => Member)
-    public async likeTargetMember(
-        @Args('memberId') input: string,
-        @AuthMember('_id') memberId: ObjectId
-    ): Promise<Member> {
-        const likeRefId = ShapeIntoMongoObjectId(input)
-        return await this.memberService.likeTargetMember(memberId, likeRefId);
-    }
+	@UseGuards(AuthGuard)
+	@Mutation(() => Member)
+	public async likeTargetMember(
+		@Args('memberId') input: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Member> {
+		const likeRefId = ShapeIntoMongoObjectId(input);
+		return await this.memberService.likeTargetMember(memberId, likeRefId);
+	}
 
-    /** ADMIN **/
+	/** ADMIN **/
 
-    @Roles(MemberType.ADMIN)
-    @UseGuards(RolesGuard)
-    @Query(() => Members)
-    public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
-        return await this.memberService.getAllMembersByAdmin(input);
-    }
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Query(() => Members)
+	public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
+		return await this.memberService.getAllMembersByAdmin(input);
+	}
 
-    @Roles(MemberType.ADMIN)
-    @UseGuards(RolesGuard)
-    @Mutation(() => Member)
-    public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
-        return await this.memberService.updateMemberByAdmin(input);
-    }
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Mutation(() => Member)
+	public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
+		return await this.memberService.updateMemberByAdmin(input);
+	}
 
-    /** UPLOADER **/
+	/** UPLOADER **/
 
-    @UseGuards(AuthGuard)
-    @Mutation((returns) => String)
-    public async imageUploader(
-        @Args({ name: 'file', type: () => GraphQLUpload })
-        { createReadStream, filename, mimetype }: FileUpload,
-        @Args('target') target: String,
-    ): Promise<string> {
+	@UseGuards(AuthGuard)
+	@Mutation((returns) => String)
+	public async imageUploader(
+		@Args({ name: 'file', type: () => GraphQLUpload })
+		{ createReadStream, filename, mimetype }: FileUpload,
+		@Args('target') target: string,
+	): Promise<string> {
+		if (!filename) throw new Error(Message.UPLOAD_FAILED);
+		// Path traversal himoyasi — target faqat ruxsat etilgan papkalardan bo'lsin
+		if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
+		const validMime = validMimeTypes.includes(mimetype);
+		if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-        if (!filename) throw new Error(Message.UPLOAD_FAILED);
-        // Path traversal himoyasi — target faqat ruxsat etilgan papkalardan bo'lsin
-        if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
-        const validMime = validMimeTypes.includes(mimetype);
-        if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+		// Sharp baribir JPEG'ga qayta kodlaydi — kengaytma doim .jpg
+		const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
+		mkdirSync(`uploads/${target}`, { recursive: true });
+		const url = `uploads/${target}/${imageName}`;
+		const stream = createReadStream();
 
-        // Sharp baribir JPEG'ga qayta kodlaydi — kengaytma doim .jpg
-        const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
-        mkdirSync(`uploads/${target}`, { recursive: true });
-        const url = `uploads/${target}/${imageName}`;
-        const stream = createReadStream();
+		const transformer = sharp()
+			.rotate()
+			.resize({ width: 1400, withoutEnlargement: true })
+			.jpeg({ quality: 80, progressive: true, mozjpeg: true });
 
-        const transformer = sharp()
-            .rotate()
-            .resize({ width: 1400, withoutEnlargement: true })
-            .jpeg({ quality: 80, progressive: true, mozjpeg: true });
+		const result = await new Promise((resolve, reject) => {
+			stream
+				.pipe(transformer)
+				.pipe(createWriteStream(url))
+				.on('finish', async () => resolve(true))
+				.on('error', () => reject(false));
+		});
+		if (!result) throw new Error(Message.UPLOAD_FAILED);
 
-        const result = await new Promise((resolve, reject) => {
-            stream
-                .pipe(transformer)
-                .pipe(createWriteStream(url))
-                .on('finish', async () => resolve(true))
-                .on('error', () => reject(false));
-        });
-        if (!result) throw new Error(Message.UPLOAD_FAILED);
+		return url;
+	}
 
-        return url;
-    }
+	@UseGuards(AuthGuard)
+	@Mutation((returns) => String)
+	public async modelUploader(
+		@Args({ name: 'file', type: () => GraphQLUpload })
+		{ createReadStream, filename, mimetype }: FileUpload,
+		@Args('target') target: string,
+	): Promise<string> {
+		if (!filename) throw new Error(Message.UPLOAD_FAILED);
+		if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
+		if (!validModelMimeTypes.includes(mimetype)) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-    @UseGuards(AuthGuard)
-    @Mutation((returns) => String)
-    public async modelUploader(
-        @Args({ name: 'file', type: () => GraphQLUpload })
-        { createReadStream, filename, mimetype }: FileUpload,
-        @Args('target') target: String,
-    ): Promise<string> {
+		const modelName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.glb';
+		mkdirSync(`uploads/${target}`, { recursive: true });
+		const url = `uploads/${target}/${modelName}`;
 
-        if (!filename) throw new Error(Message.UPLOAD_FAILED);
-        if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
-        if (!validModelMimeTypes.includes(mimetype)) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+		const stream = createReadStream();
+		const written = await new Promise((resolve, reject) => {
+			stream
+				.pipe(createWriteStream(url))
+				.on('finish', () => resolve(true))
+				.on('error', () => reject(false));
+		});
+		if (!written) throw new Error(Message.UPLOAD_FAILED);
 
-        const modelName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.glb';
-        mkdirSync(`uploads/${target}`, { recursive: true });
-        const url = `uploads/${target}/${modelName}`;
+		// A GLB cannot be transcoded the way images are, so the file is validated after
+		// landing on disk and removed if it is not a real glTF binary or is oversized.
+		const discard = () => {
+			try {
+				unlinkSync(url);
+			} catch {
+				/* already gone */
+			}
+		};
 
-        const stream = createReadStream();
-        const written = await new Promise((resolve, reject) => {
-            stream
-                .pipe(createWriteStream(url))
-                .on('finish', () => resolve(true))
-                .on('error', () => reject(false));
-        });
-        if (!written) throw new Error(Message.UPLOAD_FAILED);
+		if (statSync(url).size > MAX_MODEL_BYTES) {
+			discard();
+			throw new Error(Message.UPLOAD_FAILED);
+		}
 
-        // A GLB cannot be transcoded the way images are, so the file is validated after
-        // landing on disk and removed if it is not a real glTF binary or is oversized.
-        const discard = () => {
-            try { unlinkSync(url); } catch { /* already gone */ }
-        };
+		const header = Buffer.alloc(4);
+		const descriptor = openSync(url, 'r');
+		try {
+			readSync(descriptor, header, 0, 4, 0);
+		} finally {
+			closeSync(descriptor);
+		}
+		if (header.toString('ascii') !== GLB_MAGIC) {
+			discard();
+			throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+		}
 
-        if (statSync(url).size > MAX_MODEL_BYTES) {
-            discard();
-            throw new Error(Message.UPLOAD_FAILED);
-        }
+		return url;
+	}
 
-        const header = Buffer.alloc(4);
-        const descriptor = openSync(url, 'r');
-        try {
-            readSync(descriptor, header, 0, 4, 0);
-        } finally {
-            closeSync(descriptor);
-        }
-        if (header.toString('ascii') !== GLB_MAGIC) {
-            discard();
-            throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
-        }
+	@UseGuards(AuthGuard)
+	@Mutation((returns) => [String])
+	public async imagesUploader(
+		@Args('files', { type: () => [GraphQLUpload] })
+		files: Promise<FileUpload>[],
+		@Args('target') target: string,
+	): Promise<string[]> {
+		const uploadedImages: string[] = [];
+		const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
+			try {
+				const { filename, mimetype, createReadStream } = await img;
 
-        return url;
-    }
+				if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
+				const validMime = validMimeTypes.includes(mimetype);
+				if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
 
-    @UseGuards(AuthGuard)
-    @Mutation((returns) => [String])
-    public async imagesUploader(
-        @Args('files', { type: () => [GraphQLUpload] })
-        files: Promise<FileUpload>[],
-        @Args('target') target: String,
-    ): Promise<string[]> {
+				const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
+				mkdirSync(`uploads/${target}`, { recursive: true });
+				const url = `uploads/${target}/${imageName}`;
+				const stream = createReadStream();
 
-        const uploadedImages: string[] = [];
-        const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
-            try {
-                const { filename, mimetype, encoding, createReadStream } = await img;
+				const transformer = sharp()
+					.rotate()
+					.resize({ width: 1400, withoutEnlargement: true })
+					.jpeg({ quality: 80, progressive: true, mozjpeg: true });
 
-                if (!ALLOWED_UPLOAD_TARGETS.includes(String(target))) throw new Error(Message.UPLOAD_FAILED);
-                const validMime = validMimeTypes.includes(mimetype);
-                if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+				const result = await new Promise((resolve, reject) => {
+					stream
+						.pipe(transformer)
+						.pipe(createWriteStream(url))
+						.on('finish', () => resolve(true))
+						.on('error', () => reject(false));
+				});
+				if (!result) throw new Error(Message.UPLOAD_FAILED);
 
-                const imageName = getSerialForImage(filename).replace(/\.[a-z0-9]+$/i, '') + '.jpg';
-                mkdirSync(`uploads/${target}`, { recursive: true });
-                const url = `uploads/${target}/${imageName}`;
-                const stream = createReadStream();
+				uploadedImages[index] = url;
+			} catch (err) {
+				Logger.error('Error, file missing!', err);
+			}
+		});
 
-                const transformer = sharp()
-                    .rotate()
-                    .resize({ width: 1400, withoutEnlargement: true })
-                    .jpeg({ quality: 80, progressive: true, mozjpeg: true });
-
-                const result = await new Promise((resolve, reject) => {
-                    stream
-                        .pipe(transformer)
-                        .pipe(createWriteStream(url))
-                        .on('finish', () => resolve(true))
-                        .on('error', () => reject(false));
-                });
-                if (!result) throw new Error(Message.UPLOAD_FAILED);
-
-                uploadedImages[index] = url;
-
-            } catch (err) {
-                Logger.error('Error, file missing!', err);
-            }
-        });
-
-        await Promise.all(promisedList);
-        return uploadedImages;
-    }
+		await Promise.all(promisedList);
+		return uploadedImages;
+	}
 }

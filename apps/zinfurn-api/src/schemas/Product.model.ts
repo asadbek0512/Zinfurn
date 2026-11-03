@@ -5,7 +5,7 @@ import {
 	ProductCategory,
 	ProductMaterial,
 	ProductColor,
-	ProductCondition
+	ProductCondition,
 } from '../libs/enums/product.enum';
 
 const ProductSchema = new Schema(

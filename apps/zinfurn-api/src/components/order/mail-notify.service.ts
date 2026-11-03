@@ -55,10 +55,7 @@ export class MailNotifyService {
 
 	private async send(memberId: any, orderCode: string, status: OrderStatus, orderTotal?: number): Promise<void> {
 		try {
-			const member = await this.memberModel
-				.findById(memberId)
-				.select('memberEmail memberNick memberFullName')
-				.exec();
+			const member = await this.memberModel.findById(memberId).select('memberEmail memberNick memberFullName').exec();
 			if (!member?.memberEmail) return;
 			const name = member.memberFullName || member.memberNick || 'there';
 			await this.sendRaw(
@@ -90,8 +87,12 @@ export class MailNotifyService {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f5f2;border-radius:10px;padding:16px;">
             <tr><td style="font-size:13px;color:#888;padding-bottom:4px;">Order number</td></tr>
             <tr><td style="font-size:16px;color:#1a1a1a;font-weight:600;">${this.escape(orderCode)}</td></tr>
-            ${amount ? `<tr><td style="font-size:13px;color:#888;padding:12px 0 4px;">Total</td></tr>
-            <tr><td style="font-size:16px;color:#cf6422;font-weight:700;">${amount}</td></tr>` : ''}
+            ${
+							amount
+								? `<tr><td style="font-size:13px;color:#888;padding:12px 0 4px;">Total</td></tr>
+            <tr><td style="font-size:16px;color:#cf6422;font-weight:700;">${amount}</td></tr>`
+								: ''
+						}
           </table>
           <div style="text-align:center;margin-top:28px;">
             <a href="https://zinfurn.uz/mypage?category=myOrders"
@@ -114,7 +115,10 @@ export class MailNotifyService {
 	}
 
 	private escape(s: string): string {
-		return String(s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] as string));
+		return String(s).replace(
+			/[<>&"]/g,
+			(c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] as string,
+		);
 	}
 
 	private async sendRaw(to: string, subject: string, html: string): Promise<void> {

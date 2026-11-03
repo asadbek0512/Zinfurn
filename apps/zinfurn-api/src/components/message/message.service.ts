@@ -50,8 +50,16 @@ export class MessageService {
 			messageStatus: MessageStatus.WAIT,
 		});
 
-		await this.notifyNew(senderId, receiverId, input.productId, product.productTitle, input.message, false, conversationId);
-		return message as unknown as Message;
+		await this.notifyNew(
+			senderId,
+			receiverId,
+			input.productId,
+			product.productTitle,
+			input.message,
+			false,
+			conversationId,
+		);
+		return message;
 	}
 
 	public async replyMessage(senderId: ObjectId, input: ReplyMessageInput): Promise<Message> {
@@ -74,8 +82,16 @@ export class MessageService {
 		});
 
 		const product = last.productId ? await this.productModel.findById(last.productId) : null;
-		await this.notifyNew(senderId, receiverId, last.productId ? String(last.productId) : undefined, product?.productTitle, input.message, last.get('kind') === 'REPAIR', input.conversationId);
-		return message as unknown as Message;
+		await this.notifyNew(
+			senderId,
+			receiverId,
+			last.productId ? String(last.productId) : undefined,
+			product?.productTitle,
+			input.message,
+			last.get('kind') === 'REPAIR',
+			input.conversationId,
+		);
+		return message;
 	}
 
 	public async sendRepairRequest(senderId: ObjectId, input: SendRepairRequestInput): Promise<Message> {
@@ -100,10 +116,18 @@ export class MessageService {
 		});
 
 		await this.notifyNew(senderId, tech._id, undefined, undefined, input.message, true, conversationId);
-		return message as unknown as Message;
+		return message;
 	}
 
-	private async notifyNew(senderId: ObjectId, receiverId: any, productId: string | undefined, productTitle: string | undefined, text: string, isRepair = false, conversationId?: string) {
+	private async notifyNew(
+		senderId: ObjectId,
+		receiverId: any,
+		productId: string | undefined,
+		productTitle: string | undefined,
+		text: string,
+		isRepair = false,
+		conversationId?: string,
+	) {
 		const sender = await this.memberModel.findById(senderId);
 		const nick = sender ? sender.memberNick : 'Someone';
 		const short = text.length > 60 ? text.slice(0, 60) + '...' : text;
@@ -116,7 +140,7 @@ export class MessageService {
 			receiverId: String(receiverId),
 			...(productId ? { productId } : {}),
 			...(conversationId ? { conversationId } : {}),
-		} as any);
+		});
 	}
 
 	public async getMyConversations(memberId: ObjectId): Promise<Conversation[]> {
@@ -141,7 +165,9 @@ export class MessageService {
 					lastSender: { $first: '$senderId' },
 					lastReceiver: { $first: '$receiverId' },
 					unreadCount: {
-						$sum: { $cond: [{ $and: [{ $eq: ['$receiverId', me] }, { $eq: ['$messageStatus', MessageStatus.WAIT] }] }, 1, 0] },
+						$sum: {
+							$cond: [{ $and: [{ $eq: ['$receiverId', me] }, { $eq: ['$messageStatus', MessageStatus.WAIT] }] }, 1, 0],
+						},
 					},
 				},
 			},

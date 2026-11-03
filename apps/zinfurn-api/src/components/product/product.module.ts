@@ -11,21 +11,21 @@ import { TranslationModule } from '../translation/translation.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      {
-        name: 'Product',
-        schema: ProductSchema,
-      },
-    ]),
-    AuthModule,
-    ViewModule,
-    MemberModule,
-    LikeModule,
-    TranslationModule,
-    NotificationModule,
-  ],
-  providers: [ProductResolver, ProductService],
-  exports: [ProductService],
+	imports: [
+		MongooseModule.forFeature([
+			{
+				name: 'Product',
+				schema: ProductSchema,
+			},
+		]),
+		AuthModule,
+		ViewModule,
+		MemberModule,
+		LikeModule,
+		TranslationModule,
+		NotificationModule,
+	],
+	providers: [ProductResolver, ProductService],
+	exports: [ProductService],
 })
-export class ProductModule { }
+export class ProductModule {}

@@ -75,7 +75,13 @@ export class FcmSender {
 		const iat = nowSec();
 		const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
 		const claims = base64url(
-			JSON.stringify({ iss: account.client_email, scope: FCM_SCOPE, aud: GOOGLE_TOKEN_URL, iat, exp: iat + GOOGLE_TOKEN_TTL_SEC }),
+			JSON.stringify({
+				iss: account.client_email,
+				scope: FCM_SCOPE,
+				aud: GOOGLE_TOKEN_URL,
+				iat,
+				exp: iat + GOOGLE_TOKEN_TTL_SEC,
+			}),
 		);
 		const signature = sign('RSA-SHA256', Buffer.from(`${header}.${claims}`), account.private_key).toString('base64url');
 		const res = await fetch(GOOGLE_TOKEN_URL, {
@@ -132,7 +138,8 @@ export class ApnsSender {
 			req.on('end', () => {
 				client.close();
 				if (status === 200) return resolve();
-				if (status === APNS_GONE || APNS_INVALID_REASONS.some((r) => body.includes(r))) return reject(new InvalidPushTokenError(body));
+				if (status === APNS_GONE || APNS_INVALID_REASONS.some((r) => body.includes(r)))
+					return reject(new InvalidPushTokenError(body));
 				reject(new Error(`APNs ${status}: ${body}`));
 			});
 			req.on('error', (err) => {

@@ -33,7 +33,7 @@ export class CouponService {
 		const discountAmount = this.calcDiscount(coupon, orderTotal);
 		return {
 			valid: true,
-			message: 'Kupon qo\'llandi',
+			message: "Kupon qo'llandi",
 			discountAmount,
 			finalTotal: Math.max(0, orderTotal - discountAmount),
 			couponCode: coupon.couponCode,

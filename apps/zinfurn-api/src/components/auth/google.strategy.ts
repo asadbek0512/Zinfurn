@@ -14,7 +14,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 		});
 	}
 
-	async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+	async validate(
+		req: any,
+		accessToken: string,
+		refreshToken: string,
+		profile: any,
+		done: VerifyCallback,
+	): Promise<any> {
 		const { name, emails, photos, id } = profile;
 		// Get memberId from state query parameter (for account linking)
 		const memberId = req.query?.state;
