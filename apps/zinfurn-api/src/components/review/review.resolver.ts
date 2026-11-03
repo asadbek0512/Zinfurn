@@ -51,9 +51,7 @@ export class ReviewResolver {
 
 	@UseGuards(WithoutGuard)
 	@Query(() => ReviewSummary)
-	public async getProductReviewSummary(
-		@Args('productId') productId: string,
-	): Promise<ReviewSummary> {
+	public async getProductReviewSummary(@Args('productId') productId: string): Promise<ReviewSummary> {
 		return this.reviewService.getProductReviewSummary(ShapeIntoMongoObjectId(productId));
 	}
 

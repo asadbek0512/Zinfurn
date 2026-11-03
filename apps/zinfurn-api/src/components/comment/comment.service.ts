@@ -51,7 +51,7 @@ export class CommentService {
 						modifier: 1,
 					});
 					break;
-				case CommentGroup.ARTICLE:
+				case CommentGroup.ARTICLE: {
 					// @ts-ignore
 					const article = await this.boardArticleService.getBoardArticle(null, input.commentRefId);
 					ownerId = article.memberId.toString();
@@ -61,7 +61,8 @@ export class CommentService {
 						modifier: 1,
 					});
 					break;
-				case CommentGroup.REPAIR_PRODUCT:
+				}
+				case CommentGroup.REPAIR_PRODUCT: {
 					// @ts-ignore
 					const repairProduct = await this.repairProductService.getRepairProduct(null, input.commentRefId);
 					ownerId = repairProduct.memberId.toString();
@@ -71,11 +72,13 @@ export class CommentService {
 						modifier: 1,
 					});
 					break;
-				case CommentGroup.PRODUCT_QA:
+				}
+				case CommentGroup.PRODUCT_QA: {
 					// @ts-ignore
 					const product = await this.productService.getProduct(null, input.commentRefId);
 					ownerId = product.memberId.toString();
 					break;
+				}
 			}
 
 			// Send notification if we have an owner ID and it's not a self-comment
@@ -112,25 +115,28 @@ export class CommentService {
 		let notificationDesc = '';
 
 		switch (commentGroup) {
-			case CommentGroup.REPAIR_PRODUCT:
+			case CommentGroup.REPAIR_PRODUCT: {
 				// @ts-ignore
 				const repairProduct = await this.repairProductService.getRepairProduct(null, refId as any);
 				notificationDesc = `${commenterName} commented on your product "${repairProduct.repairProductType}"`;
 				break;
-			case CommentGroup.ARTICLE:
+			}
+			case CommentGroup.ARTICLE: {
 				// @ts-ignore
 				const article = await this.boardArticleService.getBlog(null, refId as any);
 				notificationDesc = `${commenterName} commented on your article "${article.articleTitle}"`;
 				break;
+			}
 			case CommentGroup.MEMBER:
 				notificationDesc = `${commenterName} commented on your profile`;
 				break;
 			case CommentGroup.PRODUCT:
-			case CommentGroup.PRODUCT_QA:
+			case CommentGroup.PRODUCT_QA: {
 				// @ts-ignore
 				const product = await this.productService.getProduct(null, refId as any);
 				notificationDesc = `${commenterName} asked a question about your product "${product.productTitle}"`;
 				break;
+			}
 		}
 
 		// Send notification

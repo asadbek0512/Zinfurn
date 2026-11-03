@@ -23,7 +23,6 @@ export enum NotificationGroup {
 	ARTICLE = 'ARTICLE',
 	PRODUCT = 'PRODUCT',
 	REPAIR_PRODUCT = 'REPAIR_PRODUCT',
-
 }
 registerEnumType(NotificationGroup, {
 	name: 'NotificationGroup',

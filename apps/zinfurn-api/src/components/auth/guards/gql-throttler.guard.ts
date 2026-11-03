@@ -36,7 +36,7 @@ export class GqlThrottlerGuard extends ThrottlerGuard {
 			const xff = req?.headers?.['x-forwarded-for'];
 			this.alert?.report({
 				type: SecurityEventType.RATE_LIMIT,
-				detail: 'So\'rov chastotasi limitdan oshdi (DoS/scraping ehtimoli)',
+				detail: "So'rov chastotasi limitdan oshdi (DoS/scraping ehtimoli)",
 				ip: (typeof xff === 'string' && xff.split(',')[0].trim()) || req?.ip || 'unknown',
 				path: req?.originalUrl || 'graphql',
 				userAgent: String(req?.headers?.['user-agent'] || ''),

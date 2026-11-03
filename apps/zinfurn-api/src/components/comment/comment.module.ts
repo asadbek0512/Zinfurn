@@ -22,7 +22,7 @@ import { RepairProductModule } from '../repair-product/repair-product.module';
 		MemberModule,
 		ProductModule,
 		BoardArticleModule,
-    RepairProductModule
+		RepairProductModule,
 	],
 	providers: [CommentResolver, CommentService],
 })

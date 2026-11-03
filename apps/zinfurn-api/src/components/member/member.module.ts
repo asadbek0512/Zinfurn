@@ -11,20 +11,20 @@ import ProductSchema from '../../schemas/Product.model';
 import RepairSchema from '../../schemas/RepairProduct';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]),
-    MongooseModule.forFeature([{ name: 'Follow', schema: FollowSchema }]),
-    MongooseModule.forFeature([
-      { name: 'Product', schema: ProductSchema },
-      { name: 'RepairProduct', schema: RepairSchema },
-    ]),
-    AuthModule,
-    ViewModule,
-    LikeModule,
-  ],
-  providers: [MemberResolver, MemberService],
-  exports: [MemberService]
+	imports: [
+		MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]),
+		MongooseModule.forFeature([{ name: 'Follow', schema: FollowSchema }]),
+		MongooseModule.forFeature([
+			{ name: 'Product', schema: ProductSchema },
+			{ name: 'RepairProduct', schema: RepairSchema },
+		]),
+		AuthModule,
+		ViewModule,
+		LikeModule,
+	],
+	providers: [MemberResolver, MemberService],
+	exports: [MemberService],
 })
-export class MemberModule { }
+export class MemberModule {}
 
 //// circular dependency between modules. Use forwardRef()

@@ -12,7 +12,10 @@ export class PushResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => Boolean)
-	public async registerPushToken(@Args('input') input: PushTokenInput, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+	public async registerPushToken(
+		@Args('input') input: PushTokenInput,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<boolean> {
 		return this.pushService.registerToken(memberId, input);
 	}
 

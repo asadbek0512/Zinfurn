@@ -40,10 +40,12 @@ export class ReviewService {
 			const review = await this.reviewModel.create(input);
 
 			// recalculate average rating and update counters
-			const avgResult = await this.reviewModel.aggregate([
-				{ $match: { productId: input.productId, reviewStatus: ReviewStatus.ACTIVE } },
-				{ $group: { _id: null, avg: { $avg: '$reviewRating' } } },
-			]).exec();
+			const avgResult = await this.reviewModel
+				.aggregate([
+					{ $match: { productId: input.productId, reviewStatus: ReviewStatus.ACTIVE } },
+					{ $group: { _id: null, avg: { $avg: '$reviewRating' } } },
+				])
+				.exec();
 			const newRating = avgResult[0] ? Math.round(avgResult[0].avg * 10) / 10 : 0;
 
 			await this.productModel.findByIdAndUpdate(input.productId, {
@@ -142,11 +144,7 @@ export class ReviewService {
 			_id: reviewId,
 			likesCount: likes.length,
 			dislikesCount: dislikes.length,
-			myReaction: likes.includes(me)
-				? ReviewReaction.LIKE
-				: dislikes.includes(me)
-					? ReviewReaction.DISLIKE
-					: undefined,
+			myReaction: likes.includes(me) ? ReviewReaction.LIKE : dislikes.includes(me) ? ReviewReaction.DISLIKE : undefined,
 		};
 	}
 

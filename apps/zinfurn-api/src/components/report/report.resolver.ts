@@ -12,7 +12,10 @@ export class ReportResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => Boolean)
-	public async reportContent(@Args('input') input: ReportInput, @AuthMember('_id') memberId: ObjectId): Promise<boolean> {
+	public async reportContent(
+		@Args('input') input: ReportInput,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<boolean> {
 		return this.reportService.reportContent(memberId, input);
 	}
 }

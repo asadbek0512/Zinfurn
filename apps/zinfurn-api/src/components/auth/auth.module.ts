@@ -11,17 +11,17 @@ import { AppleVerifier } from './apple.verifier';
 import MemberSchema from '../../schemas/Member.model';
 
 @Module({
-  imports: [
-    HttpModule,
-    PassportModule,
-    MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]),
-    JwtModule.register({
-      secret: `${process.env.SECRET_TOKEN}`,
-      signOptions: { expiresIn: '30d' },
-    }),
-  ],
-  providers: [AuthService, GoogleStrategy, TelegramStrategy, AppleVerifier],
-  controllers: [AuthController],
-  exports: [AuthService],
+	imports: [
+		HttpModule,
+		PassportModule,
+		MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]),
+		JwtModule.register({
+			secret: `${process.env.SECRET_TOKEN}`,
+			signOptions: { expiresIn: '30d' },
+		}),
+	],
+	providers: [AuthService, GoogleStrategy, TelegramStrategy, AppleVerifier],
+	controllers: [AuthController],
+	exports: [AuthService],
 })
 export class AuthModule {}

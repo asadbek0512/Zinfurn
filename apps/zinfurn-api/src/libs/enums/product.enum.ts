@@ -39,7 +39,7 @@ export enum ProductMaterial {
 	WOOD = 'WOOD',
 	METAL = 'METAL',
 	PLASTIC = 'PLASTIC',
-	GLASS = "GLASS"
+	GLASS = 'GLASS',
 }
 registerEnumType(ProductMaterial, {
 	name: 'ProductMaterial',

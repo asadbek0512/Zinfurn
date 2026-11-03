@@ -18,7 +18,7 @@ export class TelegramNotifyService {
 	constructor(@InjectModel('Member') private readonly memberModel: Model<Member>) {}
 
 	private readonly STATUS_TEXT: Record<string, string> = {
-		[OrderStatus.PENDING]: "🕐 Qabul qilindi — tez orada tayyorlaymiz",
+		[OrderStatus.PENDING]: '🕐 Qabul qilindi — tez orada tayyorlaymiz',
 		[OrderStatus.PROCESSING]: '📦 Tayyorlanmoqda',
 		[OrderStatus.SHIPPED]: "🚚 Yo'lga chiqdi",
 		[OrderStatus.DELIVERED]: '📬 Yetkazib berildi',

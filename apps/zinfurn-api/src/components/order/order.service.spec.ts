@@ -35,7 +35,9 @@ describe('OrderService.createOrder', () => {
 
 	const makeService = (products: object[], discountAmount = 0, storedOrder: object | null = null) => {
 		const create = jest.fn(async (doc: object) => ({ _id: 'o1', ...doc }));
-		const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...storedOrder, ...update }) }));
+		const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({
+			exec: async () => ({ ...storedOrder, ...update }),
+		}));
 		const orderModel = {
 			create,
 			findOne: jest.fn(() => ({ lean: () => ({ exec: async () => storedOrder }) })),
@@ -57,7 +59,9 @@ describe('OrderService.createOrder', () => {
 			{ sendToMember: jest.fn(async () => undefined) } as unknown as PushService,
 		);
 		// auto-progression taymerlari testda ishga tushmasin
-		jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
+		jest
+			.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression')
+			.mockImplementation(() => undefined);
 		return { service, create, redeemCoupon, notify, tossConfirm, findOneAndUpdate };
 	};
 
@@ -71,7 +75,7 @@ describe('OrderService.createOrder', () => {
 			...overrides,
 		}) as unknown as CreateOrderInput;
 
-	it('client narxi va summasi e\'tiborsiz — DB narxi va sale narxi ishlatiladi', async () => {
+	it("client narxi va summasi e'tiborsiz — DB narxi va sale narxi ishlatiladi", async () => {
 		const { service, create } = makeService([sofa, chair]);
 		const order = await service.createOrder(MEMBER_ID, makeInput());
 		expect(order.orderTotal).toBe(500000 * 2 + 80000);
@@ -80,13 +84,13 @@ describe('OrderService.createOrder', () => {
 		expect(saved.orderItems[1].productPrice).toBe(80000);
 	});
 
-	it('sotuvda bo\'lmagan (topilmagan) mahsulot bo\'lsa buyurtma rad etiladi', async () => {
+	it("sotuvda bo'lmagan (topilmagan) mahsulot bo'lsa buyurtma rad etiladi", async () => {
 		const { service, create } = makeService([sofa]);
 		await expect(service.createOrder(MEMBER_ID, makeInput())).rejects.toBeInstanceOf(BadRequestException);
 		expect(create).not.toHaveBeenCalled();
 	});
 
-	it('kupon server hisoblagan summaga qo\'llanadi', async () => {
+	it("kupon server hisoblagan summaga qo'llanadi", async () => {
 		const { service, redeemCoupon } = makeService([sofa, chair], 50000);
 		const order = await service.createOrder(MEMBER_ID, makeInput({ couponCode: 'SALE' }));
 		expect(redeemCoupon).toHaveBeenCalledWith('SALE', 1080000);
@@ -95,23 +99,37 @@ describe('OrderService.createOrder', () => {
 
 	describe('Toss', () => {
 		const KRW_PER_USD = 1350;
-		const unpaid = { _id: 'o1', orderId: 'ZIN-1', memberId: MEMBER_ID, orderTotal: 100, paymentMethod: PaymentMethod.TOSS, paymentStatus: PaymentStatus.UNPAID, paymentAmount: 100 * KRW_PER_USD };
+		const unpaid = {
+			_id: 'o1',
+			orderId: 'ZIN-1',
+			memberId: MEMBER_ID,
+			orderTotal: 100,
+			paymentMethod: PaymentMethod.TOSS,
+			paymentStatus: PaymentStatus.UNPAID,
+			paymentAmount: 100 * KRW_PER_USD,
+		};
 		const confirmInput = { paymentKey: 'pk_1', orderId: 'ZIN-1', amount: 100 * KRW_PER_USD };
 
 		it('Toss buyurtma UNPAID va KRW summasi bilan yaratiladi, xabar yuborilmaydi', async () => {
 			const { service, notify } = makeService([sofa, chair]);
 			const order = await service.createOrder(MEMBER_ID, makeInput({ paymentMethod: PaymentMethod.TOSS }));
-			expect(order).toMatchObject({ paymentStatus: PaymentStatus.UNPAID, paymentCurrency: 'KRW', paymentAmount: 1080000 * KRW_PER_USD });
+			expect(order).toMatchObject({
+				paymentStatus: PaymentStatus.UNPAID,
+				paymentCurrency: 'KRW',
+				paymentAmount: 1080000 * KRW_PER_USD,
+			});
 			expect(notify.notifyCustomer).not.toHaveBeenCalled();
 		});
 
-		it('summa buyurtmadagidan farq qilsa Toss\'ga so\'rov yuborilmaydi', async () => {
+		it("summa buyurtmadagidan farq qilsa Toss'ga so'rov yuborilmaydi", async () => {
 			const { service, tossConfirm } = makeService([], 0, unpaid);
-			await expect(service.confirmTossPayment(MEMBER_ID, { ...confirmInput, amount: 100 })).rejects.toBeInstanceOf(BadRequestException);
+			await expect(service.confirmTossPayment(MEMBER_ID, { ...confirmInput, amount: 100 })).rejects.toBeInstanceOf(
+				BadRequestException,
+			);
 			expect(tossConfirm).not.toHaveBeenCalled();
 		});
 
-		it('to\'g\'ri summa — Toss tasdiqlaydi, buyurtma PAID bo\'ladi', async () => {
+		it("to'g'ri summa — Toss tasdiqlaydi, buyurtma PAID bo'ladi", async () => {
 			const { service, tossConfirm, findOneAndUpdate, notify } = makeService([], 0, unpaid);
 			const order = await service.confirmTossPayment(MEMBER_ID, confirmInput);
 			expect(tossConfirm).toHaveBeenCalledWith('pk_1', 'ZIN-1', 100 * KRW_PER_USD);
@@ -120,7 +138,7 @@ describe('OrderService.createOrder', () => {
 			expect(notify.notifyAdminNewOrder).toHaveBeenCalled();
 		});
 
-		it('allaqachon to\'langan buyurtma qayta tasdiqlanmaydi', async () => {
+		it("allaqachon to'langan buyurtma qayta tasdiqlanmaydi", async () => {
 			const paid = { ...unpaid, paymentStatus: PaymentStatus.PAID, paymentKey: 'pk_1' };
 			const { service, tossConfirm } = makeService([], 0, paid);
 			const order = await service.confirmTossPayment(MEMBER_ID, confirmInput);
@@ -135,10 +153,20 @@ describe('OrderService.createOrder', () => {
 	});
 
 	describe('expireUnpaidOnlineOrders', () => {
-		const stale = { _id: 'o9', orderId: 'ZIN-9', paymentMethod: PaymentMethod.TOSS, memberId: MEMBER_ID, orderTotal: 10, paymentAmount: 13500, orderCouponCode: 'SALE10' };
+		const stale = {
+			_id: 'o9',
+			orderId: 'ZIN-9',
+			paymentMethod: PaymentMethod.TOSS,
+			memberId: MEMBER_ID,
+			orderTotal: 10,
+			paymentAmount: 13500,
+			orderCouponCode: 'SALE10',
+		};
 
 		const makeExpiry = (tossResult: object | null) => {
-			const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({ exec: async () => ({ ...stale, ...update }) }));
+			const findOneAndUpdate = jest.fn((_filter: object, update: object) => ({
+				exec: async () => ({ ...stale, ...update }),
+			}));
 			const orderModel = {
 				find: jest.fn(() => ({ limit: () => ({ lean: () => ({ exec: async () => [stale] }) }) })),
 				findOneAndUpdate,
@@ -154,7 +182,9 @@ describe('OrderService.createOrder', () => {
 				{ findByOrderId: jest.fn(async () => tossResult) } as unknown as TossPaymentService,
 				{ sendToMember: jest.fn(async () => undefined) } as unknown as PushService,
 			);
-			jest.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression').mockImplementation(() => undefined);
+			jest
+				.spyOn(service as unknown as { scheduleAutoProgression: () => void }, 'scheduleAutoProgression')
+				.mockImplementation(() => undefined);
 			return { service, findOneAndUpdate, releaseCoupon, notify };
 		};
 
@@ -167,14 +197,21 @@ describe('OrderService.createOrder', () => {
 		});
 
 		it("Toss'da DONE — PAID qilinadi, bekor qilinmaydi", async () => {
-			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry({ status: 'DONE', totalAmount: 13500, paymentKey: 'pk_9' });
+			const { service, findOneAndUpdate, releaseCoupon, notify } = makeExpiry({
+				status: 'DONE',
+				totalAmount: 13500,
+				paymentKey: 'pk_9',
+			});
 			await service.expireUnpaidOnlineOrders();
-			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ paymentStatus: PaymentStatus.PAID, paymentKey: 'pk_9' });
+			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({
+				paymentStatus: PaymentStatus.PAID,
+				paymentKey: 'pk_9',
+			});
 			expect(releaseCoupon).not.toHaveBeenCalled();
 			expect(notify.notifyAdminNewOrder).toHaveBeenCalled();
 		});
 
-		it("Toss summasi mos kelmasa — PAID qilinmaydi", async () => {
+		it('Toss summasi mos kelmasa — PAID qilinmaydi', async () => {
 			const { service, findOneAndUpdate } = makeExpiry({ status: 'DONE', totalAmount: 1, paymentKey: 'pk_9' });
 			await service.expireUnpaidOnlineOrders();
 			expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ orderStatus: OrderStatus.CANCELLED });
@@ -206,7 +243,10 @@ describe('OrderService.createOrder', () => {
 		it('PENDING → PROCESSING, keyingi qadam vaqti belgilanadi', async () => {
 			const { service, findOneAndUpdate, notify } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.PENDING }]);
 			await service.advanceDemoOrders();
-			const [filter, update] = findOneAndUpdate.mock.calls[0] as unknown as [object, { orderStatus: OrderStatus; orderAutoProgressAt: Date }];
+			const [filter, update] = findOneAndUpdate.mock.calls[0] as unknown as [
+				object,
+				{ orderStatus: OrderStatus; orderAutoProgressAt: Date },
+			];
 			expect(filter).toEqual({ _id: 'o1', orderStatus: OrderStatus.PENDING });
 			expect(update.orderStatus).toBe(OrderStatus.PROCESSING);
 			expect(update.orderAutoProgressAt.getTime()).toBeGreaterThan(Date.now());
@@ -216,11 +256,16 @@ describe('OrderService.createOrder', () => {
 		it('SHIPPED → DELIVERED, kuzatuv tugaydi', async () => {
 			const { service, findOneAndUpdate } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.SHIPPED }]);
 			await service.advanceDemoOrders();
-			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({ orderStatus: OrderStatus.DELIVERED, $unset: { orderAutoProgressAt: 1 } });
+			expect(findOneAndUpdate.mock.calls[0][1]).toEqual({
+				orderStatus: OrderStatus.DELIVERED,
+				$unset: { orderAutoProgressAt: 1 },
+			});
 		});
 
 		it("qo'lda CANCELLED qilingan buyurtma surilmaydi, faqat kuzatuvdan chiqariladi", async () => {
-			const { service, findOneAndUpdate, updateOne } = makeProgress([{ _id: 'o1', orderStatus: OrderStatus.CANCELLED }]);
+			const { service, findOneAndUpdate, updateOne } = makeProgress([
+				{ _id: 'o1', orderStatus: OrderStatus.CANCELLED },
+			]);
 			await service.advanceDemoOrders();
 			expect(findOneAndUpdate).not.toHaveBeenCalled();
 			expect(updateOne).toHaveBeenCalledWith({ _id: 'o1' }, { $unset: { orderAutoProgressAt: 1 } });
@@ -236,19 +281,19 @@ describe('OrderService.createOrder', () => {
 	describe('effectivePrice', () => {
 		const now = Date.now();
 
-		it('sale yoqilmagan bo\'lsa asosiy narx', () => {
+		it("sale yoqilmagan bo'lsa asosiy narx", () => {
 			expect(effectivePrice({ ...chair, productIsOnSale: false }, now)).toBe(100000);
 		});
 
-		it('sale hali boshlanmagan bo\'lsa asosiy narx', () => {
+		it("sale hali boshlanmagan bo'lsa asosiy narx", () => {
 			expect(effectivePrice({ ...chair, productSaleStartsAt: new Date(now + DAY_MS) }, now)).toBe(100000);
 		});
 
-		it('sale muddati tugagan bo\'lsa asosiy narx', () => {
+		it("sale muddati tugagan bo'lsa asosiy narx", () => {
 			expect(effectivePrice({ ...chair, productSaleExpiresAt: new Date(now - DAY_MS) }, now)).toBe(100000);
 		});
 
-		it('sale oynasi ochiq bo\'lsa sale narxi', () => {
+		it("sale oynasi ochiq bo'lsa sale narxi", () => {
 			const window = { productSaleStartsAt: new Date(now - DAY_MS), productSaleExpiresAt: new Date(now + DAY_MS) };
 			expect(effectivePrice({ ...chair, ...window }, now)).toBe(80000);
 		});

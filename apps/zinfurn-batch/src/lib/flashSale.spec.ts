@@ -24,7 +24,7 @@ describe('flashSale', () => {
 		expect(isSaleActive({ ...base, productSaleExpiresAt: new Date(NOW + DAY_MS) }, NOW)).toBe(true);
 	});
 
-	it('juda arzon mahsulotda chegirma yo\'qolsa — aksiya qo\'yilmaydi', () => {
+	it("juda arzon mahsulotda chegirma yo'qolsa — aksiya qo'yilmaydi", () => {
 		expect(buildSaleWindow(1, NOW, () => 0)).toBeNull();
 	});
 

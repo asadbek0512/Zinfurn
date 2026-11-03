@@ -1,4 +1,4 @@
-import { Field, ID, InputType } from '@nestjs/graphql';
+import { Field, InputType } from '@nestjs/graphql';
 import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { NotificationType, NotificationGroup } from '../../enums/notification.enum';
 

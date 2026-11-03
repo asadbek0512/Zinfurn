@@ -11,7 +11,7 @@ export class AllExceptionsFilter implements ExceptionFilter, GqlExceptionFilter 
 
 	public catch(exception: unknown, host: ArgumentsHost): unknown {
 		const contextType = host.getType<GqlContextType>();
-		const message = exception instanceof Error ? exception.stack ?? exception.message : String(exception);
+		const message = exception instanceof Error ? (exception.stack ?? exception.message) : String(exception);
 
 		this.logger.error(`[${contextType}] ${message}`);
 
