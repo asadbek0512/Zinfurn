@@ -225,7 +225,7 @@ requestedType allowed values: ${Object.values(ProductType).join(', ')}`;
 	private buildResponseSchema() {
 		return {
 			type: 'OBJECT',
-			products: {
+			properties: {
 				roomType: { type: 'STRING', enum: Object.values(ProductCategory) },
 				dominantColors: {
 					type: 'ARRAY',

@@ -54,12 +54,12 @@ DESCRIPTION: ${desc || ''}`;
 	private buildResponseSchema() {
 		const item = {
 			type: 'OBJECT',
-			products: { title: { type: 'STRING' }, desc: { type: 'STRING' } },
+			properties: { title: { type: 'STRING' }, desc: { type: 'STRING' } },
 			required: ['title', 'desc'],
 		};
 		return {
 			type: 'OBJECT',
-			products: Object.fromEntries(SUPPORTED_LOCALES.map((k) => [k, item])),
+			properties: Object.fromEntries(SUPPORTED_LOCALES.map((k) => [k, item])),
 			required: [...SUPPORTED_LOCALES],
 		};
 	}
