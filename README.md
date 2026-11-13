@@ -142,6 +142,18 @@ npm test                   # 81 unit tests (auth, orders, payments, coupons, rev
 
 `.env` (see `.env.example`): `MONGO_DEV`, `SECRET_TOKEN`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID/SECRET`, `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`, optional `ADMIN_TELEGRAM_CHAT_ID`, `RESEND_API_KEY`, `MAIL_FROM`, `SESSION_SECRET`.
 
+## Backups & monitoring
+
+Disaster recovery runs from server cron (scripts live on the VPS, outside this repo):
+
+| What | When | Where | Retention |
+|---|---|---|---|
+| `mongodump` of the prod DB (gzip archive) | daily 03:00 UTC | VPS `~/backups/zinfurn/` | 14 days |
+| Off-site copy: DB dumps + `uploads/` (rclone) | right after the dump | Google Drive `zinfurn-backup/` | 30 days |
+| Uptime check of `zinfurn.uz` | every 5 min | — | — |
+
+Failures (site down / recovered, off-site upload failed) are pushed to Telegram. Restore: `mongorestore --uri="$MONGO_PROD" --archive=zinfurn-<date>.gz --gzip`.
+
 ## Roadmap
 
 Engineering plan to take the API from a single-instance showcase to a horizontally-scalable, production-hardened service. Ordered by impact.
